@@ -1,8 +1,17 @@
-# Kaden Racing — iOS WebView shell (App Store)
+# Kaden Racing — iOS (App Store)
 
-The native app loads your hosted **HTML5 game** in `WKWebView` so you can **Archive** and submit to **App Store Connect**.
+The iOS app is **100% Swift**: **SwiftUI** for menus and HUD, **SceneKit** for the 3D track and cars. There is no `WKWebView` in the product target. Regenerate the Xcode project after structural changes: `cd ios && xcodegen generate`.
 
-**Game URL:** set `GAME_WEB_URL` in `KadenRacing/Info.plist` (HTTPS). Default: `https://kaden-car-championships.vercel.app`.
+## Project layout (`KadenRacing/`)
+
+| Folder | Purpose |
+|--------|---------|
+| **`App/`** | App entry point (`KadenRacingApp.swift`) and root view (`ContentView.swift`). |
+| **`Game/`** | SceneKit runtime: `NativeRaceEngine`, `TrackSpline`, `SceneKitRaceView`. |
+| **`Models/`** | Domain types and static data (`GameDefinitions` — cars, tracks, `GameRouteMode`, etc.). |
+| **`Views/`** | SwiftUI screens, navigation, and session state (`NativeScreens`, `GameFlowState`). |
+| **`Resources/`** | `Info.plist`, `PrivacyInfo.xcprivacy`, `LaunchScreen.storyboard`, `Assets.xcassets` (app icon + menu background image). |
+| **`WebBundle/`** *(optional, excluded from target)* | Legacy HTML/JS assets only if you keep them for reference; not shipped in the app bundle. |
 
 ---
 
@@ -10,14 +19,14 @@ The native app loads your hosted **HTML5 game** in `WKWebView` so you can **Arch
 
 | Item | Status |
 |------|--------|
-| **App Icon** | `Assets.xcassets` — single 1024×1024 **universal** iOS icon (from `app-icon.png`); Xcode generates device sizes |
-| **Launch screen** | `LaunchScreen.storyboard` — black full-screen (all devices) |
-| **Privacy manifest** | `PrivacyInfo.xcprivacy` — not tracking; no native data collection (update if you add SDKs) |
-| **Export compliance (encryption)** | `ITSAppUsesNonExemptEncryption` = **NO** in `Info.plist` — only standard HTTPS to your server (aligns with *“No*” in App Store Connect for standard encryption) |
+| **App Icon** | `Resources/Assets.xcassets` — single 1024×1024 **universal** iOS icon; Xcode generates device sizes |
+| **Launch screen** | `Resources/LaunchScreen.storyboard` — black full-screen (all devices) |
+| **Privacy manifest** | `Resources/PrivacyInfo.xcprivacy` — not tracking; no native data collection (update if you add SDKs) |
+| **Export compliance (encryption)** | `ITSAppUsesNonExemptEncryption` = **NO** in `Resources/Info.plist` (App Store Connect encryption question) |
 | **App category** | `LSApplicationCategoryType` = **Games** |
 | **Versioning** | `CFBundleShortVersionString` (marketing) + `CFBundleVersion` (build) — bump for each App Store upload |
 | **Device** | iPhone + iPad (`TARGETED_DEVICE_FAMILY`), **arm64** |
-| **Orientation** | iPhone & iPad: **all four** (portrait, upside-down, both landscapes) in `Info.plist` |
+| **Orientation** | iPhone & iPad: **all four** (portrait, upside-down, both landscapes) in `Resources/Info.plist` |
 
 **1024 App Store icon:** must have **no alpha channel**. If App Store Connect rejects the icon, re-export the PNG as opaque (e.g. flatten on a background in an image editor).
 
@@ -46,7 +55,7 @@ These are **not** in the repo; Apple requires them at submission time.
 
 1. **Xcode 15+**, open `KadenRacing.xcodeproj` (or run `xcodegen generate` in this folder if you use `project.yml`).
 2. **Signing:** select your **Team**; set a unique **Bundle ID** if you change it from `com.kaden.racing.championships`.
-3. **Increment** build (`CFBundleVersion`) / version (`CFBundleShortVersionString`) in **Info.plist** (or target **General** in Xcode) for every upload.
+3. **Increment** build (`CFBundleVersion`) / version (`CFBundleShortVersionString`) in `Resources/Info.plist` (or target **General** in Xcode) for every upload.
 4. **Product → Archive** → **Distribute App** → **App Store Connect**.
 
 ```bash
@@ -57,18 +66,18 @@ open KadenRacing.xcodeproj
 
 ---
 
-## App Review tips (WebView / 4.2)
+## App Review tips (native game / 4.2)
 
-- **Guideline 4.2 (Minimum Functionality):** the **game in the browser** should be a real, playable product; the native binary is a shell.
-- In **App Review Information**, explain: *“The app is a full-screen WebView that loads our game at [URL]. Network required.”*
-- **Demo account:** not required unless your **web** game hide content behind login.
-- Test on **cellular** and **Wi‑Fi**; load time should be acceptable.
+- **Guideline 4.2 (Minimum Functionality):** the **SceneKit** racing experience should be a real, playable product on device.
+- In **App Review Information**, you can note: *“Racing game implemented in SwiftUI + SceneKit; no third-party game engine required; works offline.”*
+- **Demo account:** not required for a game with no login.
+- Test on **cellular** and **Wi‑Fi** if you add networking later (analytics, multiplayer, etc.).
 
 ---
 
 ## Offline behavior
 
-The app **does not** embed `index.html`; the game is loaded from `GAME_WEB_URL`. If the device is offline, the user sees a blank or WebKit error page. For a better experience later, you can add a native “No connection” view in Swift (not implemented here).
+The app does not require network access for core gameplay. All code and art used in the binary ship in the app bundle (`App`, `Game`, `UI`, `Resources`). A separate **web** build of the game (repo root `index.html`) can still be hosted (e.g. Vercel) for browsers; that is independent of the iOS target.
 
 ---
 
@@ -85,4 +94,4 @@ xcodegen generate
 
 ## Privacy manifest & your website
 
-`PrivacyInfo.xcprivacy` covers **native** code only (currently: no tracking, no collected data types). Data handling by **JavaScript / your host** is declared in **App Store Connect App Privacy** and your **Privacy Policy**, not only in this file. If you add ads or analytics SDKs to the iOS target, update the manifest and labels.
+`Resources/PrivacyInfo.xcprivacy` covers **native** code only (currently: no tracking, no collected data types). Declare any additional practices in **App Store Connect → App Privacy** and your public **Privacy Policy** URL. If you add ads or analytics SDKs to the iOS target, update the manifest and labels.

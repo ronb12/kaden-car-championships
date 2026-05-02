@@ -5,6 +5,7 @@ options:
   deploymentTarget:
     iOS: "15.0"
   xcodeVersion: "15.0"
+  createIntermediateGroups: true
 targets:
   KadenRacing:
     type: application
@@ -14,11 +15,16 @@ targets:
       - path: KadenRacing
         excludes:
           - "**/.DS_Store"
+          - "**/WebBundle/**"
+    resources:
+      - path: KadenRacing/Resources/Audio
     settings:
+      ENABLE_USER_SCRIPT_SANDBOXING: NO
       PRODUCT_BUNDLE_IDENTIFIER: com.kaden.racing.championships
       PRODUCT_NAME: KadenRacing
       TARGETED_DEVICE_FAMILY: "1,2"
-      INFOPLIST_FILE: KadenRacing/Info.plist
+      INFOPLIST_FILE: KadenRacing/Resources/Info.plist
+      CODE_SIGN_ENTITLEMENTS: KadenRacing/KadenRacing.entitlements
       SWIFT_VERSION: "5.0"
       ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       CURRENT_PROJECT_VERSION: "1"

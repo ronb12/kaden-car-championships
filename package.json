@@ -1,0 +1,8 @@
+{
+  "name": "kaden-car-championships",
+  "private": true,
+  "description": "Racing game workspace — asset builds invoke Blender batch pipelines.",
+  "scripts": {
+    "build:assets": "bash scripts/build-assets.sh"
+  }
+}

@@ -3,40 +3,109 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0D03074C93A5F494BEB7C458 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 29DE1D35D067FA9DC3F13CF0 /* Assets.xcassets */; };
-		3D1919C6D44B4217912374D7 /* GameWebContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5303AB3802E6CCB4D260C429 /* GameWebContainer.swift */; };
-		62C3390E39C4851229A3906E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 64E815BEE65F938AA62A7C5A /* PrivacyInfo.xcprivacy */; };
-		809DD39207B01370F4203F35 /* KadenRacingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DCB098CDC82096D54D64FC2 /* KadenRacingApp.swift */; };
-		98D2AE0F294A97A8ACA75F79 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AE3C1770D346FF43FC5F8B5C /* LaunchScreen.storyboard */; };
-		D8C8FF3543C31C35BDA46724 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3AE84D15CA951E778A6EBA /* ContentView.swift */; };
+		011BE87B4584285C0D0D943E /* NativeRaceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47DCB73E68BDE7970EE2FFDE /* NativeRaceEngine.swift */; };
+		03811865CE19936A4375A23B /* AssetManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89E2B441EBF5F830A0B52232 /* AssetManager.swift */; };
+		182633BA42EDE23AD23DFFD0 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BB4BEC8CDD796E10EF9F07A /* ContentView.swift */; };
+		1DE5D865A147481EABE466E8 /* NativeScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A4B4C5B4792FD7570D0076 /* NativeScreens.swift */; };
+		27275E9438927B2ED62E4F87 /* TrafficObjectPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = B816EA46C6C95A7AA2A7CDCD /* TrafficObjectPool.swift */; };
+		2F8192FF7EBD03DB3260C2B8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6B47351373932D157F2D3869 /* Assets.xcassets */; };
+		30BFAE56CFC16BF12101D5CC /* ModularTrackGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB50422B99F9B6159764217 /* ModularTrackGenerator.swift */; };
+		31D52EEDFE361334D425446F /* GameServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA31E56B0DB32C9099B31D9C /* GameServices.swift */; };
+		33F5C8FD5139F941F1A864B2 /* ArcadeKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6414E3206DF68149DE76094 /* ArcadeKit.swift */; };
+		351683A3FC3708F6788D4295 /* PlayerProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B5537B58EA6FB79966744F7 /* PlayerProgressStore.swift */; };
+		3A78D603402B1028D0B1C489 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 83A82A919E5118DE638B2E8A /* LaunchScreen.storyboard */; };
+		42C3D862F8398CEFBF0D6525 /* ProceduralCityDecor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71002AB31F7FB7C5421A9C12 /* ProceduralCityDecor.swift */; };
+		443B9CE48EF1CA0CD12B9DC5 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 87206BCADB78574908DAC4CD /* PrivacyInfo.xcprivacy */; };
+		4A95E1E22624A058119D6B49 /* SceneKitMobileTuning.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F16D11F9C7F6375523AF1F /* SceneKitMobileTuning.swift */; };
+		5A04A8D5AB620C0251479C04 /* CityStreamingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B0907D07083EF5241F49B0B /* CityStreamingCoordinator.swift */; };
+		5C2850FEAA7FF641EC7A4FE5 /* RaceCarGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B1E3EDE1AE06CDBB91B3AE7 /* RaceCarGeometry.swift */; };
+		639B1CD2E6F0C8E23F743A6E /* CarStatsRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D44DCB93358ECB8F7BA2F7 /* CarStatsRegistry.swift */; };
+		68EE93CEA45EC15A61E6DDEE /* RaceParticles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C0F5ABDF927B71860775984 /* RaceParticles.swift */; };
+		70451007795EF8ABF4741B4C /* car_engine_racing.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = D77918A96F3C3C980974A300 /* car_engine_racing.mp3 */; };
+		7D5437FFA5CB03B6531D2302 /* GameFlowState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9154ED1C5303CCF3B9A1131 /* GameFlowState.swift */; };
+		7DA60ED4CC6526242AFAF61D /* CityRuntimeConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD896D199288A2360B0870FE /* CityRuntimeConfig.swift */; };
+		8EFC694517A5CB95FBB29959 /* RaceAudioController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A823AB14D16C2D30DA1BF5A /* RaceAudioController.swift */; };
+		98AF983F82020C5F103EE02B /* SceneKitRaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F381FC8965008D1513A83A9 /* SceneKitRaceView.swift */; };
+		B50B9C6D3CE4E858B05E293C /* SeededRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9567874A992497E8DA890D2 /* SeededRandom.swift */; };
+		BDA645D4BAC54543F4E85DA6 /* TiltSteeringController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8251B9768530759509971D /* TiltSteeringController.swift */; };
+		BF95F4EA12CD9CF88E39A3A5 /* AUDIO_ATTRIBUTION.txt in Resources */ = {isa = PBXBuildFile; fileRef = 80CB87CBCA7ED81C4A77D5A9 /* AUDIO_ATTRIBUTION.txt */; };
+		CDCA15C79EDA4F1CF9AAB843 /* CityThemeTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 574C4CD35FA3A4CCB2680CDF /* CityThemeTypes.swift */; };
+		D1332B11CE1FCE6992DB96E8 /* CityThemeCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCE94DF841BB6822F9D82CBF /* CityThemeCatalog.swift */; };
+		DAD81D02C9996751ABD7552E /* ControlPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = B69682A864136F51C277E3DA /* ControlPreferences.swift */; };
+		DC293C83DE48A2CDEC237AAC /* RacePedalCluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 306347128B70B4CEDD494B35 /* RacePedalCluster.swift */; };
+		DFFE549133A19A824655F5D5 /* TrackSpline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 708F75DACBECCF2D63C71A7B /* TrackSpline.swift */; };
+		E0E9DA03786944611E6CA813 /* CityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBC2D37AF5D02A470F9A7279 /* CityManager.swift */; };
+		E57E9867CDB054AEB69E313D /* KadenRacingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EC125BCEDDDC4AE5C4A039 /* KadenRacingApp.swift */; };
+		F137939F2ABF95AE46212D2C /* GameDefinitions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7E2286C4B690B250121BFF9 /* GameDefinitions.swift */; };
+		FBDE069B0ABF3899E2F0E1A7 /* RaceOrientationModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FC676CF587F4C026FA7839E /* RaceOrientationModifier.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		29DE1D35D067FA9DC3F13CF0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		5303AB3802E6CCB4D260C429 /* GameWebContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameWebContainer.swift; sourceTree = "<group>"; };
-		5DCB098CDC82096D54D64FC2 /* KadenRacingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KadenRacingApp.swift; sourceTree = "<group>"; };
-		64E815BEE65F938AA62A7C5A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		9C3AE84D15CA951E778A6EBA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		A03527D17C901848B86782CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		AE3C1770D346FF43FC5F8B5C /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
-		E894CC66A01BF4BEA7464CC2 /* KadenRacing.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KadenRacing.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		05EC125BCEDDDC4AE5C4A039 /* KadenRacingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KadenRacingApp.swift; sourceTree = "<group>"; };
+		1A823AB14D16C2D30DA1BF5A /* RaceAudioController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceAudioController.swift; sourceTree = "<group>"; };
+		1B1E3EDE1AE06CDBB91B3AE7 /* RaceCarGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceCarGeometry.swift; sourceTree = "<group>"; };
+		1BB4BEC8CDD796E10EF9F07A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		306347128B70B4CEDD494B35 /* RacePedalCluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RacePedalCluster.swift; sourceTree = "<group>"; };
+		3FC676CF587F4C026FA7839E /* RaceOrientationModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceOrientationModifier.swift; sourceTree = "<group>"; };
+		47DCB73E68BDE7970EE2FFDE /* NativeRaceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeRaceEngine.swift; sourceTree = "<group>"; };
+		4B5537B58EA6FB79966744F7 /* PlayerProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerProgressStore.swift; sourceTree = "<group>"; };
+		574C4CD35FA3A4CCB2680CDF /* CityThemeTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityThemeTypes.swift; sourceTree = "<group>"; };
+		63A4B4C5B4792FD7570D0076 /* NativeScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeScreens.swift; sourceTree = "<group>"; };
+		6B47351373932D157F2D3869 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		708F75DACBECCF2D63C71A7B /* TrackSpline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackSpline.swift; sourceTree = "<group>"; };
+		71002AB31F7FB7C5421A9C12 /* ProceduralCityDecor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProceduralCityDecor.swift; sourceTree = "<group>"; };
+		785CDC2BC183E8F6F4E9EC8E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7B0907D07083EF5241F49B0B /* CityStreamingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityStreamingCoordinator.swift; sourceTree = "<group>"; };
+		80CB87CBCA7ED81C4A77D5A9 /* AUDIO_ATTRIBUTION.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = AUDIO_ATTRIBUTION.txt; sourceTree = "<group>"; };
+		80D44DCB93358ECB8F7BA2F7 /* CarStatsRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarStatsRegistry.swift; sourceTree = "<group>"; };
+		83A82A919E5118DE638B2E8A /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		87206BCADB78574908DAC4CD /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		89E2B441EBF5F830A0B52232 /* AssetManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetManager.swift; sourceTree = "<group>"; };
+		8C0F5ABDF927B71860775984 /* RaceParticles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceParticles.swift; sourceTree = "<group>"; };
+		8F381FC8965008D1513A83A9 /* SceneKitRaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKitRaceView.swift; sourceTree = "<group>"; };
+		A7E2286C4B690B250121BFF9 /* GameDefinitions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDefinitions.swift; sourceTree = "<group>"; };
+		A9154ED1C5303CCF3B9A1131 /* GameFlowState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameFlowState.swift; sourceTree = "<group>"; };
+		A9567874A992497E8DA890D2 /* SeededRandom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeededRandom.swift; sourceTree = "<group>"; };
+		B4F16D11F9C7F6375523AF1F /* SceneKitMobileTuning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKitMobileTuning.swift; sourceTree = "<group>"; };
+		B69682A864136F51C277E3DA /* ControlPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlPreferences.swift; sourceTree = "<group>"; };
+		B816EA46C6C95A7AA2A7CDCD /* TrafficObjectPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrafficObjectPool.swift; sourceTree = "<group>"; };
+		BBB50422B99F9B6159764217 /* ModularTrackGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModularTrackGenerator.swift; sourceTree = "<group>"; };
+		BBC2D37AF5D02A470F9A7279 /* CityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityManager.swift; sourceTree = "<group>"; };
+		CA31E56B0DB32C9099B31D9C /* GameServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameServices.swift; sourceTree = "<group>"; };
+		CC8251B9768530759509971D /* TiltSteeringController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiltSteeringController.swift; sourceTree = "<group>"; };
+		CD896D199288A2360B0870FE /* CityRuntimeConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityRuntimeConfig.swift; sourceTree = "<group>"; };
+		D6414E3206DF68149DE76094 /* ArcadeKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeKit.swift; sourceTree = "<group>"; };
+		D77918A96F3C3C980974A300 /* car_engine_racing.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = car_engine_racing.mp3; sourceTree = "<group>"; };
+		E894CC66A01BF4BEA7464CC2 /* KadenRacing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KadenRacing.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FCA151EEE4DEBE7E36231A8E /* KadenRacing.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KadenRacing.entitlements; sourceTree = "<group>"; };
+		FCE94DF841BB6822F9D82CBF /* CityThemeCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityThemeCatalog.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		162E78D3F10EE5F6A7D6653B /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				CA31E56B0DB32C9099B31D9C /* GameServices.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		1AFA6EC1BBE658AC75721C32 /* KadenRacing */ = {
 			isa = PBXGroup;
 			children = (
-				29DE1D35D067FA9DC3F13CF0 /* Assets.xcassets */,
-				9C3AE84D15CA951E778A6EBA /* ContentView.swift */,
-				5303AB3802E6CCB4D260C429 /* GameWebContainer.swift */,
-				A03527D17C901848B86782CF /* Info.plist */,
-				5DCB098CDC82096D54D64FC2 /* KadenRacingApp.swift */,
-				AE3C1770D346FF43FC5F8B5C /* LaunchScreen.storyboard */,
-				64E815BEE65F938AA62A7C5A /* PrivacyInfo.xcprivacy */,
+				FCA151EEE4DEBE7E36231A8E /* KadenRacing.entitlements */,
+				975F3DD5C4C750194BFB333B /* App */,
+				BCD8E81FC4D25EE99ECD1624 /* City */,
+				94ADC27AAB74FEFB141BE80A /* Core */,
+				C2ACD84D6FB654076F75294D /* Game */,
+				BA57C90D0007B4D453091E12 /* Models */,
+				F03C6A57D386DED28B44C084 /* Resources */,
+				162E78D3F10EE5F6A7D6653B /* Services */,
+				D53CFAD6C6F3479A62814464 /* Views */,
 			);
 			path = KadenRacing;
 			sourceTree = "<group>";
@@ -55,6 +124,98 @@
 				1AFA6EC1BBE658AC75721C32 /* KadenRacing */,
 				4F45D0846FC2A4DE9551CE88 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		94ADC27AAB74FEFB141BE80A /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				D6414E3206DF68149DE76094 /* ArcadeKit.swift */,
+				80D44DCB93358ECB8F7BA2F7 /* CarStatsRegistry.swift */,
+				B69682A864136F51C277E3DA /* ControlPreferences.swift */,
+				4B5537B58EA6FB79966744F7 /* PlayerProgressStore.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		975F3DD5C4C750194BFB333B /* App */ = {
+			isa = PBXGroup;
+			children = (
+				1BB4BEC8CDD796E10EF9F07A /* ContentView.swift */,
+				05EC125BCEDDDC4AE5C4A039 /* KadenRacingApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		AA4D15F3F9BCD9FA8E942240 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				80CB87CBCA7ED81C4A77D5A9 /* AUDIO_ATTRIBUTION.txt */,
+				D77918A96F3C3C980974A300 /* car_engine_racing.mp3 */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
+		BA57C90D0007B4D453091E12 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A7E2286C4B690B250121BFF9 /* GameDefinitions.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		BCD8E81FC4D25EE99ECD1624 /* City */ = {
+			isa = PBXGroup;
+			children = (
+				89E2B441EBF5F830A0B52232 /* AssetManager.swift */,
+				BBC2D37AF5D02A470F9A7279 /* CityManager.swift */,
+				CD896D199288A2360B0870FE /* CityRuntimeConfig.swift */,
+				7B0907D07083EF5241F49B0B /* CityStreamingCoordinator.swift */,
+				FCE94DF841BB6822F9D82CBF /* CityThemeCatalog.swift */,
+				574C4CD35FA3A4CCB2680CDF /* CityThemeTypes.swift */,
+				BBB50422B99F9B6159764217 /* ModularTrackGenerator.swift */,
+				71002AB31F7FB7C5421A9C12 /* ProceduralCityDecor.swift */,
+				B4F16D11F9C7F6375523AF1F /* SceneKitMobileTuning.swift */,
+				A9567874A992497E8DA890D2 /* SeededRandom.swift */,
+				B816EA46C6C95A7AA2A7CDCD /* TrafficObjectPool.swift */,
+			);
+			path = City;
+			sourceTree = "<group>";
+		};
+		C2ACD84D6FB654076F75294D /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				47DCB73E68BDE7970EE2FFDE /* NativeRaceEngine.swift */,
+				1A823AB14D16C2D30DA1BF5A /* RaceAudioController.swift */,
+				1B1E3EDE1AE06CDBB91B3AE7 /* RaceCarGeometry.swift */,
+				8C0F5ABDF927B71860775984 /* RaceParticles.swift */,
+				8F381FC8965008D1513A83A9 /* SceneKitRaceView.swift */,
+				708F75DACBECCF2D63C71A7B /* TrackSpline.swift */,
+			);
+			path = Game;
+			sourceTree = "<group>";
+		};
+		D53CFAD6C6F3479A62814464 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A9154ED1C5303CCF3B9A1131 /* GameFlowState.swift */,
+				63A4B4C5B4792FD7570D0076 /* NativeScreens.swift */,
+				3FC676CF587F4C026FA7839E /* RaceOrientationModifier.swift */,
+				306347128B70B4CEDD494B35 /* RacePedalCluster.swift */,
+				CC8251B9768530759509971D /* TiltSteeringController.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		F03C6A57D386DED28B44C084 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				6B47351373932D157F2D3869 /* Assets.xcassets */,
+				785CDC2BC183E8F6F4E9EC8E /* Info.plist */,
+				83A82A919E5118DE638B2E8A /* LaunchScreen.storyboard */,
+				87206BCADB78574908DAC4CD /* PrivacyInfo.xcprivacy */,
+				AA4D15F3F9BCD9FA8E942240 /* Audio */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -85,7 +246,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2620;
 			};
 			buildConfigurationList = 8236D2491A5B949D59D59472 /* Build configuration list for PBXProject "KadenRacing" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -97,7 +258,6 @@
 			);
 			mainGroup = 765B3C25F9D01C4848CE0635;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -111,9 +271,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0D03074C93A5F494BEB7C458 /* Assets.xcassets in Resources */,
-				98D2AE0F294A97A8ACA75F79 /* LaunchScreen.storyboard in Resources */,
-				62C3390E39C4851229A3906E /* PrivacyInfo.xcprivacy in Resources */,
+				BF95F4EA12CD9CF88E39A3A5 /* AUDIO_ATTRIBUTION.txt in Resources */,
+				2F8192FF7EBD03DB3260C2B8 /* Assets.xcassets in Resources */,
+				3A78D603402B1028D0B1C489 /* LaunchScreen.storyboard in Resources */,
+				443B9CE48EF1CA0CD12B9DC5 /* PrivacyInfo.xcprivacy in Resources */,
+				70451007795EF8ABF4741B4C /* car_engine_racing.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -124,9 +286,36 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D8C8FF3543C31C35BDA46724 /* ContentView.swift in Sources */,
-				3D1919C6D44B4217912374D7 /* GameWebContainer.swift in Sources */,
-				809DD39207B01370F4203F35 /* KadenRacingApp.swift in Sources */,
+				33F5C8FD5139F941F1A864B2 /* ArcadeKit.swift in Sources */,
+				03811865CE19936A4375A23B /* AssetManager.swift in Sources */,
+				639B1CD2E6F0C8E23F743A6E /* CarStatsRegistry.swift in Sources */,
+				E0E9DA03786944611E6CA813 /* CityManager.swift in Sources */,
+				7DA60ED4CC6526242AFAF61D /* CityRuntimeConfig.swift in Sources */,
+				5A04A8D5AB620C0251479C04 /* CityStreamingCoordinator.swift in Sources */,
+				D1332B11CE1FCE6992DB96E8 /* CityThemeCatalog.swift in Sources */,
+				CDCA15C79EDA4F1CF9AAB843 /* CityThemeTypes.swift in Sources */,
+				182633BA42EDE23AD23DFFD0 /* ContentView.swift in Sources */,
+				DAD81D02C9996751ABD7552E /* ControlPreferences.swift in Sources */,
+				F137939F2ABF95AE46212D2C /* GameDefinitions.swift in Sources */,
+				7D5437FFA5CB03B6531D2302 /* GameFlowState.swift in Sources */,
+				31D52EEDFE361334D425446F /* GameServices.swift in Sources */,
+				E57E9867CDB054AEB69E313D /* KadenRacingApp.swift in Sources */,
+				30BFAE56CFC16BF12101D5CC /* ModularTrackGenerator.swift in Sources */,
+				011BE87B4584285C0D0D943E /* NativeRaceEngine.swift in Sources */,
+				1DE5D865A147481EABE466E8 /* NativeScreens.swift in Sources */,
+				351683A3FC3708F6788D4295 /* PlayerProgressStore.swift in Sources */,
+				42C3D862F8398CEFBF0D6525 /* ProceduralCityDecor.swift in Sources */,
+				8EFC694517A5CB95FBB29959 /* RaceAudioController.swift in Sources */,
+				5C2850FEAA7FF641EC7A4FE5 /* RaceCarGeometry.swift in Sources */,
+				FBDE069B0ABF3899E2F0E1A7 /* RaceOrientationModifier.swift in Sources */,
+				68EE93CEA45EC15A61E6DDEE /* RaceParticles.swift in Sources */,
+				DC293C83DE48A2CDEC237AAC /* RacePedalCluster.swift in Sources */,
+				4A95E1E22624A058119D6B49 /* SceneKitMobileTuning.swift in Sources */,
+				98AF983F82020C5F103EE02B /* SceneKitRaceView.swift in Sources */,
+				B50B9C6D3CE4E858B05E293C /* SeededRandom.swift in Sources */,
+				BDA645D4BAC54543F4E85DA6 /* TiltSteeringController.swift in Sources */,
+				DFFE549133A19A824655F5D5 /* TrackSpline.swift in Sources */,
+				27275E9438927B2ED62E4F87 /* TrafficObjectPool.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,9 +326,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = KadenRacing/KadenRacing.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				INFOPLIST_FILE = KadenRacing/Info.plist;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_FILE = KadenRacing/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -204,6 +395,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
@@ -214,9 +406,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = KadenRacing/KadenRacing.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				INFOPLIST_FILE = KadenRacing/Info.plist;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_FILE = KadenRacing/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -288,6 +482,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;

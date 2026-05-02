@@ -1,0 +1,6 @@
+Engine sample (car_engine_racing.mp3)
+- Source: BigSoundBank “Car Engine #2” (sound 0291)
+- License: CC0 (public domain) — https://bigsoundbank.com/car-engine-2-s0291.html
+- Author: Denis Chardonnet
+
+You may replace this file with your own engine loop; keep the filename or update RaceAudioController resource names.

@@ -55,8 +55,7 @@
 	<true/>
 	<key>UIStatusBarStyle</key>
 	<string>UIStatusBarStyleLightContent</string>
-	<!-- HTTPS URL of your deployed game (Vercel / custom domain). Change before shipping. -->
-	<key>GAME_WEB_URL</key>
-	<string>https://kaden-car-championships.vercel.app</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Kaden Racing uses device tilt for steering when you enable tilt controls.</string>
 </dict>
 </plist>
