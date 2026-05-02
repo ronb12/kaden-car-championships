@@ -298,13 +298,27 @@ body{background:#000;overflow:hidden;font-family:'Orbitron',monospace;touch-acti
 <script>
 'use strict';
 
+// iOS WKWebView often reports 0×0 until after first layout; never size WebGL to that.
+function readViewportSize() {
+  let w = window.visualViewport ? window.visualViewport.width : innerWidth;
+  let h = window.visualViewport ? window.visualViewport.height : innerHeight;
+  if (!w || !h || w < 2 || h < 2) {
+    w = innerWidth || (document.documentElement && document.documentElement.clientWidth) || screen.width || 390;
+    h = innerHeight || (document.documentElement && document.documentElement.clientHeight) || screen.height || 844;
+  }
+  w = Math.max(1, w);
+  h = Math.max(1, h);
+  return { w: w, h: h };
+}
+
 // ── Renderer ──────────────────────────────────────────
 const canvas = document.getElementById('canvas');
+const _vs0 = readViewportSize();
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setSize(innerWidth, innerHeight);
+renderer.setSize(_vs0.w, _vs0.h);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.95;
 
@@ -312,7 +326,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
 scene.fog = new THREE.Fog(0xc9e8f5, 80, 350);
 
-const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 600);
+const camera = new THREE.PerspectiveCamera(62, _vs0.w / _vs0.h, 0.1, 600);
 
 // ── Dynamic lighting (updated per city) ──────────────
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -2811,12 +2825,11 @@ function restartGame() {
 }
 
 function onViewportResize() {
-  const w = window.visualViewport ? window.visualViewport.width : innerWidth;
-  const h = window.visualViewport ? window.visualViewport.height : innerHeight;
-  camera.aspect = w / h;
+  const vp = readViewportSize();
+  camera.aspect = vp.w / vp.h;
   camera.updateProjectionMatrix();
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-  renderer.setSize(w, h);
+  renderer.setSize(vp.w, vp.h);
 }
 window.addEventListener('resize', onViewportResize);
 if (window.visualViewport) {
@@ -2827,6 +2840,8 @@ window.addEventListener('orientationchange', function() {
   setTimeout(onViewportResize, 180);
 });
 onViewportResize();
+requestAnimationFrame(function() { onViewportResize(); });
+[50, 200, 450].forEach(function(ms) { setTimeout(onViewportResize, ms); });
 
 // Initial placement & start loop
 const ip = curve.getPoint(0);

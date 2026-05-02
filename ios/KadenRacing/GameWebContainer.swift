@@ -27,6 +27,8 @@ struct GameWebContainer: UIViewRepresentable {
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.bounces = false
+        webView.scrollView.delaysContentTouches = false
+        webView.scrollView.isMultipleTouchEnabled = true
 
         #if DEBUG
         if #available(iOS 16.4, *) {
