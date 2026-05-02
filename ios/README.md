@@ -17,7 +17,7 @@ The native app loads your hosted **HTML5 game** in `WKWebView` so you can **Arch
 | **App category** | `LSApplicationCategoryType` = **Games** |
 | **Versioning** | `CFBundleShortVersionString` (marketing) + `CFBundleVersion` (build) — bump for each App Store upload |
 | **Device** | iPhone + iPad (`TARGETED_DEVICE_FAMILY`), **arm64** |
-| **Orientation** | iPhone: landscape; iPad: all (adjust in `Info.plist` if you want) |
+| **Orientation** | iPhone & iPad: **all four** (portrait, upside-down, both landscapes) in `Info.plist` |
 
 **1024 App Store icon:** must have **no alpha channel**. If App Store Connect rejects the icon, re-export the PNG as opaque (e.g. flatten on a background in an image editor).
 
@@ -33,7 +33,7 @@ These are **not** in the repo; Apple requires them at submission time.
 | **App record** | Unique **Bundle ID** (match Xcode → Signing & Capabilities) |
 | **Privacy Policy URL** | **Required** for most apps; host a simple page describing data practices for the **website** loaded in the WebView (cookies, localStorage, analytics if any) |
 | **Support URL** | A contact or help page (can be the same site as the game, different path) |
-| **Screenshots** | Required sizes for **6.7"**, **6.5"** (and others per Apple’s current list). Capture from simulator or device in **landscape** |
+| **Screenshots** | Required sizes for **6.7"**, **6.5"** (and others per Apple’s current list). Capture from Simulator or device (game plays in any orientation) |
 | **Copyright / trade name** | e.g. `© 2026 Your Name` |
 | **Age rating** | Complete the questionnaire (racing / mild violence, etc. as appropriate) |
 | **App Privacy** | Nutrition labels: declare what the **loaded web content** may collect (or “Data Not Collected” only if truly accurate). Align with your Privacy Policy. |
