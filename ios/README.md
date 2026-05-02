@@ -55,6 +55,10 @@ Keep **HTTPS** so App Transport Security stays satisfied.
 - You load remote web content: declare **Privacy Nutrition** as appropriate (e.g. if the site sets cookies / analytics, disclose). If the game is first-party static hosting with no trackers, many teams select minimal data collection—confirm against your actual deployment.
 - Ensure **audio**: Web Audio unlock on first tap is already handled in the web game; no extra native code required.
 
+## App Review note
+
+Apple sometimes scrutinizes **minimal WebView shells** (Guideline **4.2** — Minimum Functionality). Your shipped web game should be substantive; keep metadata accurate and ensure the app behaves well offline-start (clear error or splash), stable audio, and full-screen gameplay.
+
 ## Offline / errors
 
 This shell **requires network access** to play. There is no bundled `index.html` copy; always ship after verifying `GAME_WEB_URL` loads on cellular Safari.
