@@ -1,0 +1,27 @@
+# Generate Xcode project:  brew install xcodegen  &&  cd ios && xcodegen generate
+name: KadenRacing
+options:
+  bundleIdPrefix: com.kaden
+  deploymentTarget:
+    iOS: "15.0"
+  xcodeVersion: "15.0"
+targets:
+  KadenRacing:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: KadenRacing
+        excludes:
+          - "**/.DS_Store"
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.kaden.racing.championships
+      PRODUCT_NAME: KadenRacing
+      TARGETED_DEVICE_FAMILY: "1,2"
+      INFOPLIST_FILE: KadenRacing/Info.plist
+      SWIFT_VERSION: "5.0"
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      CURRENT_PROJECT_VERSION: "1"
+      MARKETING_VERSION: "1.0"
+    scheme:
+      testTargets: []
