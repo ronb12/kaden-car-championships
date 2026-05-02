@@ -1,70 +1,88 @@
 # Kaden Racing — iOS WebView shell (App Store)
 
-This folder wraps the hosted **HTML5 game** in `WKWebView` so you can archive and submit to **App Store Connect**.
+The native app loads your hosted **HTML5 game** in `WKWebView` so you can **Archive** and submit to **App Store Connect**.
 
-The game itself loads from **`GAME_WEB_URL`** in `KadenRacing/Info.plist` (HTTPS only). Default points at the Vercel project name `kaden-car-championships`; change it to your production domain if different.
+**Game URL:** set `GAME_WEB_URL` in `KadenRacing/Info.plist` (HTTPS). Default: `https://kaden-car-championships.vercel.app`.
 
-## Requirements
+---
 
-- macOS with **Xcode 15+**
-- Apple Developer Program membership ($99/yr) for App Store upload
-- Valid **bundle identifier** (unique to your team), icons, and signing in Xcode
+## Already included (technical App Store requirements)
 
-## Generate the Xcode project
+| Item | Status |
+|------|--------|
+| **App Icon** | `Assets.xcassets` — single 1024×1024 **universal** iOS icon (from `app-icon.png`); Xcode generates device sizes |
+| **Launch screen** | `LaunchScreen.storyboard` — black full-screen (all devices) |
+| **Privacy manifest** | `PrivacyInfo.xcprivacy` — not tracking; no native data collection (update if you add SDKs) |
+| **Export compliance (encryption)** | `ITSAppUsesNonExemptEncryption` = **NO** in `Info.plist` — only standard HTTPS to your server (aligns with *“No*” in App Store Connect for standard encryption) |
+| **App category** | `LSApplicationCategoryType` = **Games** |
+| **Versioning** | `CFBundleShortVersionString` (marketing) + `CFBundleVersion` (build) — bump for each App Store upload |
+| **Device** | iPhone + iPad (`TARGETED_DEVICE_FAMILY`), **arm64** |
+| **Orientation** | iPhone: landscape; iPad: all (adjust in `Info.plist` if you want) |
 
-Install [XcodeGen](https://github.com/yonaskolb/XcodeGen) (one-time):
+**1024 App Store icon:** must have **no alpha channel**. If App Store Connect rejects the icon, re-export the PNG as opaque (e.g. flatten on a background in an image editor).
+
+---
+
+## You must provide in App Store Connect (listing)
+
+These are **not** in the repo; Apple requires them at submission time.
+
+| Field | Notes |
+|------|--------|
+| **Apple Developer Program** | Paid membership, agreements active |
+| **App record** | Unique **Bundle ID** (match Xcode → Signing & Capabilities) |
+| **Privacy Policy URL** | **Required** for most apps; host a simple page describing data practices for the **website** loaded in the WebView (cookies, localStorage, analytics if any) |
+| **Support URL** | A contact or help page (can be the same site as the game, different path) |
+| **Screenshots** | Required sizes for **6.7"**, **6.5"** (and others per Apple’s current list). Capture from simulator or device in **landscape** |
+| **Copyright / trade name** | e.g. `© 2026 Your Name` |
+| **Age rating** | Complete the questionnaire (racing / mild violence, etc. as appropriate) |
+| **App Privacy** | Nutrition labels: declare what the **loaded web content** may collect (or “Data Not Collected” only if truly accurate). Align with your Privacy Policy. |
+
+**Export compliance wizard:** If you only use HTTPS like this app, answers typically match **“No”** to custom encryption and standard TLS — consistent with `ITSAppUsesNonExemptEncryption` = false.
+
+---
+
+## Build & upload
+
+1. **Xcode 15+**, open `KadenRacing.xcodeproj` (or run `xcodegen generate` in this folder if you use `project.yml`).
+2. **Signing:** select your **Team**; set a unique **Bundle ID** if you change it from `com.kaden.racing.championships`.
+3. **Increment** build (`CFBundleVersion`) / version (`CFBundleShortVersionString`) in **Info.plist** (or target **General** in Xcode) for every upload.
+4. **Product → Archive** → **Distribute App** → **App Store Connect**.
 
 ```bash
-brew install xcodegen
+cd ios
+xcodegen generate   # optional, if you edit project.yml
+open KadenRacing.xcodeproj
 ```
 
-From this `ios` directory:
+---
+
+## App Review tips (WebView / 4.2)
+
+- **Guideline 4.2 (Minimum Functionality):** the **game in the browser** should be a real, playable product; the native binary is a shell.
+- In **App Review Information**, explain: *“The app is a full-screen WebView that loads our game at [URL]. Network required.”*
+- **Demo account:** not required unless your **web** game hide content behind login.
+- Test on **cellular** and **Wi‑Fi**; load time should be acceptable.
+
+---
+
+## Offline behavior
+
+The app **does not** embed `index.html`; the game is loaded from `GAME_WEB_URL`. If the device is offline, the user sees a blank or WebKit error page. For a better experience later, you can add a native “No connection” view in Swift (not implemented here).
+
+---
+
+## Regenerating the Xcode project
+
+If you change `project.yml`:
 
 ```bash
 cd ios
 xcodegen generate
-open KadenRacing.xcodeproj
 ```
 
-If you prefer not to use XcodeGen: create a new **iOS App** in Xcode (SwiftUI, iOS 15), delete the template views, and add the Swift files from `KadenRacing/` manually; copy keys from `Info.plist` into the target’s Info tab.
+---
 
-## App icons
+## Privacy manifest & your website
 
-1. In Xcode: **Assets.xcassets → App Icon**.
-2. Drag your **1024×1024** master (use `../app-icon.png` from the repo as source; Xcode can generate sizes or use an asset generator).
-
-App Store Connect requires a 1024×1024 icon without alpha for the store listing.
-
-## Configure URL & bundle ID
-
-| Setting | Where |
-|--------|--------|
-| Game URL | `KadenRacing/Info.plist` → `GAME_WEB_URL` |
-| Bundle ID | Xcode → Target → **Signing & Capabilities** (must match App Store Connect app record) |
-
-Keep **HTTPS** so App Transport Security stays satisfied.
-
-## Build for device / Archive
-
-1. Select **Any iOS Device (arm64)** or a plugged-in iPhone.
-2. **Product → Archive**.
-3. **Distribute App** → App Store Connect.
-
-## Privacy & compliance
-
-- You load remote web content: declare **Privacy Nutrition** as appropriate (e.g. if the site sets cookies / analytics, disclose). If the game is first-party static hosting with no trackers, many teams select minimal data collection—confirm against your actual deployment.
-- Ensure **audio**: Web Audio unlock on first tap is already handled in the web game; no extra native code required.
-
-## App Review note
-
-Apple sometimes scrutinizes **minimal WebView shells** (Guideline **4.2** — Minimum Functionality). Your shipped web game should be substantive; keep metadata accurate and ensure the app behaves well offline-start (clear error or splash), stable audio, and full-screen gameplay.
-
-## Offline / errors
-
-This shell **requires network access** to play. There is no bundled `index.html` copy; always ship after verifying `GAME_WEB_URL` loads on cellular Safari.
-
-To bundle local HTML later, add files to the target and load `file://` URLs — not included here to avoid duplicating the live site.
-
-## Orientation
-
-Landscape is primary for gameplay (`Info.plist`). iPad allows all orientations for App Review flexibility; adjust if you want phone portrait.
+`PrivacyInfo.xcprivacy` covers **native** code only (currently: no tracking, no collected data types). Data handling by **JavaScript / your host** is declared in **App Store Connect App Privacy** and your **Privacy Policy**, not only in this file. If you add ads or analytics SDKs to the iOS target, update the manifest and labels.

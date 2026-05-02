@@ -7,16 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D03074C93A5F494BEB7C458 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 29DE1D35D067FA9DC3F13CF0 /* Assets.xcassets */; };
 		3D1919C6D44B4217912374D7 /* GameWebContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5303AB3802E6CCB4D260C429 /* GameWebContainer.swift */; };
+		62C3390E39C4851229A3906E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 64E815BEE65F938AA62A7C5A /* PrivacyInfo.xcprivacy */; };
 		809DD39207B01370F4203F35 /* KadenRacingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DCB098CDC82096D54D64FC2 /* KadenRacingApp.swift */; };
+		98D2AE0F294A97A8ACA75F79 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AE3C1770D346FF43FC5F8B5C /* LaunchScreen.storyboard */; };
 		D8C8FF3543C31C35BDA46724 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3AE84D15CA951E778A6EBA /* ContentView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		29DE1D35D067FA9DC3F13CF0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5303AB3802E6CCB4D260C429 /* GameWebContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameWebContainer.swift; sourceTree = "<group>"; };
 		5DCB098CDC82096D54D64FC2 /* KadenRacingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KadenRacingApp.swift; sourceTree = "<group>"; };
+		64E815BEE65F938AA62A7C5A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		9C3AE84D15CA951E778A6EBA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A03527D17C901848B86782CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		AE3C1770D346FF43FC5F8B5C /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		E894CC66A01BF4BEA7464CC2 /* KadenRacing.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KadenRacing.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -24,10 +30,13 @@
 		1AFA6EC1BBE658AC75721C32 /* KadenRacing */ = {
 			isa = PBXGroup;
 			children = (
+				29DE1D35D067FA9DC3F13CF0 /* Assets.xcassets */,
 				9C3AE84D15CA951E778A6EBA /* ContentView.swift */,
 				5303AB3802E6CCB4D260C429 /* GameWebContainer.swift */,
 				A03527D17C901848B86782CF /* Info.plist */,
 				5DCB098CDC82096D54D64FC2 /* KadenRacingApp.swift */,
+				AE3C1770D346FF43FC5F8B5C /* LaunchScreen.storyboard */,
+				64E815BEE65F938AA62A7C5A /* PrivacyInfo.xcprivacy */,
 			);
 			path = KadenRacing;
 			sourceTree = "<group>";
@@ -56,6 +65,7 @@
 			buildConfigurationList = 75F30B08605414156E7427A7 /* Build configuration list for PBXNativeTarget "KadenRacing" */;
 			buildPhases = (
 				DE6CBF0C394CA07585E4B096 /* Sources */,
+				D4CAC03E6C4E913DD3EB51F5 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -95,6 +105,19 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D4CAC03E6C4E913DD3EB51F5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0D03074C93A5F494BEB7C458 /* Assets.xcassets in Resources */,
+				98D2AE0F294A97A8ACA75F79 /* LaunchScreen.storyboard in Resources */,
+				62C3390E39C4851229A3906E /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		DE6CBF0C394CA07585E4B096 /* Sources */ = {
