@@ -69,6 +69,11 @@ body{background:#000;overflow:hidden;font-family:'Orbitron',monospace;touch-acti
 #controls-hint{margin-top:16px;color:#334;font-size:10px;letter-spacing:2px;text-align:center;line-height:1.8;}
 /* City selector */
 #city-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:min(560px,96vw);}
+#track-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(760px,96vw);max-height:38vh;overflow-y:auto;padding:6px 4px 10px;scrollbar-width:thin;}
+#track-grid .track-card{border:1px solid rgba(0,180,255,.28);border-radius:6px;padding:8px 5px;cursor:pointer;text-align:center;background:rgba(0,25,45,.55);transition:all .15s;}
+#track-grid .track-card:hover,#track-grid .track-card.selected{border-color:#00d4ff;box-shadow:0 0 14px rgba(0,180,255,.35);background:rgba(0,55,110,.45);}
+#track-grid .track-card-name{font-size:8px;font-weight:900;letter-spacing:1px;color:#00ddff;line-height:1.25;}
+#track-grid .track-card-tag{font-size:7px;color:#557;margin-top:4px;letter-spacing:1px;}
 .city-card{border:2px solid rgba(0,150,255,.25);border-radius:8px;padding:12px 8px;cursor:pointer;text-align:center;transition:all .2s;position:relative;}
 .city-card:hover,.city-card.selected{border-color:#00d4ff;box-shadow:0 0 20px rgba(0,180,255,.35);}
 .city-card.selected::after{content:'✓';position:absolute;top:6px;right:8px;color:#00d4ff;font-size:13px;}
@@ -190,6 +195,8 @@ body{background:#000;overflow:hidden;font-family:'Orbitron',monospace;touch-acti
 <div id="city-select-screen">
   <div class="screen-title">SELECT CITY</div>
   <div id="city-grid"></div>
+  <div class="champ-sub" style="margin:12px 0 6px;">SELECT CIRCUIT · 20 TRACKS</div>
+  <div id="track-grid"></div>
   <button class="menu-btn" id="city-confirm-btn" onclick="confirmCity()">RACE HERE</button>
   <button class="back-btn" onclick="showScreen('car-select-screen')">← BACK</button>
 </div>
@@ -465,46 +472,134 @@ function buildF40(bodyHex, isPlayer) {
   return G;
 }
 
-// ── Track ─────────────────────────────────────────────
+// ── Track · 20 circuits ─────────────────────────────────
 const TW = 40;
-const tpts = [];
-for (let i = 0; i < 64; i++) {
-  const a = (i / 64) * Math.PI * 2;
-  tpts.push(new THREE.Vector3(
-    Math.sin(a) * 85 + Math.sin(a * 2) * 28,
-    0,
-    Math.cos(a) * 62 + Math.cos(a * 3) * 16
-  ));
+
+function buildClosedPoints(genFn, segments) {
+  const arr = [];
+  for (let i = 0; i < segments; i++) {
+    const t = (i / segments) * Math.PI * 2;
+    const o = genFn(t);
+    arr.push(new THREE.Vector3(o.x, 0, o.z));
+  }
+  arr.push(arr[0].clone());
+  return arr;
 }
-tpts.push(tpts[0].clone());
-const curve = new THREE.CatmullRomCurve3(tpts, true);
 
-(function buildRoad() {
-  const pts = curve.getPoints(500);
+const TRACK_DEFS = [
+  { name: 'HARBOR LOOP', tag: 'Bay City', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 85 + Math.sin(2 * t) * 28, z: Math.cos(t) * 62 + Math.cos(3 * t) * 16 };
+  }, 72) },
+  { name: 'SUNSET OVAL', tag: 'Speedway', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 100, z: Math.cos(t) * 54 };
+  }, 72) },
+  { name: 'ALPINE RIDGE', tag: 'Elevation', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 52, z: Math.cos(t) * 98 };
+  }, 72) },
+  { name: 'NOVA RING', tag: 'Circuit', pts: buildClosedPoints(function(t) {
+    const R = 78;
+    return { x: Math.sin(t) * R, z: Math.cos(t) * R };
+  }, 64) },
+  { name: 'PULSE GP', tag: 'Technical', pts: buildClosedPoints(function(t) {
+    const R = 70 + 28 * Math.cos(2 * t);
+    return { x: Math.sin(t) * R, z: Math.cos(t) * R };
+  }, 80) },
+  { name: 'TRIDENT RUN', tag: 'Tri-lobe', pts: buildClosedPoints(function(t) {
+    const R = 62 + 38 * Math.cos(3 * t);
+    return { x: Math.sin(t) * R, z: Math.cos(t) * R };
+  }, 84) },
+  { name: 'THUNDER DOME', tag: 'Woven', pts: buildClosedPoints(function(t) {
+    const R = 72 + 26 * Math.sin(5 * t);
+    return { x: Math.sin(t) * R, z: Math.cos(t) * R };
+  }, 88) },
+  { name: 'COASTAL SWEEP', tag: 'Asymmetric', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 88 + 14 * Math.sin(3 * t), z: Math.cos(t) * 58 };
+  }, 72) },
+  { name: 'DESERT MILE', tag: 'Long', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 118, z: Math.cos(t) * 48 };
+  }, 72) },
+  { name: 'GLACIER TECH', tag: 'Tight', pts: buildClosedPoints(function(t) {
+    const R = 48 + 12 * Math.sin(6 * t);
+    return { x: Math.sin(t) * R, z: Math.cos(t) * R };
+  }, 96) },
+  { name: 'INFINITY EIGHT', tag: 'Figure-8', pts: buildClosedPoints(function(t) {
+    const a = 88;
+    return { x: a * Math.sin(t), z: a * Math.sin(t) * Math.cos(t) };
+  }, 96) },
+  { name: 'RIVERSIDE', tag: 'Flow', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 76, z: Math.cos(t) * 92 + 18 * Math.sin(4 * t) };
+  }, 72) },
+  { name: 'CANYON RAID', tag: 'Aggressive', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * (82 + 24 * Math.cos(3 * t)), z: Math.cos(t) * (64 + 18 * Math.sin(5 * t)) };
+  }, 88) },
+  { name: 'IRON PEAK', tag: 'Mountain', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 68 + 22 * Math.sin(5 * t), z: Math.cos(t) * 74 + 16 * Math.sin(4 * t) };
+  }, 88) },
+  { name: 'VELOCITY BAY', tag: 'Hybrid', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 80 + Math.sin(2 * t) * 22, z: Math.cos(t) * 58 + Math.cos(3 * t) * 14 };
+  }, 72) },
+  { name: 'NEON CIRCUIT', tag: 'Night', pts: buildClosedPoints(function(t) {
+    const R = 75 + 30 * Math.cos(4 * t);
+    return { x: Math.sin(t) * R, z: Math.cos(t) * R };
+  }, 80) },
+  { name: 'STORM HARBOR', tag: 'Dynamic', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 90 + Math.cos(3 * t) * 20, z: Math.cos(t) * 55 + Math.sin(5 * t) * 12 };
+  }, 88) },
+  { name: 'GRAND PRIX RING', tag: 'Pro', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 92, z: Math.cos(t) * 68 };
+  }, 72) },
+  { name: 'MIDNIGHT SPRINT', tag: 'Short', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 56, z: Math.cos(t) * 52 };
+  }, 64) },
+  { name: 'KRC SHOWDOWN', tag: 'Finals', pts: buildClosedPoints(function(t) {
+    return { x: Math.sin(t) * 102 + Math.sin(2 * t) * 22, z: Math.cos(t) * 72 + Math.cos(3 * t) * 20 };
+  }, 80) }
+];
+
+let curve = null;
+let roadGroup = null;
+let archGroup = null;
+let archPL = null;
+let lapCheckPts = [];
+let mmPts = [];
+let mmMnX = 0, mmMxX = 1, mmMnZ = 0, mmMxZ = 1;
+let mmSc = 1, mmCx = 0, mmCz = 0;
+
+function refreshMinimapBounds() {
+  if (!curve) return;
+  mmPts = curve.getPoints(200);
+  mmMnX = Infinity; mmMxX = -Infinity; mmMnZ = Infinity; mmMxZ = -Infinity;
+  mmPts.forEach(function(p) {
+    mmMnX = Math.min(mmMnX, p.x); mmMxX = Math.max(mmMxX, p.x);
+    mmMnZ = Math.min(mmMnZ, p.z); mmMxZ = Math.max(mmMxZ, p.z);
+  });
+  const wr = mmMxX - mmMnX || 1;
+  const wd = mmMxZ - mmMnZ || 1;
+  mmSc = Math.min(86 / wr, 86 / wd) * 0.85;
+  mmCx = (mmMxX + mmMnX) / 2;
+  mmCz = (mmMxZ + mmMnZ) / 2;
+}
+
+function buildRoadMesh(crv) {
+  const pts = crv.getPoints(500);
   const grp = new THREE.Group();
-
   const roadColA = new THREE.MeshLambertMaterial({ color: 0x171924 });
   const roadColB = new THREE.MeshLambertMaterial({ color: 0x131720 });
   const curbRed  = new THREE.MeshLambertMaterial({ color: 0xcc1100 });
   const curbWht  = new THREE.MeshLambertMaterial({ color: 0xffffff });
-  const dashMat  = new THREE.MeshLambertMaterial({ color: 0xddcc00 });  // centre solid yellow
-  const laneMat  = new THREE.MeshLambertMaterial({ color: 0xcccccc });  // white lane dashes
-
+  const dashMat  = new THREE.MeshLambertMaterial({ color: 0xddcc00 });
+  const laneMat  = new THREE.MeshLambertMaterial({ color: 0xcccccc });
   const hw = TW / 2;
-  // Lane divider offsets from centre (3 lanes, 2 dividers)
-  const laneOffsets = [-TW / 3, TW / 3]; // at 1/3 and 2/3 across
+  const laneOffsets = [-TW / 3, TW / 3];
 
   for (let i = 0; i < pts.length - 1; i++) {
     const p0 = pts[i], p1 = pts[i + 1];
     const d  = new THREE.Vector3().subVectors(p1, p0).normalize();
     const r  = new THREE.Vector3(-d.z, 0, d.x);
-
     const tl = p0.clone().addScaledVector(r,  hw);
     const tr = p0.clone().addScaledVector(r, -hw);
     const bl = p1.clone().addScaledVector(r,  hw);
     const br = p1.clone().addScaledVector(r, -hw);
-
-    // Road surface
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
       tl.x, -0.05, tl.z,  tr.x, -0.05, tr.z,  bl.x, -0.05, bl.z,
@@ -515,7 +610,6 @@ const curve = new THREE.CatmullRomCurve3(tpts, true);
     rm.receiveShadow = true;
     grp.add(rm);
 
-    // Kerb stripes
     if (i % 4 === 0) {
       for (const side of ['l', 'r']) {
         const cw  = 0.9;
@@ -532,8 +626,6 @@ const curve = new THREE.CatmullRomCurve3(tpts, true);
         grp.add(new THREE.Mesh(cg, Math.floor(i / 4) % 2 === 0 ? curbRed : curbWht));
       }
     }
-
-    // Centre solid yellow line
     const dw = 0.18;
     const dg = new THREE.BufferGeometry();
     dg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
@@ -546,8 +638,6 @@ const curve = new THREE.CatmullRomCurve3(tpts, true);
     ]), 3));
     dg.computeVertexNormals();
     grp.add(new THREE.Mesh(dg, dashMat));
-
-    // White dashed lane lines (skip every other segment for dash effect)
     if (i % 4 < 2) {
       for (const lo of laneOffsets) {
         const lw = 0.12;
@@ -567,8 +657,69 @@ const curve = new THREE.CatmullRomCurve3(tpts, true);
       }
     }
   }
-  scene.add(grp);
-})();
+  return grp;
+}
+
+function rebuildTrackWorld(trackIdx) {
+  const td = TRACK_DEFS[trackIdx];
+  if (!td) return;
+  curve = new THREE.CatmullRomCurve3(td.pts, true);
+
+  if (roadGroup) {
+    scene.remove(roadGroup);
+    roadGroup.traverse(function(o) {
+      if (o.geometry) o.geometry.dispose();
+    });
+    roadGroup = null;
+  }
+  roadGroup = buildRoadMesh(curve);
+  scene.add(roadGroup);
+
+  if (archGroup) {
+    scene.remove(archGroup);
+    archGroup.traverse(function(o) {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material && !Array.isArray(o.material)) o.material.dispose();
+    });
+  }
+  archGroup = new THREE.Group();
+  const sfp = curve.getPoint(0);
+  const sfTan = new THREE.Vector3();
+  curve.getTangent(0, sfTan);
+  const sfR = new THREE.Vector3(-sfTan.z, 0, sfTan.x);
+  const ry = Math.atan2(sfTan.x, sfTan.z);
+  const sfm = new THREE.Mesh(new THREE.BoxGeometry(TW + 2, 0.08, 2.2), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+  sfm.position.set(sfp.x, 0.04, sfp.z);
+  sfm.rotation.y = ry;
+  archGroup.add(sfm);
+  const archMat = new THREE.MeshBasicMaterial({ color: 0x00aaff });
+  const archLm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 0.3), archMat);
+  archLm.position.set(sfp.x + sfR.x * 7, 4, sfp.z + sfR.z * 7);
+  archGroup.add(archLm);
+  const archRm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 0.3), archMat);
+  archRm.position.set(sfp.x - sfR.x * 7, 4, sfp.z - sfR.z * 7);
+  archGroup.add(archRm);
+  const archTop = new THREE.Mesh(new THREE.BoxGeometry(TW + 2, 0.3, 0.3), archMat);
+  archTop.position.set(sfp.x, 8, sfp.z);
+  archTop.rotation.y = ry;
+  archGroup.add(archTop);
+  archPL = new THREE.PointLight(0x00aaff, 2, 28);
+  archPL.position.set(sfp.x, 8, sfp.z);
+  archGroup.add(archPL);
+  scene.add(archGroup);
+
+  lapCheckPts = curve.getPoints(200);
+  refreshMinimapBounds();
+
+  const samp = curve.getPoints(350);
+  let maxE = 0;
+  samp.forEach(function(p) {
+    maxE = Math.max(maxE, Math.abs(p.x), Math.abs(p.z));
+  });
+  const planeSz = Math.min(1500, Math.max(700, maxE * 2 + 320));
+  if (gnd.geometry) gnd.geometry.dispose();
+  gnd.geometry = new THREE.PlaneGeometry(planeSz, planeSz);
+}
 
 // ── Sky & atmosphere system ───────────────────────────
 let skyObjects = [];
@@ -613,7 +764,7 @@ function buildSky(def) {
 }
 
 // ── City Definitions ──────────────────────────────────
-const cityPts = curve.getPoints(120);
+let cityPts = [];
 const CITY_DEFS = [
   {
     name: 'LOS SANTOS',
@@ -682,6 +833,7 @@ const CITY_DEFS = [
   },
 ];
 let selectedCityIdx = 0;
+let selectedTrackIdx = 0;
 
 // ── City Scene Objects ────────────────────────────────
 let cityGroup = null;
@@ -697,6 +849,7 @@ function buildCity(cityIdx) {
   clearSky();
   const def = CITY_DEFS[cityIdx];
   cityGroup = new THREE.Group();
+  cityPts = curve.getPoints(120);
 
   // Lighting
   scene.background = new THREE.Color(def.sky);
@@ -883,41 +1036,17 @@ function getBuildingPushout(carX, carZ) {
 }
 
 // ── Ground ──
-const gnd = new THREE.Mesh(
+let gnd = new THREE.Mesh(
   new THREE.PlaneGeometry(800, 800),
-  new THREE.MeshLambertMaterial({ color: 0x5a8a30 }) // updated per city
+  new THREE.MeshLambertMaterial({ color: 0x5a8a30 })
 );
 gnd.rotation.x = -Math.PI / 2;
 gnd.position.y = -0.12;
 gnd.receiveShadow = true;
 scene.add(gnd);
 
-// Build default city (city 0 = Los Santos daytime)
+rebuildTrackWorld(0);
 buildCity(0);
-
-// Start/finish arch
-const sfp = curve.getPoint(0);
-const sfTan = new THREE.Vector3(); curve.getTangent(0, sfTan);
-const sfR = new THREE.Vector3(-sfTan.z, 0, sfTan.x);
-
-const sfm = new THREE.Mesh(new THREE.BoxGeometry(TW + 2, .08, 2.2), new THREE.MeshLambertMaterial({ color: 0xffffff }));
-sfm.position.set(sfp.x, .04, sfp.z);
-sfm.rotation.y = Math.atan2(sfTan.x, sfTan.z);
-scene.add(sfm);
-
-const archMat = new THREE.MeshBasicMaterial({ color: 0x00aaff });
-const archL = new THREE.Mesh(new THREE.BoxGeometry(.3, 8, .3), archMat);
-archL.position.set(sfp.x + sfR.x * 7, 4, sfp.z + sfR.z * 7); scene.add(archL);
-const archR = new THREE.Mesh(new THREE.BoxGeometry(.3, 8, .3), archMat);
-archR.position.set(sfp.x - sfR.x * 7, 4, sfp.z - sfR.z * 7); scene.add(archR);
-const archTop = new THREE.Mesh(new THREE.BoxGeometry(TW + 2, .3, .3), archMat);
-archTop.position.set(sfp.x, 8, sfp.z);
-archTop.rotation.y = Math.atan2(sfTan.x, sfTan.z);
-scene.add(archTop);
-
-const archPL = new THREE.PointLight(0x00aaff, 2, 28);
-archPL.position.set(sfp.x, 8, sfp.z);
-scene.add(archPL);
 
 // ── Cars ──────────────────────────────────────────────
 const playerCar = buildF40(0xcc0000, true);
@@ -1075,7 +1204,6 @@ function placeAICar(carG, t, lat, spd) {
 }
 
 // ── Find nearest t on spline to world pos ─────────────
-const lapCheckPts = curve.getPoints(200);
 function nearestT(x, z) {
   let best = 0, bestIdx = 0, bestDist = Infinity;
   for (let i = 0; i < lapCheckPts.length; i++) {
@@ -1189,15 +1317,6 @@ function fmt(ms) {
   return m + ':' + String(s).padStart(2, '0') + '.' + String(ms2).padStart(3, '0');
 }
 
-// Pre-compute minimap transform once
-const mmPts = curve.getPoints(200);
-let mmMnX = Infinity, mmMxX = -Infinity, mmMnZ = Infinity, mmMxZ = -Infinity;
-mmPts.forEach(function(p) {
-  mmMnX = Math.min(mmMnX, p.x); mmMxX = Math.max(mmMxX, p.x);
-  mmMnZ = Math.min(mmMnZ, p.z); mmMxZ = Math.max(mmMxZ, p.z);
-});
-const mmSc = Math.min(86 / (mmMxX - mmMnX), 86 / (mmMxZ - mmMnZ)) * .85;
-const mmCx = (mmMxX + mmMnX) / 2, mmCz = (mmMxZ + mmMnZ) / 2;
 function toMM(x, z) { return [(x - mmCx) * mmSc + 50, (z - mmCz) * mmSc + 50]; }
 
 function drawMinimap() {
@@ -1920,7 +2039,7 @@ function togglePause() {
 }
 
 function storageBestKey() {
-  return 'krc-best-' + selectedCityIdx + '-' + selectedCarIdx;
+  return 'krc-best-' + selectedCityIdx + '-' + selectedCarIdx + '-' + selectedTrackIdx;
 }
 
 function resetAIRaceState() {
@@ -1998,12 +2117,26 @@ function confirmCar() {
       else if (orig === (0xcc0000 * 0.45 | 0)) obj.material.color.setHex(Math.round(targetColor * 0.45) | 0);
     }
   });
-  // Go to city selector
   buildCityGrid();
   showScreen('city-select-screen');
 }
 
 // ── City Selector ─────────────────────────────────────
+function buildTrackGrid() {
+  const grid = document.getElementById('track-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  TRACK_DEFS.forEach(function(tr, i) {
+    const card = document.createElement('div');
+    card.className = 'track-card' + (i === selectedTrackIdx ? ' selected' : '');
+    card.onclick = function() { selectedTrackIdx = i; buildTrackGrid(); };
+    card.innerHTML =
+      '<div class="track-card-name">' + tr.name + '</div>' +
+      '<div class="track-card-tag">' + tr.tag + '</div>';
+    grid.appendChild(card);
+  });
+}
+
 function buildCityGrid() {
   const grid = document.getElementById('city-grid');
   grid.innerHTML = '';
@@ -2011,7 +2144,6 @@ function buildCityGrid() {
     const card = document.createElement('div');
     card.className = 'city-card' + (i === selectedCityIdx ? ' selected' : '');
     card.onclick = function() { selectedCityIdx = i; buildCityGrid(); };
-    // Mini gradient preview
     const grad = 'linear-gradient(135deg,' + city.previewGrad.join(',') + ')';
     card.innerHTML =
       '<div class="city-preview" style="background:' + grad + '"></div>' +
@@ -2019,12 +2151,18 @@ function buildCityGrid() {
       '<div class="city-card-desc">' + city.desc + '</div>';
     grid.appendChild(card);
   });
+  buildTrackGrid();
 }
 
 function confirmCity() {
-  if (selectedCityIdx !== (window._builtCityIdx || 0)) {
+  const needWorld =
+    selectedCityIdx !== (window._builtCityIdx || -1) ||
+    selectedTrackIdx !== (window._builtTrackIdx || -1);
+  if (needWorld) {
+    rebuildTrackWorld(selectedTrackIdx);
     buildCity(selectedCityIdx);
     window._builtCityIdx = selectedCityIdx;
+    window._builtTrackIdx = selectedTrackIdx;
   }
   if (modeSelected === 'champ') {
     champState = { raceIdx: 0, points: { player: 0, ai: [0,0,0,0] } };
