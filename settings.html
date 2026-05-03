@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Kaden's Racing Championships Settings</title>
+<link rel="icon" href="favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#050505;color:#fff;font-family:'Orbitron',Arial,sans-serif;-webkit-overflow-scrolling:touch}
+body{overflow-x:hidden;background:radial-gradient(circle at 20% 8%,rgba(255,102,0,.24),transparent 34%),radial-gradient(circle at 84% 10%,rgba(0,180,255,.16),transparent 30%),linear-gradient(135deg,#070707 0%,#160400 48%,#030609 100%)}
+.wrap{width:min(760px,calc(100vw - 28px));margin:0 auto;padding:24px 0 40px}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+.eyebrow{font-size:10px;color:#ffcc00;letter-spacing:4px;text-shadow:0 0 10px #ff6600}
+h1{margin:6px 0 4px;font-size:clamp(34px,8vw,70px);letter-spacing:7px;line-height:.95;text-shadow:0 0 18px #ff3300,0 0 42px #ff8800}
+.sub{font:600 13px/1.45 Arial,sans-serif;color:#c9d2dd}
+.back,.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border:1px solid rgba(255,204,0,.55);border-radius:6px;background:rgba(0,0,0,.45);color:#ffcc00;text-decoration:none;font-weight:900;letter-spacing:2px;padding:12px 16px;font-family:inherit;cursor:pointer}
+.panel{border:1px solid rgba(255,102,0,.42);background:rgba(8,8,8,.78);box-shadow:0 18px 55px rgba(0,0,0,.48),inset 0 0 24px rgba(255,102,0,.06);border-radius:8px;padding:16px;margin-bottom:16px}
+.label{font-size:10px;letter-spacing:3px;color:#ffcc00;margin-bottom:8px}
+input{width:100%;border:0;outline:0;background:rgba(255,255,255,.08);border-radius:6px;padding:13px 12px;color:#fff;font:900 14px Orbitron,monospace;letter-spacing:1px;text-transform:uppercase;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+input:focus{box-shadow:inset 0 0 0 1px rgba(255,170,0,.75),0 0 14px rgba(255,120,0,.26)}
+.note{margin-top:8px;font:600 12px/1.4 Arial,sans-serif;color:rgba(220,235,255,.72)}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid rgba(255,102,0,.62);background:rgba(255,102,0,.11);color:#ffd86a;border-radius:6px;min-height:40px;padding:10px 14px;font-size:11px;font-weight:900;letter-spacing:2px;cursor:pointer;font-family:inherit}
+.chip.active{background:linear-gradient(180deg,#ffd400,#ff6a00);color:#160600;border-color:#ffd85a;box-shadow:0 0 22px rgba(255,120,0,.38)}
+.links{display:grid;gap:10px}
+.danger{border-color:rgba(255,70,70,.72);color:#fff;background:linear-gradient(180deg,rgba(150,0,0,.45),rgba(50,0,0,.72))}
+.status{min-height:18px;margin-top:10px;font:700 12px/1.4 Arial,sans-serif;color:#8dffbd}
+@media (max-width:620px){.topbar{flex-direction:column}h1{letter-spacing:4px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">KADEN RACING CHAMPIONSHIPS</div>
+      <h1>SETTINGS</h1>
+      <div class="sub">Manage your gamer nickname, online play, privacy links, and account data.</div>
+    </div>
+    <a class="back" href="index.html">MAIN MENU</a>
+  </div>
+
+  <section class="panel">
+    <div class="label">GAMER NAME</div>
+    <input id="gamer-name-input" type="text" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="KRC DRIVER">
+    <div class="note">Use a gamer nickname. Do not use your real name.</div>
+  </section>
+
+  <section class="panel">
+    <div class="label">GLOBAL PLAY</div>
+    <div class="seg" id="play-mode-row">
+      <button class="chip" type="button" data-play-mode="solo">SOLO</button>
+      <button class="chip" type="button" data-play-mode="online">ONLINE</button>
+    </div>
+    <div class="note">Solo keeps racing private on this device. Online uses global scores, online presence, and multiplayer features.</div>
+  </section>
+
+  <section class="panel links">
+    <a class="back" href="privacy.html">PRIVACY POLICY</a>
+    <a class="back" href="terms.html">TERMS OF SERVICE</a>
+  </section>
+
+  <section class="panel">
+    <div class="label">DELETE ACCOUNT</div>
+    <div class="note">Deletes your saved player ID, gamer name, local progress, and server records tied to this player ID, including global scores, play history, and online presence.</div>
+    <button class="btn danger" id="delete-account-btn" type="button">DELETE ACCOUNT</button>
+    <div class="status" id="delete-status" role="status" aria-live="polite"></div>
+  </section>
+</main>
+<script>
+function cleanGamerName(value) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9 _.-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+}
+function getPlayerId() {
+  try { return localStorage.getItem('krc-player-id') || ''; } catch (err) { return ''; }
+}
+function saveGamerName(value) {
+  const name = cleanGamerName(value) || 'KRC DRIVER';
+  try { localStorage.setItem('krc-gamer-name', name); } catch (err) {}
+  return name;
+}
+function onlinePlayEnabled() {
+  try { return localStorage.getItem('krc-play-mode') !== 'solo'; } catch (err) { return true; }
+}
+function setPlayMode(mode) {
+  try { localStorage.setItem('krc-play-mode', mode === 'solo' ? 'solo' : 'online'); } catch (err) {}
+  updatePlayModeButtons();
+}
+function updatePlayModeButtons() {
+  const online = onlinePlayEnabled();
+  document.querySelectorAll('[data-play-mode]').forEach(function(btn) {
+    const mode = btn.getAttribute('data-play-mode');
+    btn.classList.toggle('active', online ? mode === 'online' : mode === 'solo');
+  });
+}
+function apiFetch(path, opts) {
+  const apiPath = location.protocol === 'file:' ? 'https://kaden-car-championships.vercel.app' + path : path;
+  return fetch(apiPath, opts).then(function(res) { return res.json(); });
+}
+function clearKrcLocalData() {
+  try {
+    Object.keys(localStorage).forEach(function(key) {
+      if (key.indexOf('krc-') === 0) localStorage.removeItem(key);
+    });
+  } catch (err) {}
+}
+const nameInput = document.getElementById('gamer-name-input');
+try { nameInput.value = cleanGamerName(localStorage.getItem('krc-gamer-name')) || 'KRC DRIVER'; } catch (err) { nameInput.value = 'KRC DRIVER'; }
+nameInput.addEventListener('input', function() {
+  const cleaned = cleanGamerName(nameInput.value);
+  if (nameInput.value !== cleaned) nameInput.value = cleaned;
+  saveGamerName(cleaned);
+});
+document.getElementById('play-mode-row').addEventListener('click', function(ev) {
+  const btn = ev.target.closest('button[data-play-mode]');
+  if (btn) setPlayMode(btn.getAttribute('data-play-mode'));
+});
+document.getElementById('delete-account-btn').addEventListener('click', function() {
+  const status = document.getElementById('delete-status');
+  const playerId = getPlayerId();
+  if (!confirm('Delete this KRC account data from this device and the online scoreboard?')) return;
+  status.textContent = 'Deleting account data...';
+  apiFetch('/api/delete-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ playerId: playerId })
+  }).catch(function() {
+    return { ok: false };
+  }).then(function() {
+    clearKrcLocalData();
+    status.textContent = 'Account data deleted. Returning to main menu...';
+    setTimeout(function() { window.location.href = 'index.html'; }, 900);
+  });
+});
+updatePlayModeButtons();
+</script>
+</body>
+</html>

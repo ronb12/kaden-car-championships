@@ -134,6 +134,7 @@ enum RaceCarGeometry {
 
         // --- Tail light bar ---
         let tailMat = SCNMaterial()
+        tailMat.name = "krcTailLightMaterial"
         tailMat.diffuse.contents = UIColor(red: 0.95, green: 0.08, blue: 0.12, alpha: 1)
         tailMat.emission.contents = UIColor(red: 0.55, green: 0.02, blue: 0.05, alpha: 1)
         tailMat.lightingModel = .constant
@@ -148,6 +149,43 @@ enum RaceCarGeometry {
         tl.position = SCNVector3(0, 0.46 * s, -2.22 * s)
         tl.eulerAngles.x = 0.06
         root.addChildNode(tl)
+
+        let brakeMat = SCNMaterial()
+        brakeMat.name = "krcBrakeLightMaterial"
+        brakeMat.diffuse.contents = UIColor(red: 1, green: 0.03, blue: 0, alpha: 1)
+        brakeMat.emission.contents = UIColor(red: 0.75, green: 0, blue: 0, alpha: 1)
+        brakeMat.lightingModel = .constant
+        let brakeGeo = SCNBox(
+            width: CGFloat(0.34 * s),
+            height: CGFloat(0.16 * s),
+            length: CGFloat(0.08 * s),
+            chamferRadius: CGFloat(0.03 * s)
+        )
+        brakeGeo.materials = [brakeMat]
+        for sx in [-1.0, 1.0] as [CGFloat] {
+            let outer = SCNNode(geometry: brakeGeo)
+            outer.name = "krcBrakeLamp"
+            outer.position = SCNVector3(Float(sx) * 0.72 * s, 0.5 * s, -2.28 * s)
+            outer.castsShadow = false
+            root.addChildNode(outer)
+
+            let inner = SCNNode(geometry: brakeGeo.copy() as? SCNGeometry)
+            inner.name = "krcBrakeLamp"
+            inner.position = SCNVector3(Float(sx) * 0.42 * s, 0.5 * s, -2.28 * s)
+            inner.castsShadow = false
+            root.addChildNode(inner)
+
+            let glow = SCNLight()
+            glow.type = .omni
+            glow.color = UIColor(red: 1, green: 0.03, blue: 0, alpha: 1)
+            glow.intensity = 70
+            glow.attenuationEndDistance = CGFloat(3.2 * s)
+            let glowNode = SCNNode()
+            glowNode.name = "krcBrakeGlow"
+            glowNode.light = glow
+            glowNode.position = SCNVector3(Float(sx) * 0.6 * s, 0.52 * s, -2.42 * s)
+            root.addChildNode(glowNode)
+        }
 
         // --- Wheels ---
         let tireR: CGFloat = 0.37 * CGFloat(s)
@@ -206,6 +244,23 @@ enum RaceCarGeometry {
             gn.position = SCNVector3(0, 0.015 * s, -0.25 * s)
             gn.renderingOrder = -1
             root.addChildNode(gn)
+        }
+    }
+
+    static func setBrakeLights(root: SCNNode, amount: Float) {
+        let a = max(0, min(1, amount))
+        root.enumerateChildNodes { node, _ in
+            if node.name == "krcBrakeLamp" {
+                node.geometry?.materials.forEach { material in
+                    material.diffuse.contents = a > 0.05
+                        ? UIColor(red: 1, green: 0.04, blue: 0, alpha: 1)
+                        : UIColor(red: 0.55, green: 0.02, blue: 0.01, alpha: 1)
+                    material.emission.contents = UIColor(red: CGFloat(0.35 + a * 0.65), green: 0, blue: 0, alpha: 1)
+                }
+            } else if node.name == "krcBrakeGlow", let light = node.light {
+                light.intensity = CGFloat(45 + a * 260)
+                light.attenuationEndDistance = CGFloat(2.5 + a * 2.5)
+            }
         }
     }
 

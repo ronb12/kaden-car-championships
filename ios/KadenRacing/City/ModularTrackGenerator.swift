@@ -33,7 +33,7 @@ enum ModularTrackGenerator {
             }
             let er = 1 + rip
             var x = cos(u) * a * er
-            var z = sin(u) * b * er
+            let z = sin(u) * b * er
             if definition.terrain == .coastal {
                 x += 0.08 * a * sin(2.1 * u)
             }

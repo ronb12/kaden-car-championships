@@ -66,8 +66,11 @@ struct MainMenuScreen: View {
                 }
                 .padding(.horizontal)
                 Spacer()
-                Text("KADEN RACING")
-                    .font(.system(size: 32, weight: .black, design: .rounded))
+                Text("Kaden's Racing Championships")
+                    .font(.system(size: 26, weight: .black, design: .rounded))
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.55)
+                    .lineLimit(2)
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.6), radius: 4, y: 2)
                 Text("Hot Pursuit Edition")

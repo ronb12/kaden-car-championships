@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Kaden's Racing Championships Garage</title>
+<link rel="icon" href="favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#050505;color:#fff;font-family:'Orbitron',Arial,sans-serif;-webkit-overflow-scrolling:touch}
+body{overflow-x:hidden;background:
+  radial-gradient(circle at 18% 4%,rgba(255,102,0,.28),transparent 34%),
+  radial-gradient(circle at 85% 10%,rgba(255,204,0,.16),transparent 31%),
+  linear-gradient(135deg,#070707 0%,#160400 42%,#050505 100%)}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:
+  linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px),
+  linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:64px 64px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.8),transparent 72%)}
+.wrap{width:min(1180px,calc(100vw - 28px));margin:0 auto;padding:22px 0 34px;position:relative;z-index:1}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}
+.brand{min-width:0}
+.eyebrow{font-size:11px;color:#ffcc00;letter-spacing:5px;text-shadow:0 0 10px #ff6600}
+h1{margin:5px 0 4px;font-size:clamp(34px,7vw,76px);letter-spacing:8px;line-height:.92;color:#fff;text-shadow:0 0 18px #ff3300,0 0 42px #ff8800}
+.sub{font-size:12px;letter-spacing:3px;color:#cfcfcf;line-height:1.45}
+.back{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:12px 18px;border:1px solid rgba(255,204,0,.55);border-radius:6px;background:rgba(0,0,0,.45);color:#ffcc00;text-decoration:none;font-weight:900;letter-spacing:2px;white-space:nowrap}
+.top-links{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.top-links .back{min-height:38px;padding:9px 12px;font-size:10px}
+.panel{border:1px solid rgba(255,102,0,.42);background:rgba(8,8,8,.74);box-shadow:0 18px 55px rgba(0,0,0,.48),inset 0 0 24px rgba(255,102,0,.06);border-radius:8px;padding:14px;margin-bottom:16px}
+	.settings{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:14px;align-items:end}
+	.label{font-size:10px;letter-spacing:3px;color:#ffcc00;margin-bottom:8px}
+	.gamer{display:flex;align-items:center;gap:8px;border:1px solid rgba(0,180,255,.3);border-radius:6px;background:rgba(0,0,0,.32);padding:8px 10px;margin-top:10px;width:min(360px,100%)}
+	.gamer label{font-size:8px;font-weight:900;letter-spacing:2px;color:#00d4ff;white-space:nowrap}
+	.gamer input{min-width:0;flex:1;border:0;outline:0;background:rgba(255,255,255,.08);border-radius:4px;padding:8px 9px;color:#fff;font:900 12px Orbitron,monospace;letter-spacing:1px;text-transform:uppercase;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+	.gamer input:focus{box-shadow:inset 0 0 0 1px rgba(255,170,0,.75),0 0 14px rgba(255,120,0,.26)}
+	.gamer-note{width:min(360px,100%);margin:5px 0 0;font-size:8px;line-height:1.35;letter-spacing:1px;color:rgba(210,230,255,.62)}
+	.seg{display:flex;gap:8px;flex-wrap:wrap}
+button{font-family:inherit}
+	.chip,.choose{border:1px solid rgba(255,102,0,.62);background:rgba(255,102,0,.11);color:#ffd86a;border-radius:6px;min-height:40px;padding:10px 14px;font-size:11px;font-weight:900;letter-spacing:2px;cursor:pointer}
+	.chip.active{background:linear-gradient(180deg,#ffd400,#ff6a00);color:#160600;border-color:#ffd85a;box-shadow:0 0 22px rgba(255,120,0,.38)}
+	.mode-copy{font-family:Arial,sans-serif;font-size:11px;color:#aab7c8;line-height:1.35;margin-top:7px}
+.count{font-size:12px;letter-spacing:3px;color:#f2f2f2;text-align:right}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:14px;touch-action:pan-y}
+.card{position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.11);border-radius:8px;background:linear-gradient(180deg,rgba(32,32,32,.92),rgba(4,4,4,.94));box-shadow:0 16px 36px rgba(0,0,0,.34);padding:12px;min-height:314px;display:flex;flex-direction:column}
+.card:before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 0 42%,rgba(255,255,255,.08) 45%,transparent 48% 100%);opacity:.65;pointer-events:none}
+.car-art{height:160px;border-radius:7px;background:linear-gradient(180deg,#1a1a1a,#080808);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;overflow:hidden}
+.car-art:before{content:"";position:absolute;left:-10%;right:-10%;bottom:24px;height:3px;background:linear-gradient(90deg,transparent,#ffcc00,transparent);opacity:.5}
+.car-art svg{width:96%;height:150px;filter:drop-shadow(0 18px 16px rgba(0,0,0,.78))}
+.car-art img{position:relative;z-index:1;width:94%;height:150px;object-fit:contain;filter:drop-shadow(0 18px 16px rgba(0,0,0,.82))}
+.name{font-size:15px;line-height:1.2;min-height:38px;letter-spacing:1px;color:#fff;text-shadow:0 0 9px rgba(255,102,0,.55)}
+.desc{font-family:Arial,sans-serif;font-size:12px;line-height:1.35;color:#bdbdbd;min-height:34px;margin:4px 0 10px}
+.stats{display:grid;gap:7px;margin-top:auto}
+.stat{display:grid;grid-template-columns:54px 1fr 30px;gap:8px;align-items:center;font-size:10px;color:#ffcc00}
+.bar{height:8px;border-radius:999px;background:#202020;overflow:hidden;border:1px solid rgba(255,255,255,.09)}
+.fill{height:100%;background:linear-gradient(90deg,#ff3300,#ffcc00);box-shadow:0 0 12px rgba(255,122,0,.55)}
+.choose{width:100%;margin-top:12px;background:rgba(255,204,0,.12);color:#fff}
+.choose:hover{background:linear-gradient(180deg,#ffcc00,#ff5a00);color:#1a0700}
+.mode-note{font-size:11px;color:#bdbdbd;letter-spacing:2px;text-align:right}
+@media (max-width:760px){
+  .topbar{align-items:flex-start;flex-direction:column}
+  .settings{grid-template-columns:1fr}
+  .count,.mode-note{text-align:left}
+  h1{letter-spacing:4px}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="topbar">
+    <div class="brand">
+	      <div class="eyebrow">KADEN RACING CHAMPIONSHIPS</div>
+	      <h1>KRC GARAGE</h1>
+	      <div class="sub">Choose your ride, tune the race setup, then hit the city circuit.</div>
+	      <div class="gamer">
+	        <label for="gamer-name-input">GAMER NAME</label>
+	        <input id="gamer-name-input" type="text" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="KRC DRIVER">
+	      </div>
+	      <div class="gamer-note">Use a gamer nickname. Do not use your real name.</div>
+	    </div>
+    <div class="top-links">
+      <a class="back" href="settings.html">SETTINGS</a>
+      <a class="back" href="index.html">MAIN MENU</a>
+    </div>
+  </div>
+
+	  <section class="panel settings" aria-label="Garage settings">
+	    <div>
+	      <div class="label">PLAY MODE</div>
+	      <div class="seg" id="play-mode-row">
+	        <button class="chip" type="button" data-play-mode="solo">SOLO</button>
+	        <button class="chip" type="button" data-play-mode="online">ONLINE</button>
+	      </div>
+	      <div class="mode-copy">Solo keeps the race private. Online uses global scores and multiplayer.</div>
+	    </div>
+	    <div>
+	      <div class="label">OPPONENT SKILL</div>
+      <div class="seg" id="difficulty-row">
+        <button class="chip" type="button" data-diff="0">CASUAL</button>
+        <button class="chip active" type="button" data-diff="1">PRO</button>
+        <button class="chip" type="button" data-diff="2">ELITE</button>
+      </div>
+    </div>
+    <div>
+      <div class="label">LAPS</div>
+      <div class="seg" id="laps-row">
+        <button class="chip" type="button" data-laps="3">3</button>
+        <button class="chip active" type="button" data-laps="5">5</button>
+        <button class="chip" type="button" data-laps="8">8</button>
+        <button class="chip" type="button" data-laps="10">10</button>
+        <button class="chip" type="button" data-laps="15">15</button>
+        <button class="chip" type="button" data-laps="20">20</button>
+      </div>
+    </div>
+    <div>
+      <div class="label">TRANSMISSION</div>
+      <div class="seg" id="transmission-row">
+        <button class="chip active" type="button" data-transmission="automatic">AUTO</button>
+        <button class="chip" type="button" data-transmission="manual">MANUAL</button>
+      </div>
+      <div class="mode-copy">Manual uses Q/Z down and E/X up during the race.</div>
+    </div>
+    <div>
+      <div class="count" id="garage-count">31 CARS AVAILABLE</div>
+      <div class="mode-note" id="mode-note">QUICK RACE</div>
+    </div>
+  </section>
+
+  <section class="grid" id="garage-grid" aria-label="Car garage"></section>
+</main>
+
+<script>
+const CARS = [
+  { id:'f40',       model:'f40',       name:'KRC VELOCE 40',        color:0xcc0000, topSpeed:100, accel:90,  handling:80, desc:'Raw power. Legend.' },
+  { id:'lambo',     model:'lambo',     name:'KRC BULLSTORM',        color:0xdd8800, topSpeed:98,  accel:95,  handling:75, desc:'Roar of the street.' },
+  { id:'gtr',       model:'gtr',       name:'KRC NIGHT R35',        color:0x224488, topSpeed:92,  accel:85,  handling:95, desc:'Precision machine.' },
+  { id:'911',       model:'911',       name:'KRC NINE-ONE',         color:0xeeeeee, topSpeed:88,  accel:82,  handling:98, desc:'Born on the track.' },
+  { id:'mclaren',   model:'mclaren',   name:'KRC AERO 720',         color:0xff6600, topSpeed:100, accel:98,  handling:88, desc:'Aerodynamic beast.' },
+  { id:'bugatti',   model:'bugatti',   name:'KRC ROYAL W16',        color:0x112266, topSpeed:100, accel:100, handling:78, desc:'Extreme hyper power.' },
+  { id:'amg',       model:'amg',       name:'KRC BLACKLINE GT',      color:0x1a1a1a, topSpeed:94,  accel:88,  handling:90, desc:'Dark precision.' },
+  { id:'m4',        model:'m4',        name:'KRC M-STRIKE',         color:0x002255, topSpeed:90,  accel:86,  handling:94, desc:'Driver-focused coupe.' },
+  { id:'rx7',       model:'rx7',       name:'KRC ROTARY 7',         color:0xcc2200, topSpeed:85,  accel:84,  handling:96, desc:'Light, loud, and sharp.' },
+  { id:'supra',     model:'supra',     name:'KRC STREET KING',      color:0xff9900, topSpeed:89,  accel:87,  handling:92, desc:'Tuner icon energy.' },
+  { id:'r34',       model:'r34',       name:'KRC SKY R34',          color:0x55aadd, topSpeed:91,  accel:88,  handling:93, desc:'All-wheel grip legend.' },
+  { id:'evo',       model:'evo',       name:'KRC RALLY EVO',        color:0x0044bb, topSpeed:84,  accel:90,  handling:99, desc:'Rally DNA.' },
+  { id:'viper',     model:'viper',     name:'KRC VENOM V10',        color:0xaa0000, topSpeed:97,  accel:92,  handling:80, desc:'American-style muscle.' },
+  { id:'koenigsegg',model:'koenigsegg',name:'KRC APEX ONE',         color:0xff1493, topSpeed:100, accel:100, handling:85, desc:'Top-speed prototype.' },
+  { id:'mustang',   model:'viper',     name:'KRC STALLION GT',      color:0x003f8f, topSpeed:90,  accel:86,  handling:82, desc:'Wide street power.' },
+  { id:'camaro',    model:'amg',       name:'KRC CAMBER SS',        color:0xffcc00, topSpeed:89,  accel:87,  handling:83, desc:'Muscle coupe with bite.' },
+  { id:'challenger',model:'viper',     name:'KRC OUTLAW WIDE',      color:0x261300, topSpeed:91,  accel:84,  handling:76, desc:'Heavyweight straight-line bruiser.' },
+  { id:'corvette',  model:'mclaren',   name:'KRC STING ZR',         color:0xffdd00, topSpeed:96,  accel:94,  handling:89, desc:'Track-ready super coupe.' },
+  { id:'charger',   model:'amg',       name:'KRC PURSUIT RT',       color:0x111111, topSpeed:88,  accel:84,  handling:78, desc:'Four-door chase machine.' },
+  { id:'nsx',       model:'mclaren',   name:'KRC NOVA X',           color:0xffffff, topSpeed:93,  accel:92,  handling:94, desc:'Hybrid precision supercar.' },
+  { id:'s2000',     model:'rx7',       name:'KRC ROADSTER S2',      color:0xeeeeee, topSpeed:82,  accel:80,  handling:100,desc:'Lightweight corner hunter.' },
+  { id:'sti',       model:'evo',       name:'KRC RALLY X',          color:0x0044cc, topSpeed:83,  accel:88,  handling:97, desc:'Rally grip for city circuits.' },
+  { id:'civic',     model:'evo',       name:'KRC TYPE RUSH',        color:0xffffff, topSpeed:81,  accel:86,  handling:99, desc:'Hot hatch attack mode.' },
+  { id:'audi-r8',   model:'mclaren',   name:'KRC V10 RUSH',         color:0xcfd4d8, topSpeed:95,  accel:91,  handling:91, desc:'V10 balance and grip.' },
+  { id:'rs7',       model:'amg',       name:'KRC EXECUTIVE RS',     color:0x2a2d34, topSpeed:92,  accel:90,  handling:86, desc:'Luxury missile.' },
+  { id:'gt500',     model:'viper',     name:'KRC SUPER STALLION',   color:0x0033aa, topSpeed:96,  accel:94,  handling:79, desc:'Supercharged street fury.' },
+  { id:'r35-nismo', model:'gtr',       name:'KRC NIGHT R35-R',      color:0xffffff, topSpeed:96,  accel:93,  handling:96, desc:'Race-trim grip monster.' },
+  { id:'huracan',   model:'lambo',     name:'KRC HURRICANE EVO',    color:0x39ff14, topSpeed:98,  accel:96,  handling:90, desc:'Sharp neon supercar.' },
+  { id:'senna',     model:'mclaren',   name:'KRC AERO S',           color:0xff5500, topSpeed:99,  accel:97,  handling:99, desc:'Aero grip monster.' },
+  { id:'police',    model:'viper',     name:'KRC INTERCEPTOR',      color:0x07111f, topSpeed:94,  accel:92,  handling:86, desc:'Wide-body police muscle car built to chase racers.' },
+  { id:'jesko',     model:'koenigsegg',name:'KRC JETSTREAM',        color:0x00d4ff, topSpeed:100, accel:100, handling:88, desc:'Extreme top-speed prototype.' },
+];
+
+const params = new URLSearchParams(window.location.search);
+const rawMode = params.get('mode') || 'quick';
+const mode = ['quick','champ','career','daily','police'].indexOf(rawMode) === -1 ? 'quick' : rawMode;
+let difficultyIdx = 1;
+let selectedLaps = 5;
+let selectedTransmission = 'automatic';
+
+function cleanGamerName(value) {
+  const text = String(value || '').toUpperCase().replace(/[^A-Z0-9 _.-]/g, '').replace(/\s+/g, ' ').trim();
+  return text.slice(0, 16);
+}
+
+function krcPlayerName() {
+  try {
+    return cleanGamerName(localStorage.getItem('krc-gamer-name')) || 'KRC DRIVER';
+  } catch (err) {
+    return 'KRC DRIVER';
+  }
+}
+
+function saveGamerName(value) {
+  const name = cleanGamerName(value) || 'KRC DRIVER';
+  try { localStorage.setItem('krc-gamer-name', name); } catch (err) {}
+  return name;
+}
+
+function bindGamerNameInput() {
+  const input = document.getElementById('gamer-name-input');
+  if (!input) return;
+  input.value = krcPlayerName();
+  input.addEventListener('input', function() {
+    const cleaned = cleanGamerName(input.value);
+    if (input.value !== cleaned) input.value = cleaned;
+    saveGamerName(cleaned);
+  });
+  input.addEventListener('blur', function() {
+    input.value = saveGamerName(input.value);
+  });
+}
+
+function onlinePlayEnabled() {
+  try {
+    return localStorage.getItem('krc-play-mode') !== 'solo';
+  } catch (err) {
+    return true;
+  }
+}
+
+function setPlayMode(mode) {
+  const solo = mode === 'solo';
+  try { localStorage.setItem('krc-play-mode', solo ? 'solo' : 'online'); } catch (err) {}
+updatePlayModeButtons();
+}
+
+function setTransmission(mode) {
+  selectedTransmission = mode === 'manual' ? 'manual' : 'automatic';
+  try { localStorage.setItem('krc-transmission-mode', selectedTransmission); } catch (err) {}
+  document.querySelectorAll('[data-transmission]').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-transmission') === selectedTransmission);
+  });
+}
+
+function updatePlayModeButtons() {
+  const online = onlinePlayEnabled();
+  document.querySelectorAll('[data-play-mode]').forEach(function(btn) {
+    const modeName = btn.getAttribute('data-play-mode');
+    btn.classList.toggle('active', online ? modeName === 'online' : modeName === 'solo');
+  });
+}
+
+document.getElementById('play-mode-row').addEventListener('click', function(ev) {
+  const btn = ev.target.closest('button[data-play-mode]');
+  if (!btn) return;
+  setPlayMode(btn.getAttribute('data-play-mode'));
+});
+
+function hexColor(n) {
+  return '#' + n.toString(16).padStart(6, '0');
+}
+
+function shade(hex, amt) {
+  let num = parseInt(hex.slice(1), 16);
+  let r = Math.max(0, Math.min(255, (num >> 16) + amt));
+  let g = Math.max(0, Math.min(255, ((num >> 8) & 255) + amt));
+  let b = Math.max(0, Math.min(255, (num & 255) + amt));
+  return '#' + (b | (g << 8) | (r << 16)).toString(16).padStart(6, '0');
+}
+
+function carSvg(car, idx) {
+  const base = hexColor(car.color);
+  const dark = shade(base, -50);
+  const light = shade(base, 42);
+  const isMuscle = ['viper','amg'].includes(car.model) || ['mustang','camaro','challenger','charger','gt500'].includes(car.id);
+  const isHyper = ['lambo','mclaren','bugatti','koenigsegg'].includes(car.model);
+  const isJdm = ['gtr','r34','evo','rx7','supra','sti','civic','r35-nismo'].includes(car.id) || ['gtr','evo','rx7','supra'].includes(car.model);
+  const bodyW = isMuscle ? 98 : isHyper ? 88 : 92;
+  const rearW = isMuscle ? 112 : isHyper ? 104 : 104;
+  const noseW = isMuscle ? 72 : isHyper ? 58 : 66;
+  const hoodTop = isHyper ? 15 : 18;
+  const bodyPath =
+    'M' + (155 - noseW / 2) + ' ' + hoodTop +
+    ' C' + (155 - bodyW / 2) + ' 28 ' + (155 - bodyW / 2 - 10) + ' 55 ' + (155 - bodyW / 2 - 4) + ' 84' +
+    ' L' + (155 - rearW / 2) + ' 126' +
+    ' C' + (155 - rearW / 2 + 10) + ' 143 ' + (155 + rearW / 2 - 10) + ' 143 ' + (155 + rearW / 2) + ' 126' +
+    ' L' + (155 + bodyW / 2 + 4) + ' 84' +
+    ' C' + (155 + bodyW / 2 + 10) + ' 55 ' + (155 + bodyW / 2) + ' 28 ' + (155 + noseW / 2) + ' ' + hoodTop + ' Z';
+  const cabinPath = isHyper
+    ? 'M126 73 L139 51 L171 51 L184 73 L177 107 L133 107 Z'
+    : isMuscle
+      ? 'M121 72 L136 50 L174 50 L189 72 L182 111 L128 111 Z'
+      : 'M123 72 L137 50 L173 50 L187 72 L180 109 L130 109 Z';
+  const spoiler = (isMuscle || isJdm || isHyper)
+    ? '<rect x="91" y="132" width="128" height="10" rx="2" fill="#080808" stroke="#ffcc00" stroke-width="2"/><rect x="107" y="122" width="8" height="14" fill="#111"/><rect x="195" y="122" width="8" height="14" fill="#111"/>'
+    : '';
+  const stripe = idx % 3 === 0
+    ? '<path d="M144 20 L143 130" stroke="#fff" stroke-width="7" opacity=".9"/><path d="M166 20 L167 130" stroke="#fff" stroke-width="7" opacity=".9"/><path d="M155 19 L155 131" stroke="#111" stroke-width="4" opacity=".72"/>'
+    : '<path d="M155 20 L155 132" stroke="#ffcc00" stroke-width="8" opacity=".85"/><path d="M155 20 L155 132" stroke="#fff" stroke-width="2" opacity=".55"/>';
+  const sideStripes = isMuscle
+    ? '<path d="M111 82 L98 121" stroke="#ffcc00" stroke-width="5" opacity=".8"/><path d="M199 82 L212 121" stroke="#ffcc00" stroke-width="5" opacity=".8"/>'
+    : '';
+  return '<svg viewBox="0 0 310 170" role="img" aria-label="' + car.name + ' image">' +
+    '<defs><linearGradient id="g' + idx + '" x1="0" x2="1"><stop offset="0" stop-color="' + dark + '"/><stop offset=".48" stop-color="' + base + '"/><stop offset="1" stop-color="' + light + '"/></linearGradient></defs>' +
+    '<ellipse cx="155" cy="150" rx="118" ry="13" fill="rgba(0,0,0,.52)"/>' +
+    '<rect x="86" y="40" width="24" height="46" rx="8" fill="#050505"/><rect x="200" y="40" width="24" height="46" rx="8" fill="#050505"/>' +
+    '<rect x="82" y="100" width="29" height="48" rx="9" fill="#050505"/><rect x="199" y="100" width="29" height="48" rx="9" fill="#050505"/>' +
+    '<rect x="90" y="44" width="17" height="38" rx="6" fill="#181818" stroke="#3a3a3a" stroke-width="3"/><rect x="203" y="44" width="17" height="38" rx="6" fill="#181818" stroke="#3a3a3a" stroke-width="3"/>' +
+    '<rect x="87" y="105" width="20" height="38" rx="6" fill="#181818" stroke="#3a3a3a" stroke-width="3"/><rect x="203" y="105" width="20" height="38" rx="6" fill="#181818" stroke="#3a3a3a" stroke-width="3"/>' +
+    spoiler +
+    '<path d="' + bodyPath + '" fill="url(#g' + idx + ')" stroke="rgba(255,255,255,.36)" stroke-width="2.5"/>' +
+    '<path d="M122 25 C136 18 174 18 188 25" stroke="rgba(255,255,255,.32)" stroke-width="3" fill="none"/>' +
+    '<path d="' + cabinPath + '" fill="rgba(18,27,36,.96)" stroke="rgba(255,255,255,.38)" stroke-width="2"/>' +
+    '<path d="M132 67 L142 52 L168 52 L178 67 L173 75 L137 75 Z" fill="rgba(105,190,255,.35)"/>' +
+    '<path d="M131 105 L179 105 L171 116 L139 116 Z" fill="rgba(105,190,255,.22)"/>' +
+    stripe + sideStripes +
+    '<path d="M123 31 L104 56 L121 57 Z" fill="rgba(0,0,0,.42)"/><path d="M187 31 L206 56 L189 57 Z" fill="rgba(0,0,0,.42)"/>' +
+    '<path d="M112 126 L198 126" stroke="rgba(0,0,0,.42)" stroke-width="6" stroke-linecap="round"/>' +
+    '<text x="155" y="94" text-anchor="middle" font-size="14" font-weight="900" fill="#fff">KRC</text>' +
+    '<rect x="124" y="28" width="21" height="5" rx="2" fill="#111" opacity=".72"/><rect x="165" y="28" width="21" height="5" rx="2" fill="#111" opacity=".72"/>' +
+    '<rect x="119" y="145" width="14" height="5" rx="2" fill="#d8d8d8"/><rect x="138" y="146" width="14" height="5" rx="2" fill="#d8d8d8"/><rect x="158" y="146" width="14" height="5" rx="2" fill="#d8d8d8"/><rect x="177" y="145" width="14" height="5" rx="2" fill="#d8d8d8"/>' +
+    '</svg>';
+}
+
+function stat(label, value) {
+  return '<div class="stat"><span>' + label + '</span><div class="bar"><div class="fill" style="width:' + value + '%"></div></div><span>' + value + '</span></div>';
+}
+
+function policeSvg(car) {
+  return '<svg viewBox="0 0 310 170" role="img" aria-label="' + car.name + ' police car image">' +
+    '<defs><linearGradient id="policeBody" x1="0" x2="1"><stop offset="0" stop-color="#03060b"/><stop offset=".5" stop-color="#16202c"/><stop offset="1" stop-color="#05070c"/></linearGradient></defs>' +
+    '<ellipse cx="155" cy="151" rx="122" ry="13" fill="rgba(0,0,0,.58)"/>' +
+    '<g transform="rotate(90 155 85)">' +
+    '<rect x="66" y="36" width="38" height="51" rx="11" fill="#050505"/><rect x="206" y="36" width="38" height="51" rx="11" fill="#050505"/>' +
+    '<rect x="61" y="101" width="44" height="51" rx="12" fill="#050505"/><rect x="205" y="101" width="44" height="51" rx="12" fill="#050505"/>' +
+    '<rect x="75" y="41" width="24" height="40" rx="7" fill="#171717" stroke="#404040" stroke-width="3"/><rect x="211" y="41" width="24" height="40" rx="7" fill="#171717" stroke="#404040" stroke-width="3"/>' +
+    '<rect x="72" y="106" width="27" height="39" rx="7" fill="#171717" stroke="#404040" stroke-width="3"/><rect x="211" y="106" width="27" height="39" rx="7" fill="#171717" stroke="#404040" stroke-width="3"/>' +
+    '<path d="M104 18 C86 35 80 61 89 87 L70 129 C88 148 222 148 240 129 L221 87 C230 61 224 35 206 18 Z" fill="url(#policeBody)" stroke="rgba(255,255,255,.42)" stroke-width="2.8"/>' +
+    '<path d="M115 22 L92 60 L108 63 Z" fill="#f7f7f7" opacity=".93"/><path d="M195 22 L218 60 L202 63 Z" fill="#f7f7f7" opacity=".93"/>' +
+    '<path d="M96 83 L82 122 L136 130 L136 75 Z" fill="#f4f4f4" opacity=".94"/><path d="M214 83 L228 122 L174 130 L174 75 Z" fill="#f4f4f4" opacity=".94"/>' +
+    '<path d="M118 70 L136 49 L174 49 L192 70 L185 113 L125 113 Z" fill="rgba(16,24,34,.98)" stroke="rgba(255,255,255,.42)" stroke-width="2"/>' +
+    '<path d="M134 68 L144 54 L166 54 L176 68 L171 78 L139 78 Z" fill="rgba(90,190,255,.35)"/>' +
+    '<path d="M133 104 L177 104 L169 115 L141 115 Z" fill="rgba(90,190,255,.22)"/>' +
+    '<rect x="119" y="76" width="72" height="13" rx="4" fill="#06070a" stroke="#cfd7df" stroke-width="1.6"/>' +
+    '<rect x="123" y="78" width="30" height="9" rx="3" fill="#ff1028"><animate attributeName="opacity" values="1;.18;1" dur=".42s" repeatCount="indefinite"/></rect>' +
+    '<rect x="157" y="78" width="30" height="9" rx="3" fill="#147cff"><animate attributeName="opacity" values=".18;1;.18" dur=".42s" repeatCount="indefinite"/></rect>' +
+    '<text x="155" y="97" text-anchor="middle" font-size="14" font-weight="900" fill="#ffffff">POLICE</text>' +
+    '<text x="155" y="123" text-anchor="middle" font-size="10" font-weight="900" fill="#ffdf4a">KRC INTERCEPTOR</text>' +
+    '<path d="M101 132 L209 132" stroke="#0b0d12" stroke-width="8" stroke-linecap="round"/>' +
+    '<rect x="84" y="132" width="142" height="11" rx="2" fill="#07090d" stroke="#dce5ee" stroke-width="1.8"/>' +
+    '<rect x="117" y="145" width="15" height="5" rx="2" fill="#d8d8d8"/><rect x="138" y="146" width="15" height="5" rx="2" fill="#d8d8d8"/><rect x="157" y="146" width="15" height="5" rx="2" fill="#d8d8d8"/><rect x="178" y="145" width="15" height="5" rx="2" fill="#d8d8d8"/>' +
+    '</g>' +
+    '</svg>';
+}
+
+function carImage(car, i) {
+  if (car.id === 'police') return '<img src="garage-cars/car-police.png" alt="' + car.name + ' image" loading="lazy">';
+  const imageIdx = car.id === 'jesko' ? 29 : i;
+  const n = String(imageIdx).padStart(2, '0');
+  return '<img src="garage-cars/car-' + n + '.png" alt="' + car.name + ' image" loading="lazy">';
+}
+
+function renderGarage() {
+  document.getElementById('garage-count').textContent = CARS.length + ' CARS AVAILABLE';
+  document.getElementById('mode-note').textContent = ({ quick:'QUICK RACE', champ:'CHAMPIONSHIP', career:'CAREER MODE', daily:'DAILY CHALLENGE', police:'POLICE CHASE' })[mode] || 'QUICK RACE';
+  const grid = document.getElementById('garage-grid');
+  grid.innerHTML = CARS.map(function(car, i) {
+    return '<article class="card">' +
+      '<div class="car-art">' + carImage(car, i) + '</div>' +
+      '<div class="name">' + car.name + '</div>' +
+      '<div class="desc">' + car.desc + '</div>' +
+      '<div class="stats">' + stat('SPD', car.topSpeed) + stat('ACC', car.accel) + stat('HDL', car.handling) + '</div>' +
+      '<button class="choose" type="button" data-car="' + i + '">SELECT CAR</button>' +
+      '</article>';
+  }).join('');
+  grid.querySelectorAll('.choose').forEach(function(btn) {
+	    btn.addEventListener('click', function() {
+	      const nameInput = document.getElementById('gamer-name-input');
+	      if (nameInput) saveGamerName(nameInput.value);
+	      const carIdx = parseInt(btn.getAttribute('data-car'), 10);
+      localStorage.setItem('krc-garage-selection', JSON.stringify({
+        carIdx: carIdx,
+        mode: mode,
+        laps: selectedLaps,
+        difficulty: difficultyIdx,
+        transmission: selectedTransmission
+      }));
+      window.location.href = 'index.html?garage=1';
+    });
+  });
+}
+
+document.getElementById('difficulty-row').addEventListener('click', function(ev) {
+  const btn = ev.target.closest('button[data-diff]');
+  if (!btn) return;
+  difficultyIdx = parseInt(btn.getAttribute('data-diff'), 10);
+  document.querySelectorAll('[data-diff]').forEach(function(b) { b.classList.toggle('active', b === btn); });
+});
+
+document.getElementById('laps-row').addEventListener('click', function(ev) {
+  const btn = ev.target.closest('button[data-laps]');
+  if (!btn) return;
+  selectedLaps = parseInt(btn.getAttribute('data-laps'), 10);
+  document.querySelectorAll('[data-laps]').forEach(function(b) { b.classList.toggle('active', b === btn); });
+});
+
+document.getElementById('transmission-row').addEventListener('click', function(ev) {
+  const btn = ev.target.closest('button[data-transmission]');
+  if (!btn) return;
+  setTransmission(btn.getAttribute('data-transmission'));
+});
+
+bindGamerNameInput();
+updatePlayModeButtons();
+try { setTransmission(localStorage.getItem('krc-transmission-mode') || 'automatic'); } catch (err) { setTransmission('automatic'); }
+renderGarage();
+</script>
+</body>
+</html>

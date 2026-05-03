@@ -1,0 +1,16 @@
+.git
+.cursor
+ios
+node_modules
+assets
+scripts
+tools
+last-night-detailing
+*.placeholder.*
+*.redesign-backup.*
+*original.placeholder*
+garage 2.html
+package.original.placeholder.json
+package.redesign-backup.json
+garage-cars/* 2.png
+garage-cars/contact-sheet*.jpg

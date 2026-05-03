@@ -1,26 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="21701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
-    <device id="retina6_12" orientation="landscape" appearance="light"/>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="launch">
+    <device id="retina6_12" orientation="landscapeLeft" appearance="dark"/>
     <dependencies>
-        <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21679"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
-        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <scene sceneID="EHf-IW-A2E">
+        <scene sceneID="scene">
             <objects>
-                <viewController id="01J-lp-oVM" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
-                        <rect key="frame" x="0.0" y="0.0" width="844" height="390"/>
+                <viewController id="launch" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="view">
+                        <rect key="frame" x="0.0" y="0.0" width="852" height="393"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
-                        <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <subviews>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" image="MenuBackground" translatesAutoresizingMaskIntoConstraints="NO" id="background">
+                                <rect key="frame" x="0.0" y="0.0" width="852" height="393"/>
+                            </imageView>
+                            <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="shade">
+                                <rect key="frame" x="0.0" y="0.0" width="852" height="393"/>
+                                <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.38" colorSpace="custom" customColorSpace="sRGB"/>
+                            </view>
+                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Kaden's Racing Championships" textAlignment="center" lineBreakMode="wordWrapping" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="YES" translatesAutoresizingMaskIntoConstraints="NO" id="title">
+                                <fontDescription key="fontDescription" type="boldSystem" pointSize="28"/>
+                                <color key="textColor" red="1" green="0.64" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                            </label>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="safe"/>
+                        <color key="backgroundColor" red="0.01" green="0.01" blue="0.02" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="background" firstAttribute="top" secondItem="view" secondAttribute="top" id="bgTop"/>
+                            <constraint firstItem="background" firstAttribute="bottom" secondItem="view" secondAttribute="bottom" id="bgBottom"/>
+                            <constraint firstItem="background" firstAttribute="leading" secondItem="view" secondAttribute="leading" id="bgLeading"/>
+                            <constraint firstItem="background" firstAttribute="trailing" secondItem="view" secondAttribute="trailing" id="bgTrailing"/>
+                            <constraint firstItem="shade" firstAttribute="top" secondItem="view" secondAttribute="top" id="shadeTop"/>
+                            <constraint firstItem="shade" firstAttribute="bottom" secondItem="view" secondAttribute="bottom" id="shadeBottom"/>
+                            <constraint firstItem="shade" firstAttribute="leading" secondItem="view" secondAttribute="leading" id="shadeLeading"/>
+                            <constraint firstItem="shade" firstAttribute="trailing" secondItem="view" secondAttribute="trailing" id="shadeTrailing"/>
+                            <constraint firstItem="title" firstAttribute="leading" secondItem="safe" secondAttribute="leading" constant="16" id="titleLead"/>
+                            <constraint firstItem="safe" firstAttribute="trailing" secondItem="title" secondAttribute="trailing" constant="16" id="titleTrail"/>
+                            <constraint firstItem="title" firstAttribute="centerY" secondItem="safe" secondAttribute="centerY" id="cy"/>
+                        </constraints>
                     </view>
                 </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="firstResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="53" y="375"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="MenuBackground" width="853" height="1844"/>
+    </resources>
 </document>

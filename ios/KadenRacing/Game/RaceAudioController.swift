@@ -221,10 +221,10 @@ final class RaceAudioController {
                 self.phaseNitro += 2 * .pi * nitroHz / self.auxSampleRate
                 self.phaseSynthEngine += 2 * .pi * rpmHz / self.auxSampleRate
                 self.phaseScrub += 2 * .pi * (rpmHz * 2.1) / self.auxSampleRate
-                if self.phaseWind > 1e6 { self.phaseWind.truncatingRemainder(dividingBy: 2 * .pi) }
-                if self.phaseNitro > 1e6 { self.phaseNitro.truncatingRemainder(dividingBy: 2 * .pi) }
-                if self.phaseSynthEngine > 1e6 { self.phaseSynthEngine.truncatingRemainder(dividingBy: 2 * .pi) }
-                if self.phaseScrub > 1e6 { self.phaseScrub.truncatingRemainder(dividingBy: 2 * .pi) }
+                if self.phaseWind > 1e6 { self.phaseWind = self.phaseWind.truncatingRemainder(dividingBy: 2 * .pi) }
+                if self.phaseNitro > 1e6 { self.phaseNitro = self.phaseNitro.truncatingRemainder(dividingBy: 2 * .pi) }
+                if self.phaseSynthEngine > 1e6 { self.phaseSynthEngine = self.phaseSynthEngine.truncatingRemainder(dividingBy: 2 * .pi) }
+                if self.phaseScrub > 1e6 { self.phaseScrub = self.phaseScrub.truncatingRemainder(dividingBy: 2 * .pi) }
 
                 let out = Float(m)
                 for ch in 0..<channels {
