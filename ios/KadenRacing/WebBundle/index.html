@@ -10,6 +10,7 @@
 <title>Kaden's Racing Championships</title>
 <meta name="application-name" content="Kaden's Racing Championships">
 <meta name="apple-mobile-web-app-title" content="Kaden's Racing Championships">
+<link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="app-icon.png">
 <link rel="apple-touch-icon" href="app-icon.png">
 <meta name="theme-color" content="#0a0a0a">
@@ -2275,10 +2276,9 @@ const TRACK_ROADSIDE_HALF = TW / 2 + 6.5;
 
 function generateTrackFeatures(trackIdx) {
   const j = (trackIdx % 11) * 0.014;
+  // Bridges removed — tunnels only (elevated deck geometry disabled).
   return [
-    { type: 'bridge', t0: 0.06 + j, t1: Math.min(0.98, 0.17 + j) },
     { type: 'tunnel', t0: 0.26 + j, t1: Math.min(0.98, 0.40 + j) },
-    { type: 'bridge', t0: 0.50 + j, t1: Math.min(0.99, 0.62 + j) },
     { type: 'tunnel', t0: 0.72 + j, t1: Math.min(0.99, 0.86 + j) }
   ];
 }
@@ -2311,16 +2311,12 @@ function tunnelDepthAtT(t) {
 function buildBridgeTunnelDecor(crv) {
   const grp = new THREE.Group();
   const pillarMat = new THREE.MeshLambertMaterial({ color: 0x7a7a82 });
-  const deckMat = new THREE.MeshLambertMaterial({ color: 0x565a61 });
-  const underMat = new THREE.MeshLambertMaterial({ color: 0x343943 });
-  const bridgeSideMat = new THREE.MeshLambertMaterial({ color: 0x2a2f37 });
   const tunnelWallMat = new THREE.MeshLambertMaterial({ color: 0x30313a });
   const tunnelRoofMat = new THREE.MeshLambertMaterial({ color: 0x20242c });
   const tunnelBackMat = new THREE.MeshLambertMaterial({ color: 0x161a20 });
   const tunnelRibMat = new THREE.MeshLambertMaterial({ color: 0x686d78 });
   const tunnelLightMat = new THREE.MeshBasicMaterial({ color: 0xfff1aa });
   const portalMat = new THREE.MeshLambertMaterial({ color: 0x757982 });
-  const railMat = new THREE.MeshLambertMaterial({ color: 0xd4d7df });
 
   function addOrientedBox(group, w, h, d, mat, p, right, tan, y, cast, receive) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -2333,53 +2329,6 @@ function buildBridgeTunnelDecor(crv) {
   }
 
   trackFeatures.forEach(function(f) {
-    if (f.type === 'bridge') {
-      for (let u = f.t0; u < f.t1; u += 0.016) {
-        const p = crv.getPoint(u);
-        const tan = new THREE.Vector3();
-        crv.getTangent(u, tan);
-        tan.y = 0;
-        tan.normalize();
-        const right = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
-        const h = bridgeHeightAtT(u);
-        const deck = h - 0.12;
-        const bot = -1.1;
-        addOrientedBox(grp, TW + 4.4, 0.58, 3.35, deckMat, p, right, tan, deck - 0.42, true, true);
-        addOrientedBox(grp, TW + 1.4, 0.28, 3.45, underMat, p, right, tan, deck - 0.86, true, true);
-        [-1, 1].forEach(function(side) {
-          const rp = p.clone().addScaledVector(right, side * (TRACK_CLEAR_HALF + 0.7));
-          addOrientedBox(grp, 0.44, 1.15, 3.35, railMat, rp, right, tan, deck + 0.44, true, true);
-          const curb = p.clone().addScaledVector(right, side * (TRACK_CLEAR_HALF + 0.14));
-          addOrientedBox(grp, 0.38, 0.26, 3.35, underMat, curb, right, tan, deck + 0.02, true, true);
-          const skirt = p.clone().addScaledVector(right, side * (TRACK_CLEAR_HALF + 1.05));
-          addOrientedBox(grp, 0.34, 2.25, 3.35, bridgeSideMat, skirt, right, tan, deck - 1.2, true, true);
-        });
-      }
-      for (let u = f.t0 + 0.018; u < f.t1; u += 0.055) {
-        const p = crv.getPoint(u);
-        const tan = new THREE.Vector3();
-        crv.getTangent(u, tan);
-        tan.y = 0;
-        tan.normalize();
-        const right = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
-        const deck = bridgeHeightAtT(u) - 0.12;
-        const bot = -1.2;
-        const ph = Math.max(1.8, deck - bot);
-        const yMid = (deck + bot) / 2;
-        [-1, 1].forEach(function(side) {
-          const bx = p.x + right.x * side * (TRACK_CLEAR_HALF + 3.4);
-          const bz = p.z + right.z * side * (TRACK_CLEAR_HALF + 3.4);
-          const col = new THREE.Mesh(new THREE.BoxGeometry(0.7, ph, 0.7), pillarMat);
-          col.position.set(bx, yMid, bz);
-          col.castShadow = true;
-          grp.add(col);
-        });
-        const braceL = p.clone().addScaledVector(right, -(TRACK_CLEAR_HALF + 1.7));
-        const braceR = p.clone().addScaledVector(right, TRACK_CLEAR_HALF + 1.7);
-        addOrientedBox(grp, 2.8, 0.26, 0.38, pillarMat, braceL, right, tan, deck - 0.95, true, true);
-        addOrientedBox(grp, 2.8, 0.26, 0.38, pillarMat, braceR, right, tan, deck - 0.95, true, true);
-      }
-    }
     if (f.type === 'tunnel') {
       const portals = [f.t0, f.t1];
       portals.forEach(function(u) {
@@ -2474,18 +2423,6 @@ function buildRoadMesh(crv) {
   const dashMat  = new THREE.MeshBasicMaterial({ color: 0xf0c300, side: THREE.DoubleSide, transparent: true, opacity: 0.88, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -8 });
   const laneMat  = new THREE.MeshBasicMaterial({ color: 0xf4f7f8, side: THREE.DoubleSide, transparent: true, opacity: 0.9, polygonOffset: true, polygonOffsetFactor: -9, polygonOffsetUnits: -9 });
   const edgeMat  = new THREE.MeshBasicMaterial({ color: 0xcfd6d8, side: THREE.DoubleSide, transparent: true, opacity: 0.72, polygonOffset: true, polygonOffsetFactor: -10, polygonOffsetUnits: -10 });
-  const guideMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, side: THREE.DoubleSide, transparent: true, opacity: 0.92, polygonOffset: true, polygonOffsetFactor: -12, polygonOffsetUnits: -12 });
-  const guideHotMat = new THREE.MeshBasicMaterial({ color: 0xffcc00, side: THREE.DoubleSide, transparent: true, opacity: 0.96, polygonOffset: true, polygonOffsetFactor: -13, polygonOffsetUnits: -13 });
-  const arrowShape = new THREE.Shape();
-  arrowShape.moveTo(0, 6.2);
-  arrowShape.lineTo(5.1, -1.6);
-  arrowShape.lineTo(1.72, -0.34);
-  arrowShape.lineTo(1.72, -5.4);
-  arrowShape.lineTo(-1.72, -5.4);
-  arrowShape.lineTo(-1.72, -0.34);
-  arrowShape.lineTo(-5.1, -1.6);
-  arrowShape.lineTo(0, 6.2);
-  const arrowGeo = new THREE.ShapeGeometry(arrowShape);
   const hw = TW / 2;
   const laneOffsets = [-LANE_W, LANE_W];
   const nSeg = pts.length - 1;
@@ -2596,20 +2533,6 @@ function buildRoadMesh(crv) {
       grp.add(edge);
     }
   }
-  for (let u = 0.026; u < 1; u += 0.038) {
-    const p = crv.getPoint(u);
-    const tan = new THREE.Vector3();
-    crv.getTangent(u, tan);
-    tan.y = 0;
-    tan.normalize();
-    const h = bridgeHeightAtT(u);
-    const arrow = new THREE.Mesh(arrowGeo, Math.floor(u * 1000) % 3 === 0 ? guideHotMat : guideMat);
-    arrow.position.set(p.x, h + 0.205, p.z);
-    arrow.rotation.x = -Math.PI / 2;
-    arrow.rotation.y = Math.atan2(tan.x, tan.z) + Math.PI;
-    arrow.renderOrder = 11;
-    grp.add(arrow);
-  }
   return grp;
 }
 
@@ -2661,22 +2584,8 @@ function rebuildTrackWorld(trackIdx) {
   sfm.position.set(sfp.x, archY + 0.04, sfp.z);
   sfm.rotation.y = ry;
   archGroup.add(sfm);
-  const archMat = new THREE.MeshBasicMaterial({ color: 0x00aaff });
-  const archLm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 0.3), archMat);
-  archLm.position.set(sfp.x + sfR.x * (TW / 2 + 1.5), archY + 4, sfp.z + sfR.z * (TW / 2 + 1.5));
-  archGroup.add(archLm);
-  const archRm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 0.3), archMat);
-  archRm.position.set(sfp.x - sfR.x * (TW / 2 + 1.5), archY + 4, sfp.z - sfR.z * (TW / 2 + 1.5));
-  archGroup.add(archRm);
-  const archTop = new THREE.Mesh(new THREE.BoxGeometry(TW + 4, 0.3, 0.3), archMat);
-  archTop.position.set(sfp.x, archY + 8, sfp.z);
-  archTop.rotation.y = ry;
-  archGroup.add(archTop);
-  archPL = new THREE.PointLight(0x00aaff, 2, 28);
-  archPL.position.set(sfp.x, archY + 8, sfp.z);
-  archGroup.add(archPL);
-  const checkpointPostMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff });
-  const checkpointTopMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+  const checkpointPostMat = new THREE.MeshLambertMaterial({ color: 0x7a7f88 });
+  const checkpointTopMat = new THREE.MeshLambertMaterial({ color: 0xa8aeb8 });
   [0.25, 0.5, 0.75].forEach(function(u, idx) {
     const cp = curve.getPoint(u);
     const cpTan = new THREE.Vector3();
@@ -2702,9 +2611,6 @@ function rebuildTrackWorld(trackIdx) {
     marker.position.set(0, 4.72, -0.05);
     gate.add(marker);
     archGroup.add(gate);
-    const gateLight = new THREE.PointLight(idx === 1 ? 0xffcc00 : 0x00d4ff, 1.1, 34);
-    gateLight.position.set(cp.x, cpY + 5.0, cp.z);
-    archGroup.add(gateLight);
   });
   scene.add(archGroup);
 
@@ -2947,56 +2853,13 @@ function buildCity(cityIdx) {
 
   // (buildings removed)
 
-  // Roadside scenery: sponsor boards, stands, cones, and distance markers.
-  const sponsorMatA = new THREE.MeshLambertMaterial({ color: def.isNight ? 0x28313a : 0xff6600 });
-  const sponsorMatB = new THREE.MeshLambertMaterial({ color: def.isNight ? 0x3a2f32 : 0x1d78a8 });
-  const boardBackMat = new THREE.MeshLambertMaterial({ color: def.isDay ? 0x20242a : 0x0c0f18 });
-  const standMat = new THREE.MeshLambertMaterial({ color: def.isDay ? 0x777b84 : 0x202638 });
-  const seatMat = new THREE.MeshLambertMaterial({ color: def.isNight ? 0x101a30 : 0x304d7a });
+  // Roadside: traffic cones only (billboards, stands, streetlights, gantries removed).
   const coneMat = new THREE.MeshLambertMaterial({ color: 0xff6600 });
   const coneStripeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const markerMat = new THREE.MeshLambertMaterial({ color: def.isNight ? 0xb9c2c9 : 0xffcc00 });
   for (let i = 4; i < cityPts.length - 2; i += 6) {
     const p = cityPts[i], p2 = cityPts[Math.min(i + 1, cityPts.length - 1)];
     const d = new THREE.Vector3().subVectors(p2, p).normalize();
     const r = new THREE.Vector3(-d.z, 0, d.x);
-    const ry = Math.atan2(d.x, d.z);
-    const side = i % 12 === 0 ? -1 : 1;
-
-    const boardBase = clearRoadsidePoint(p.clone().addScaledVector(r, side * (TRACK_ROADSIDE_HALF + 5.0)), side, TRACK_ROADSIDE_HALF + 4.5);
-    if (!sceneryAllowed(boardBase, TRACK_ROADSIDE_HALF + 1.0)) continue;
-    const board = new THREE.Group();
-    board.position.set(boardBase.x, 1.9, boardBase.z);
-    board.rotation.y = ry;
-    const back = new THREE.Mesh(new THREE.BoxGeometry(7.8, 2.2, 0.22), boardBackMat);
-    board.add(back);
-    const stripe = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.45, 0.24), i % 18 === 0 ? sponsorMatA : sponsorMatB);
-    stripe.position.y = 0.18;
-    stripe.position.z = 0.02;
-    board.add(stripe);
-    const small = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.25, 0.25), markerMat);
-    small.position.set(0, -0.52, 0.03);
-    board.add(small);
-    cityGroup.add(board);
-
-    if (i % 18 === 0) {
-      const standBase = clearRoadsidePoint(p.clone().addScaledVector(r, -side * (TRACK_ROADSIDE_HALF + 8.0)), -side, TRACK_ROADSIDE_HALF + 7.0);
-      if (sceneryAllowed(standBase, TRACK_ROADSIDE_HALF + 3.0)) {
-        const stand = new THREE.Group();
-        stand.position.set(standBase.x, 0.1, standBase.z);
-        stand.rotation.y = ry;
-        for (let row = 0; row < 3; row++) {
-          const bench = new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.35, 0.8), row % 2 ? seatMat : standMat);
-          bench.position.set(0, row * 0.75 + 0.35, -row * 0.85);
-          stand.add(bench);
-        }
-        const rail = new THREE.Mesh(new THREE.BoxGeometry(11, 0.16, 0.16), markerMat);
-        rail.position.set(0, 2.5, -2.0);
-        stand.add(rail);
-        cityGroup.add(stand);
-      }
-    }
-
     if (i % 10 === 0) {
       [-1, 1].forEach(function(s) {
         const coneBase = clearRoadsidePoint(p.clone().addScaledVector(r, s * (TRACK_CLEAR_HALF + 0.7)), s, TRACK_CLEAR_HALF + 1.2);
@@ -3036,34 +2899,6 @@ function buildCity(cityIdx) {
         cone.position.set(base.x,5.5,base.z); cityGroup.add(cone);
       }
     }
-  }
-
-  // Streetlights
-  const poleMat=new THREE.MeshLambertMaterial({color:def.isDay?0x888888:0x2a2a38});
-  const bulbMat=new THREE.MeshBasicMaterial({color:def.isNight?0xffe8aa:0xfff8ee});
-  for (let i=0; i<cityPts.length-1; i+=3) {
-    const p=cityPts[i], p2=cityPts[Math.min(i+1,cityPts.length-1)];
-    const d=new THREE.Vector3().subVectors(p2,p).normalize(), r=new THREE.Vector3(-d.z,0,d.x), ry=Math.atan2(d.x,d.z);
-    for (const side of [1,-1]) {
-      const base=clearRoadsidePoint(p.clone().addScaledVector(r,side*(TRACK_ROADSIDE_HALF + 0.8)), side, TRACK_ROADSIDE_HALF + 3.4);
-      if (!sceneryAllowed(base, TRACK_ROADSIDE_HALF + 1.6)) continue;
-      const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.13,7,6),poleMat); pole.position.set(base.x,3.5,base.z); cityGroup.add(pole);
-      const arm=new THREE.Mesh(new THREE.BoxGeometry(1.3,0.11,0.11),poleMat); arm.position.set(base.x-r.x*side*0.65,7.1,base.z-r.z*side*0.65); arm.rotation.y=ry; cityGroup.add(arm);
-      const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.2,6,6),bulbMat); bulb.position.set(base.x-r.x*side*1.3,7,base.z-r.z*side*1.3); cityGroup.add(bulb);
-    }
-  }
-  for (let i=0;i<4;i++){const p=cityPts[Math.floor((i/4)*cityPts.length)];const sl=new THREE.PointLight(def.isNight?0xffe0aa:0xfff0dd,def.isNight?1.2:0.3,60);sl.position.set(p.x,7,p.z);cityGroup.add(sl);}
-
-  // Gantries
-  const bMat=new THREE.MeshLambertMaterial({color:def.isDay?0x888888:0x1e1e2e});
-  for (let i=10;i<cityPts.length-1;i+=14){
-    const p=cityPts[i],p2=cityPts[Math.min(i+1,cityPts.length-1)];
-    const d=new THREE.Vector3().subVectors(p2,p).normalize(),r=new THREE.Vector3(-d.z,0,d.x),ry=Math.atan2(d.x,d.z);
-    for(const side of[1,-1]){
-      const bx=clearRoadsidePoint(p.clone().addScaledVector(r,side*(TRACK_CLEAR_HALF+1.8)), side, TRACK_CLEAR_HALF+2.2);
-      const post=new THREE.Mesh(new THREE.BoxGeometry(0.45,10.8,0.45),bMat);post.position.set(bx.x,5.4,bx.z);cityGroup.add(post);
-    }
-    const beam=new THREE.Mesh(new THREE.BoxGeometry(TRACK_CLEAR_HALF*2+3.2,0.55,0.55),bMat);beam.position.set(p.x,10.8,p.z);beam.rotation.y=ry;cityGroup.add(beam);
   }
 
   scene.add(cityGroup);
@@ -4539,7 +4374,7 @@ function loopFrame(now) {
       if (p.life <= 0) { scene.remove(p.mesh); exPool.splice(i, 1); }
     }
 
-    archPL.intensity = 1.4 + Math.sin(Date.now() * .003) * .7;
+    if (archPL) archPL.intensity = 1.4 + Math.sin(Date.now() * .003) * .7;
 
     ghostAccum += dt;
     if (ghostAccum >= 0.048) {

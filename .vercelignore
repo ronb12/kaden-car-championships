@@ -3,9 +3,11 @@
 ios
 node_modules
 assets
-scripts
 tools
+scripts
 last-night-detailing
+dist
+app-store-ipad-screenshots
 *.placeholder.*
 *.redesign-backup.*
 *original.placeholder*
