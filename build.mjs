@@ -19,6 +19,7 @@ const files = [
   'three.min.js',
   'favicon.ico',
   'app-icon.png',
+  'ads.txt',
   'menu-bg.png',
 ];
 
