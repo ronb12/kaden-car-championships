@@ -20,6 +20,7 @@ const files = [
   'favicon.ico',
   'app-icon.png',
   'ads.txt',
+  'app-ads.txt',
   'menu-bg.png',
 ];
 
