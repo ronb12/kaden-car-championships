@@ -59,6 +59,8 @@ struct ModernRaceHUD: View {
     @ViewBuilder var pauseControl: () -> AnyView
 
     private var speedRatio: CGFloat { min(1, CGFloat(speedKmh) / 400) }
+    @ScaledMetric(relativeTo: .caption) private var hudCaption: CGFloat = 11
+    @ScaledMetric(relativeTo: .caption) private var hudTitle: CGFloat = 13
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -80,6 +82,32 @@ struct ModernRaceHUD: View {
             }
             Spacer(minLength: 0)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(hudSpokenSummary)
+    }
+
+    private var hudSpokenSummary: String {
+        var parts: [String] = ["\(speedKmh) kilometers per hour"]
+        if showPosition {
+            if let positionPrefix {
+                parts.append("\(positionPrefix) \(position) of \(max(1, racerCount))")
+            } else {
+                parts.append("Position \(position) of \(max(1, racerCount))")
+            }
+        }
+        if courierMode {
+            parts.append("Time \(raceTime)")
+        } else if positionPrefix == nil {
+            parts.append("Lap \(lap) of \(lapGoal), time \(raceTime)")
+        }
+        parts.append("Nitro \(Int((nitro * 100).rounded())) percent")
+        if showHeat {
+            parts.append("\(heatLabel) \(Int((heat * 100).rounded())) percent")
+        }
+        if wrongWay { parts.append("Wrong way") }
+        if draftActive { parts.append("Draft") }
+        if driftZoneActive { parts.append("Drift zone") }
+        return parts.joined(separator: ". ")
     }
 
     private var topBar: some View {
@@ -91,14 +119,14 @@ struct ModernRaceHUD: View {
                         Text(positionPrefix != nil
                              ? "\(positionPrefix!) \(position)/\(max(1, racerCount))"
                              : "P\(position)/\(max(1, racerCount))")
-                            .font(.system(size: 13, weight: .black, design: .rounded))
+                            .font(.system(size: hudTitle, weight: .black, design: .rounded))
                             .foregroundStyle(position == 1 || positionPrefix != nil ? KRCDesign.gold : KRCDesign.neonCyan)
                     }
                     Text(courierMode ? "TIME" : (positionPrefix != nil ? "CATCH" : "L\(lap)/\(lapGoal)"))
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .font(.system(size: hudCaption, weight: .bold, design: .monospaced))
                         .foregroundStyle(courierUrgency ? Color.red : .white)
                     Text(raceTime)
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .font(.system(size: hudCaption, weight: .bold, design: .monospaced))
                         .foregroundStyle(courierUrgency ? Color.red.opacity(0.95) : KRCDesign.mutedText)
                 }
                 Text(venue)
@@ -332,7 +360,14 @@ struct ModernRaceHUD: View {
                         .fill(color)
                         .frame(width: 28 * CGFloat(min(1, max(0, value))), height: 4)
                 }
+            if KRCAccessibility.increaseContrast {
+                Text("\(Int((value * 100).rounded()))")
+                    .font(.system(size: 8, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(.white)
+            }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label) \(Int((value * 100).rounded())) percent")
     }
 
     private func toastBanner(_ text: String) -> some View {

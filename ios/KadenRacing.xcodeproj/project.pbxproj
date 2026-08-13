@@ -11,6 +11,7 @@
 		COUR1ERCARR000000000001 /* CourierCareer.swift in Sources */ = {isa = PBXBuildFile; fileRef = COUR1ERCARR000000000002 /* CourierCareer.swift */; };
 		KRCTUTORIAL0000000002 /* KRCTutorial.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCTUTORIAL0000000001 /* KRCTutorial.swift */; };
 		KRCKIDLOOP0000000002 /* KidPlayLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCKIDLOOP0000000001 /* KidPlayLoop.swift */; };
+		KRCACCESS000000000002 /* KRCAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCACCESS000000000001 /* KRCAccessibility.swift */; };
 		KRCGHOSTTAPE0000000002 /* RaceGhostTape.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCGHOSTTAPE0000000001 /* RaceGhostTape.swift */; };
 		KRCPURSUITCMP000000002 /* PursuitCampaign.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCPURSUITCMP000000001 /* PursuitCampaign.swift */; };
 		KRCGARAGESTY0000000002 /* GarageCustomization.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCGARAGESTY0000000001 /* GarageCustomization.swift */; };
@@ -179,6 +180,7 @@
 		COUR1ERCARR000000000002 /* CourierCareer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourierCareer.swift; sourceTree = "<group>"; };
 		KRCTUTORIAL0000000001 /* KRCTutorial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCTutorial.swift; sourceTree = "<group>"; };
 		KRCKIDLOOP0000000001 /* KidPlayLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KidPlayLoop.swift; sourceTree = "<group>"; };
+		KRCACCESS000000000001 /* KRCAccessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCAccessibility.swift; sourceTree = "<group>"; };
 		KRCGHOSTTAPE0000000001 /* RaceGhostTape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceGhostTape.swift; sourceTree = "<group>"; };
 		KRCPURSUITCMP000000001 /* PursuitCampaign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PursuitCampaign.swift; sourceTree = "<group>"; };
 		KRCGARAGESTY0000000001 /* GarageCustomization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GarageCustomization.swift; sourceTree = "<group>"; };
@@ -447,6 +449,7 @@
 				KRCSTOREPOLISH00000001 /* KRCAppStorePolish.swift */,
 				KRCTUTORIAL0000000001 /* KRCTutorial.swift */,
 				KRCKIDLOOP0000000001 /* KidPlayLoop.swift */,
+				KRCACCESS000000000001 /* KRCAccessibility.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -768,6 +771,7 @@
 				KRCSTOREPOLISH00000002 /* KRCAppStorePolish.swift in Sources */,
 				KRCTUTORIAL0000000002 /* KRCTutorial.swift in Sources */,
 				KRCKIDLOOP0000000002 /* KidPlayLoop.swift in Sources */,
+				KRCACCESS000000000002 /* KRCAccessibility.swift in Sources */,
 				KRCGHOSTTAPE0000000002 /* RaceGhostTape.swift in Sources */,
 				03811865CE19936A4375A23B /* AssetManager.swift in Sources */,
 				94F1A98D2C5FB4B8779262F6 /* CarDecals.swift in Sources */,

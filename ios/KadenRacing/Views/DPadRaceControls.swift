@@ -132,7 +132,7 @@ final class DPadControllerView: UIView {
     }
 
     private func controlScale() -> CGFloat {
-        ControlPreferences.controlScale
+        ControlPreferences.effectiveControlScale
     }
 
     private func controlOpacity() -> CGFloat {
@@ -162,6 +162,16 @@ final class DPadControllerView: UIView {
                 isDirectional: true
             )
             btn.tag = dir.rawValue
+            btn.isAccessibilityElement = true
+            btn.accessibilityTraits = .button
+            btn.accessibilityLabel = {
+                switch dir {
+                case .left: return "Steer left"
+                case .right: return "Steer right"
+                case .down: return "Reverse"
+                case .up: return "Up"
+                }
+            }()
             btn.addTarget(self, action: #selector(padDown(_:)), for: .touchDown)
             btn.addTarget(self, action: #selector(padUp(_:)), for: [.touchUpInside, .touchCancel, .touchUpOutside, .touchDragExit])
             addSubview(btn)
@@ -179,6 +189,16 @@ final class DPadControllerView: UIView {
         for (face, symbol, label, accent) in specs {
             let btn = DPadPadButton(symbol: symbol, caption: label, accent: accent, isDirectional: false)
             btn.tag = face.rawValue
+            btn.isAccessibilityElement = true
+            btn.accessibilityTraits = .button
+            btn.accessibilityLabel = {
+                switch face {
+                case .a: return "Gas"
+                case .b: return "Brake"
+                case .x: return "Handbrake"
+                case .y: return "Nitro"
+                }
+            }()
             btn.addTarget(self, action: #selector(faceDown(_:)), for: .touchDown)
             btn.addTarget(self, action: #selector(faceUp(_:)), for: [.touchUpInside, .touchCancel, .touchUpOutside, .touchDragExit])
             addSubview(btn)

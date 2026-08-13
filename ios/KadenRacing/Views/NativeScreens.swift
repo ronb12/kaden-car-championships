@@ -231,6 +231,8 @@ struct MainMenuScreen: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("Play")
+                            .accessibilityHint("Starts a short race. Next prize: \(KidPlayLoop.nextPrize(progress: progress).line)")
                             .accessibilityIdentifier("menu.play")
 
                             HStack(spacing: 8) {
@@ -489,11 +491,15 @@ private struct KidToyButton: View {
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(accent)
                 Text(title)
-                    .font(.system(size: 11, weight: .black, design: .rounded))
+                    .font(.caption.weight(.black))
                     .foregroundStyle(.white)
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(2)
                 Text(subtitle)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.55))
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white.opacity(KRCAccessibility.increaseContrast ? 0.92 : 0.55))
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(2)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
@@ -507,6 +513,7 @@ private struct KidToyButton: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(title). \(subtitle)")
         .accessibilityIdentifier("menu.\(title.replacingOccurrences(of: " ", with: "_").lowercased())")
     }
 }
@@ -535,11 +542,15 @@ private struct RaceMenuButton: View {
                 // Labels
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 15, weight: .black, design: .rounded))
+                        .font(.subheadline.weight(.black))
                         .foregroundStyle(.white)
+                        .minimumScaleFactor(0.85)
+                        .lineLimit(2)
                     Text(subtitle)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.white.opacity(KRCAccessibility.increaseContrast ? 0.92 : 0.5))
+                        .minimumScaleFactor(0.85)
+                        .lineLimit(2)
                 }
 
                 Spacer()
@@ -560,6 +571,7 @@ private struct RaceMenuButton: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(title). \(subtitle)")
         .accessibilityIdentifier("menu.\(title.replacingOccurrences(of: " ", with: "_").lowercased())")
     }
 }
@@ -1533,7 +1545,7 @@ struct ActiveRaceScreen: View {
             mode: flow.activeGameMode,
             stats: stats,
             city: city,
-            nightOverride: flow.nightRace,
+            nightOverride: flow.effectiveNightRace,
             vehicleCategory: category,
             difficultyGripMul: flow.difficultyGripMul(),
             difficultyIndex: flow.difficultyIndex,
@@ -1546,7 +1558,7 @@ struct ActiveRaceScreen: View {
                 trackIndex: flow.trackIndexForCurrentRace(),
                 laps: flow.effectiveLapCount()
             ),
-            courierConfig: CourierSessionConfig.from(progress: progress, nightRace: flow.nightRace)
+            courierConfig: CourierSessionConfig.from(progress: progress, nightRace: flow.effectiveNightRace)
         ))
         _matchGateReady = State(initialValue: !KRCPlayerProfile.onlinePlayEnabled)
     }
@@ -1638,6 +1650,7 @@ struct ActiveRaceScreen: View {
         }
         .raceAllOrientationsAllowed()
         .onAppear {
+            KRCRaceAnnouncer.shared.reset()
             AppOrientationController.shared.supportedMask = .allButUpsideDown
             environmentPreloaded = false
             scenePrepared = false
@@ -1839,7 +1852,10 @@ struct ActiveRaceScreen: View {
         .padding(.top, 56)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .allowsHitTesting(false)
-        .animation(.spring(response: 0.28, dampingFraction: 0.72), value: light)
+        .animation(KRCAccessibility.reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.72), value: light)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(light == 0 ? "Go" : "\(light)")
+        .accessibilityAddTraits(.updatesFrequently)
     }
 
     private var raceOverlay: some View {
@@ -2035,6 +2051,15 @@ struct ActiveRaceScreen: View {
             let interceptor = session.engine.isHotPursuitInterceptor()
             let courier = session.engine.isCourierRun()
             let catchLeft = Int(session.engine.catchTimeDisplay().rounded(.down))
+            let _ = {
+                KRCRaceAnnouncer.shared.countdown(light: session.engine.startLight)
+                KRCRaceAnnouncer.shared.tick(
+                    position: session.engine.racePosition,
+                    racerCount: session.engine.racerCount,
+                    wrongWay: session.engine.wrongWayActive,
+                    finished: false
+                )
+            }()
             ModernRaceHUD(
                 portrait: portrait,
                 venue: flow.venueDisplayName(),
@@ -2169,6 +2194,7 @@ struct ActiveRaceScreen: View {
                 }
         }
         .foregroundStyle(.white)
+        .accessibilityLabel(paused ? "Resume" : "Pause")
         .accessibilityIdentifier("race.pause")
     }
 
@@ -2229,7 +2255,7 @@ struct RaceFinishedScreen: View {
                 VStack(spacing: 20) {
                     ZStack {
                         if flow.lastRaceReward?.celebratePodium == true {
-                            KidPodiumBurst(active: appear)
+                            KidPodiumBurst(active: appear && !KRCAccessibility.reduceMotion)
                         }
                         Image(systemName: flow.activeGameMode == .courier
                               ? "shippingbox.fill"
@@ -2237,8 +2263,8 @@ struct RaceFinishedScreen: View {
                             .font(.system(size: 52))
                             .foregroundStyle(KRCDesign.gold)
                             .shadow(color: KRCDesign.gold.opacity(0.45), radius: 12)
-                            .scaleEffect(appear ? 1 : 0.55)
-                            .opacity(appear ? 1 : 0)
+                            .scaleEffect((appear || KRCAccessibility.reduceMotion) ? 1 : 0.55)
+                            .opacity((appear || KRCAccessibility.reduceMotion) ? 1 : 0)
                     }
                     .frame(height: 72)
                     KRCDesign.ScreenHeader(
@@ -2455,8 +2481,13 @@ struct RaceFinishedScreen: View {
         .onAppear {
             KRCTutorial.markGuidedComplete()
             KRCMusicDirector.shared.play(.victory)
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
+            KRCRaceAnnouncer.shared.finished(place: flow.lastFinishPlace, racerCount: max(1, flow.lastRacerCount))
+            if KRCAccessibility.reduceMotion {
                 appear = true
+            } else {
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
+                    appear = true
+                }
             }
             if KRCAudioPreferences.hapticsEnabled {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)

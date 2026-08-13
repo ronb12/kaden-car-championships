@@ -7,7 +7,7 @@ struct SteeringWheelControl: View {
 
     var body: some View {
         GeometryReader { geo in
-            let size = min(geo.size.width, geo.size.height) * 0.42 * ControlPreferences.controlScale
+            let size = min(geo.size.width, geo.size.height) * 0.42 * ControlPreferences.effectiveControlScale
             ZStack {
                 Circle()
                     .stroke(

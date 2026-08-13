@@ -51,6 +51,8 @@ final class GameFlowState: ObservableObject {
     @Published var lastRaceReward: RaceRewardSummary?
     /// Finish place (1 = first) for grade display.
     @Published var lastFinishPlace: Int = 1
+    /// Field size at finish, for spoken results.
+    @Published var lastRacerCount: Int = 1
     /// True when the session was launched as Daily Challenge (for rewards + career win).
     @Published var dailyChallengeActive: Bool = false
     /// Selected Hot Pursuit campaign chapter index.
@@ -454,6 +456,7 @@ final class GameFlowState: ObservableObject {
             celebratePodium: place <= 3 && activeGameMode != .courier
         )
         lastFinishPlace = place
+        lastRacerCount = field
 
         let willCompleteChampionship = activeGameMode == .championshipSerie
             && champRoundsCompleted + 1 >= GameCatalog.activeChampionshipRounds.count
@@ -506,15 +509,17 @@ final class GameFlowState: ObservableObject {
         )
     }
 
+    var effectiveNightRace: Bool { nightRace || KRCAccessibility.preferDarkerWorld }
+
     func environmentCacheKey() -> String {
-        RaceEnvironmentPreloader.cacheKey(city: cityForCurrentRace(), nightOverride: nightRace)
+        RaceEnvironmentPreloader.cacheKey(city: cityForCurrentRace(), nightOverride: effectiveNightRace)
     }
 
     /// Prebuild track + city and warm shaders before showing the race scene.
     func preloadRaceEnvironment(completion: (() -> Void)? = nil) {
         RaceEnvironmentPreloader.ensureReady(
             city: cityForCurrentRace(),
-            nightOverride: nightRace,
+            nightOverride: effectiveNightRace,
             completion: completion ?? {}
         )
     }

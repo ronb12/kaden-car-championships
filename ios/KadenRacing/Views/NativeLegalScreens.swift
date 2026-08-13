@@ -29,6 +29,9 @@ struct NativeSettingsView: View {
     @State private var brakeAssist: Float = VehicleDrivingPreferences.storedBrakeAssist
     @State private var tractionControl: Float = VehicleDrivingPreferences.storedTractionControl
     @State private var graphicsQuality: GraphicsQuality = EnvironmentGraphicsSettings.quality
+    @State private var raceCallouts: Bool = KRCAccessibility.raceCalloutsEnabled
+    @State private var darkerRaces: Bool = KRCAccessibility.darkerRacesEnabled
+    @State private var largeControls: Bool = KRCAccessibility.largeControlsEnabled
 
     var body: some View {
         NavigationView {
@@ -252,6 +255,47 @@ struct NativeSettingsView: View {
                                 .padding(.horizontal, 14)
                                 .padding(.bottom, 8)
                         }
+                        KRCDesign.SettingsGroup(title: "ACCESSIBILITY") {
+                            Toggle("Race callouts", isOn: $raceCallouts)
+                                .tint(KRCDesign.neonCyan)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .accessibilityHint("Speaks countdown, position, and wrong-way during a race.")
+                                .onChange(of: raceCallouts) { v in
+                                    KRCAccessibility.raceCalloutsEnabled = v
+                                }
+                            Text("Speaks countdown, position, and wrong-way. Also used by VoiceOver.")
+                                .font(.caption)
+                                .foregroundStyle(KRCDesign.mutedText)
+                                .padding(.horizontal, 14)
+                            Divider().overlay(Color.white.opacity(0.08))
+                            Toggle("Darker races", isOn: $darkerRaces)
+                                .tint(KRCDesign.hotOrange)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .accessibilityHint("Uses night lighting on the track.")
+                                .onChange(of: darkerRaces) { v in
+                                    KRCAccessibility.darkerRacesEnabled = v
+                                }
+                            Text("Night lighting for light sensitivity. Follows Increase Contrast if you leave this on.")
+                                .font(.caption)
+                                .foregroundStyle(KRCDesign.mutedText)
+                                .padding(.horizontal, 14)
+                            Divider().overlay(Color.white.opacity(0.08))
+                            Toggle("Larger race controls", isOn: $largeControls)
+                                .tint(KRCDesign.gold)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .accessibilityHint("Makes on-screen pedals and D-pad bigger.")
+                                .onChange(of: largeControls) { v in
+                                    KRCAccessibility.largeControlsEnabled = v
+                                }
+                            Text("Menus follow your iOS text size. Reduce Motion and Increase Contrast are used automatically.")
+                                .font(.caption)
+                                .foregroundStyle(KRCDesign.mutedText)
+                                .padding(.horizontal, 14)
+                                .padding(.bottom, 10)
+                        }
                         KRCDesign.SettingsGroup(title: "LEGAL") {
                             Button { showPrivacy = true } label: {
                                 KRCDesign.SettingsRow(label: "Privacy Policy")
@@ -265,6 +309,11 @@ struct NativeSettingsView: View {
                             Divider().overlay(Color.white.opacity(0.08))
                             Button { openURL(AppLegalLinks.support) } label: {
                                 KRCDesign.SettingsRow(label: "Support")
+                            }
+                            .buttonStyle(.plain)
+                            Divider().overlay(Color.white.opacity(0.08))
+                            Button { openURL(AppLegalLinks.accessibility) } label: {
+                                KRCDesign.SettingsRow(label: "Accessibility")
                             }
                             .buttonStyle(.plain)
                         }
@@ -355,6 +404,9 @@ struct NativeSettingsView: View {
             brakeAssist = VehicleDrivingPreferences.storedBrakeAssist
             tractionControl = VehicleDrivingPreferences.storedTractionControl
             graphicsQuality = EnvironmentGraphicsSettings.quality
+            raceCallouts = KRCAccessibility.raceCalloutsEnabled
+            darkerRaces = KRCAccessibility.darkerRacesEnabled
+            largeControls = KRCAccessibility.largeControlsEnabled
             if onlineEnabled {
                 Task {
                     await KRCOnlineService.shared.refreshGlobalSummary()

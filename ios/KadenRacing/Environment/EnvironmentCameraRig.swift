@@ -44,7 +44,9 @@ struct EnvironmentCameraRig {
             speedRatio: speedRatio,
             portrait: portrait
         )
-        if gridIntro {
+        if KRCAccessibility.reduceMotion {
+            introBlend = 0
+        } else if gridIntro {
             introBlend = 1
             introOrbit += dt * 0.28
         } else {

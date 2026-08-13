@@ -108,6 +108,18 @@ private enum RacePedalStyle {
         }
     }
 
+    var accessibilityName: String {
+        switch self {
+        case .steerLeft: return "Steer left"
+        case .steerRight: return "Steer right"
+        case .gas: return "Gas"
+        case .brake: return "Brake"
+        case .nitro: return "Nitro"
+        case .handbrake: return "Handbrake"
+        case .reverse: return "Reverse"
+        }
+    }
+
     var accent: UIColor {
         switch self {
         case .steerLeft, .steerRight:
@@ -260,7 +272,7 @@ final class PedalContainerView: UIView {
 
     private func pedalSize(for layout: RaceControlLayout) -> CGFloat {
         let base: CGFloat = layout == .portrait ? 58 : 62
-        return base * ControlPreferences.controlScale
+        return base * ControlPreferences.effectiveControlScale
     }
 
     private func buildLandscapeBar() {
@@ -493,6 +505,9 @@ private final class PedalButton: UIControl {
         self.style = style
         super.init(frame: .zero)
         isExclusiveTouch = false
+        isAccessibilityElement = true
+        accessibilityTraits = .button
+        accessibilityLabel = style.accessibilityName
         setupChrome()
     }
 

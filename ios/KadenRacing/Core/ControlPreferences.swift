@@ -25,6 +25,10 @@ enum ControlPreferences {
         set { UserDefaults.standard.set(Double(newValue), forKey: sizeKey) }
     }
 
+    static var effectiveControlScale: CGFloat {
+        min(1.35, controlScale * KRCAccessibility.controlScaleBoost)
+    }
+
     static var controlOpacity: CGFloat {
         get {
             if UserDefaults.standard.object(forKey: opacityKey) == nil { return 0.88 }

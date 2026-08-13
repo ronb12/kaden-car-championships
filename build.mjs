@@ -16,6 +16,8 @@ const files = [
   'settings.html',
   'privacy.html',
   'terms.html',
+  'support.html',
+  'accessibility.html',
   'robots.txt',
   'sitemap.xml',
   'ads.txt',

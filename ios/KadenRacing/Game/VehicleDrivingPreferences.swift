@@ -49,7 +49,10 @@ enum VehicleDrivingPreferences {
     static var storedTractionControl: Float { stored(tractionKey, default: 0.58) }
 
     static var steeringAssist: Float {
-        get { manualControl ? 0 : storedSteeringAssist }
+        get {
+            if manualControl { return 0 }
+            return min(1, storedSteeringAssist + KRCAccessibility.extraSteeringAssist)
+        }
         set { UserDefaults.standard.set(newValue, forKey: assistKey) }
     }
 

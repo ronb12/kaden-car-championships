@@ -6,10 +6,16 @@ enum KRCDesign {
     static let hotOrange = Color(red: 1, green: 0.4, blue: 0)
     static let neonCyan = Color(red: 0, green: 0.83, blue: 1)
     static let subtitleGold = Color(red: 0.91, green: 0.75, blue: 0.5)
-    static let panelFill = Color.white.opacity(0.06)
     static let panelStroke = Color.orange.opacity(0.55)
-    static let mutedText = Color.white.opacity(0.58)
-    static let cardFill = Color.black.opacity(0.42)
+    static var panelFill: Color {
+        Color.white.opacity(KRCAccessibility.increaseContrast ? 0.16 : 0.06)
+    }
+    static var mutedText: Color {
+        Color.white.opacity(KRCAccessibility.increaseContrast ? 0.92 : 0.58)
+    }
+    static var cardFill: Color {
+        Color.black.opacity(KRCAccessibility.increaseContrast ? 0.72 : 0.42)
+    }
 
     // MARK: - Background
 
@@ -34,6 +40,7 @@ enum KRCDesign {
                         .contrast(1.08)
                         .brightness(0.88)
                         .onAppear {
+                            guard !KRCAccessibility.reduceMotion else { return }
                             withAnimation(.easeInOut(duration: 11).repeatForever(autoreverses: true)) {
                                 offsetX = -geo.size.width * 0.07
                                 offsetY = -geo.size.height * 0.04
@@ -134,6 +141,7 @@ enum KRCDesign {
                     }
                 }
                 .onAppear {
+                    guard !KRCAccessibility.reduceMotion else { return }
                     withAnimation(.linear(duration: 2.4).repeatForever(autoreverses: false)) {
                         shift = 1
                     }
@@ -185,7 +193,7 @@ enum KRCDesign {
 
                     VStack(spacing: 4) {
                         Text("Kaden's")
-                            .font(.system(size: 42, weight: .heavy))
+                            .font(.largeTitle.weight(.heavy))
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [.white, gold, hotOrange.opacity(0.95)],
@@ -199,7 +207,7 @@ enum KRCDesign {
                             .lineLimit(1)
 
                         Text("RACING CHAMPIONSHIPS")
-                            .font(.system(size: 16, weight: .heavy, design: .rounded))
+                            .font(.title3.weight(.heavy))
                             .kerning(2.2)
                             .foregroundStyle(
                                 LinearGradient(
@@ -214,7 +222,7 @@ enum KRCDesign {
                             .lineLimit(2)
 
                         Text("SEASON ONE")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.caption.weight(.bold))
                             .kerning(3)
                             .foregroundStyle(neonCyan.opacity(0.9))
                             .shadow(color: neonCyan.opacity(0.45), radius: 8)
@@ -256,7 +264,7 @@ enum KRCDesign {
                 .offset(y: offset)
                 .scaleEffect(x: 1, y: scale, anchor: .bottom)
                 .onAppear {
-                    guard enabled else { return }
+                    guard enabled, !KRCAccessibility.reduceMotion else { return }
                     withAnimation(.easeInOut(duration: 0.55).repeatForever(autoreverses: true)) {
                         offset = 5
                         scale = 1.05
@@ -275,7 +283,8 @@ enum KRCDesign {
                 .padding(compact ? 6 : 12)
                 .background {
                     RoundedRectangle(cornerRadius: compact ? 10 : 14, style: .continuous)
-                        .fill(.ultraThinMaterial)
+                        .fill(KRCAccessibility.increaseContrast ? Color.black.opacity(0.82) : Color.clear)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: compact ? 10 : 14, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: compact ? 10 : 14, style: .continuous)
                                 .strokeBorder(
@@ -464,6 +473,8 @@ enum KRCDesign {
                             .strokeBorder(rankColor.opacity(0.45), lineWidth: 1)
                     )
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Position \(position) of \(max(1, racerCount))")
         }
 
         private func speedPill(size: CGFloat) -> some View {
@@ -543,7 +554,7 @@ enum KRCDesign {
         let text: String
         var body: some View {
             Text(text)
-                .font(.system(size: 28, weight: .black, design: .rounded))
+                .font(.title.weight(.black))
                 .foregroundStyle(neonCyan)
                 .shadow(color: neonCyan.opacity(0.45), radius: 12)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -554,8 +565,8 @@ enum KRCDesign {
         let text: String
         var body: some View {
             Text(text)
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(subtitleGold.opacity(0.95))
+                .font(.caption.weight(.bold))
+                .foregroundStyle(subtitleGold.opacity(KRCAccessibility.increaseContrast ? 1 : 0.95))
         }
     }
 
@@ -569,7 +580,7 @@ enum KRCDesign {
         var body: some View {
             Button(action: action) {
                 Text(title)
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .font(.headline.weight(.bold))
                     .kerning(0.6)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
@@ -614,7 +625,7 @@ enum KRCDesign {
         var body: some View {
             Button(action: action) {
                 Text(title)
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .font(.headline.weight(.bold))
                     .frame(maxWidth: 320)
                     .padding(.vertical, 14)
                     .background(
@@ -644,7 +655,8 @@ enum KRCDesign {
                         Button(labels[idx]) {
                             index = idx
                         }
-                        .font(.caption2.weight(.bold))
+                        .font(.caption.weight(.bold))
+                        .accessibilityAddTraits(on ? [.isSelected] : [])
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(
@@ -706,6 +718,8 @@ enum KRCDesign {
             .padding(.vertical, 6)
             .background(Capsule().fill(Color.black.opacity(0.45)))
             .overlay(Capsule().strokeBorder(gold.opacity(0.3), lineWidth: 1))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(trailing.map { "\(credits) KR, \($0)" } ?? "\(credits) KR")
         }
     }
 
@@ -735,6 +749,7 @@ enum KRCDesign {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Back to \(backTitle)")
                 Spacer(minLength: 0)
                 if let credits {
                     CreditsChip(credits: credits, trailing: trailing)
@@ -758,18 +773,20 @@ enum KRCDesign {
         var body: some View {
             VStack(spacing: 4) {
                 Text(title)
-                    .font(.system(size: 26, weight: .black, design: .rounded))
+                    .font(.title2.weight(.black))
                     .foregroundStyle(neonCyan)
                     .shadow(color: neonCyan.opacity(0.35), radius: 10)
                     .multilineTextAlignment(.center)
                 if let subtitle {
                     Text(subtitle)
-                        .font(.caption.weight(.semibold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(subtitleGold)
                         .multilineTextAlignment(.center)
                 }
             }
             .frame(maxWidth: .infinity)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
         }
     }
 
@@ -812,6 +829,8 @@ enum KRCDesign {
                             .strokeBorder(accent.opacity(0.22), lineWidth: 1)
                     )
             )
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
         }
     }
 
@@ -822,7 +841,7 @@ enum KRCDesign {
         var body: some View {
             Button(action: action) {
                 Text(title)
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .font(.headline.weight(.bold))
                     .kerning(0.5)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
@@ -887,7 +906,7 @@ enum KRCDesign {
                 Color.black.opacity(0.62).ignoresSafeArea()
                 VStack(spacing: 18) {
                     Text("PAUSED")
-                        .font(.system(size: 30, weight: .black, design: .rounded))
+                        .font(.title.weight(.black))
                         .foregroundStyle(neonCyan)
                         .shadow(color: neonCyan.opacity(0.35), radius: 10)
                     if KRCPlayerProfile.onlinePlayEnabled {
@@ -898,6 +917,7 @@ enum KRCDesign {
                     }
                     VStack(spacing: 10) {
                         PrimaryButton(title: "RESUME", action: onResume)
+                            .accessibilityLabel("Resume race")
                             .accessibilityIdentifier("race.pause.resume")
                         if let onFlashback {
                             SecondaryButton(
@@ -906,9 +926,11 @@ enum KRCDesign {
                             )
                             .opacity(flashbackAvailable ? 1 : 0.45)
                             .disabled(!flashbackAvailable)
+                            .accessibilityLabel(flashbackAvailable ? "Flashback 2.5 seconds" : "Flashback empty")
                             .accessibilityIdentifier("race.pause.flashback")
                         }
                         SecondaryButton(title: "MAIN MENU", action: onMainMenu)
+                            .accessibilityLabel("Main menu")
                             .accessibilityIdentifier("race.pause.main_menu")
                     }
                 }
