@@ -16,6 +16,17 @@ targets:
         excludes:
           - "**/.DS_Store"
           - "**/WebBundle/**"
+    postbuildScripts:
+      - name: Copy Game Assets To Bundle
+        script: |
+          BUNDLE="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
+          rm -rf "$BUNDLE/garage-cars" "$BUNDLE/models"
+          mkdir -p "$BUNDLE/garage-cars" "$BUNDLE/models"
+          cp -R "${SRCROOT}/../garage-cars/." "$BUNDLE/garage-cars/"
+          if [ -d "${SRCROOT}/../public/models" ]; then
+            cp -R "${SRCROOT}/../public/models/." "$BUNDLE/models/"
+          fi
+        basedOnDependencyAnalysis: false
     resources:
       - path: KadenRacing/Resources/Audio
     settings:
@@ -27,7 +38,7 @@ targets:
       CODE_SIGN_ENTITLEMENTS: KadenRacing/KadenRacing.entitlements
       SWIFT_VERSION: "5.0"
       ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-      CURRENT_PROJECT_VERSION: "1"
+      CURRENT_PROJECT_VERSION: "3"
       MARKETING_VERSION: "1.0"
     scheme:
       testTargets: []

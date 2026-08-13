@@ -54,6 +54,7 @@ export async function ensureSchema(sql) {
         track_key TEXT,
         mode TEXT,
         x DOUBLE PRECISION,
+        y DOUBLE PRECISION,
         z DOUBLE PRECISION,
         angle DOUBLE PRECISION,
         speed_kmh DOUBLE PRECISION,
@@ -65,6 +66,10 @@ export async function ensureSchema(sql) {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `;
+    await sql`ALTER TABLE krc_presence ADD COLUMN IF NOT EXISTS y DOUBLE PRECISION`;
+    await sql`ALTER TABLE krc_presence ADD COLUMN IF NOT EXISTS lobby_id TEXT`;
+    await sql`ALTER TABLE krc_presence ADD COLUMN IF NOT EXISTS finish_ms INTEGER`;
+    await sql`ALTER TABLE krc_presence ADD COLUMN IF NOT EXISTS position INTEGER`;
     await sql`
       CREATE TABLE IF NOT EXISTS krc_match_lobbies (
         lobby_id TEXT PRIMARY KEY,

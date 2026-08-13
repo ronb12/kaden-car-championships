@@ -4,3 +4,12 @@
 **/xcuserdata/
 dist/
 node_modules/
+ios/KadenRacing/Resources/garage-cars/*
+!ios/KadenRacing/Resources/garage-cars/.gitkeep
+tmp/
+tmp-verify/
+qa-screenshots/
+qa-car-*.png
+ios/appstore-screenshots/
+ios/test-screenshots/
+.krc-city-snippet.js

@@ -64,18 +64,23 @@ body{background:#000;overflow:hidden;font-family:'Orbitron',-apple-system,BlinkM
 #weather-vfx.rain{display:block;background:repeating-linear-gradient(105deg,rgba(150,210,255,.18) 0 1px,transparent 1px 13px);opacity:.42;animation:rainSlide .32s linear infinite;}
 #weather-vfx.fog{display:block;background:radial-gradient(ellipse at 50% 35%,rgba(210,225,235,.28),rgba(120,140,150,.12) 45%,transparent 72%);opacity:.62;}
 @keyframes rainSlide{from{background-position:0 0;}to{background-position:-34px 70px;}}
-/* touch */
+/* touch — pinned low for thumb reach */
 #touch-controls{position:fixed;inset:0;z-index:45;pointer-events:none;display:none;}
-#btn-accel{position:absolute;bottom:calc(150px + env(safe-area-inset-bottom));right:max(16px,env(safe-area-inset-right));width:76px;height:76px;pointer-events:all;touch-action:none;}
-#btn-brake{position:absolute;bottom:calc(56px + env(safe-area-inset-bottom));right:max(16px,env(safe-area-inset-right));width:76px;height:76px;pointer-events:all;touch-action:none;}
-#btn-left{position:absolute;bottom:calc(56px + env(safe-area-inset-bottom));left:max(16px,env(safe-area-inset-left));width:76px;height:76px;pointer-events:all;touch-action:none;}
-#btn-right{position:absolute;bottom:calc(56px + env(safe-area-inset-bottom));left:calc(96px + env(safe-area-inset-left));width:76px;height:76px;pointer-events:all;touch-action:none;}
-#btn-nitro{position:absolute;bottom:calc(150px + env(safe-area-inset-bottom));right:calc(104px + env(safe-area-inset-right));width:76px;height:76px;pointer-events:all;touch-action:none;}
-#btn-shift-down,#btn-shift-up{position:absolute;bottom:calc(142px + env(safe-area-inset-bottom));width:68px;height:82px;pointer-events:all;touch-action:none;display:none;}
-#btn-shift-down{left:calc(108px + env(safe-area-inset-left));}
-#btn-shift-up{right:calc(108px + env(safe-area-inset-right));}
+#touch-controls::before{content:'';position:absolute;left:0;right:0;bottom:0;height:min(42vh,280px);background:linear-gradient(to top,rgba(0,0,0,.72) 0%,rgba(0,0,0,.28) 55%,transparent 100%);pointer-events:none;}
+#btn-accel{position:absolute;bottom:calc(6px + env(safe-area-inset-bottom));right:calc(82px + env(safe-area-inset-right));width:68px;height:68px;pointer-events:all;touch-action:none;}
+#btn-brake{position:absolute;bottom:calc(6px + env(safe-area-inset-bottom));right:max(10px,env(safe-area-inset-right));width:68px;height:68px;pointer-events:all;touch-action:none;}
+#btn-left{position:absolute;bottom:calc(6px + env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left));width:68px;height:68px;pointer-events:all;touch-action:none;}
+#btn-right{position:absolute;bottom:calc(6px + env(safe-area-inset-bottom));left:calc(82px + env(safe-area-inset-left));width:68px;height:68px;pointer-events:all;touch-action:none;}
+#btn-nitro{position:absolute;bottom:calc(6px + env(safe-area-inset-bottom));right:calc(154px + env(safe-area-inset-right));width:68px;height:68px;pointer-events:all;touch-action:none;}
+#btn-shift-down,#btn-shift-up{position:absolute;bottom:calc(6px + env(safe-area-inset-bottom));width:64px;height:72px;pointer-events:all;touch-action:none;display:none;}
+#btn-shift-down{left:calc(176px + env(safe-area-inset-left));}
+#btn-shift-up{right:calc(176px + env(safe-area-inset-right));}
 body.manual-transmission #btn-shift-down,body.manual-transmission #btn-shift-up{display:block;}
-.tbtn{width:100%;height:100%;border-radius:50%;border:2px solid rgba(0,180,255,.72);background:rgba(0,60,180,.46);display:flex;align-items:center;justify-content:center;font-size:26px;color:rgba(255,255,255,.9);user-select:none;-webkit-user-select:none;touch-action:none;box-shadow:0 0 18px rgba(0,130,255,.34),inset 0 0 18px rgba(255,255,255,.06);}
+.tbtn{width:100%;height:100%;border-radius:50%;border:2px solid rgba(0,200,255,.78);background:linear-gradient(165deg,rgba(8,22,42,.92),rgba(0,55,120,.72));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:rgba(255,255,255,.95);user-select:none;-webkit-user-select:none;touch-action:none;box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 22px rgba(0,150,255,.28),inset 0 1px 0 rgba(255,255,255,.14);transition:transform .08s ease,box-shadow .08s ease,border-color .08s ease;}
+#tb-accel .tbtn,#btn-accel>.tbtn{border-color:rgba(255,140,40,.85);background:linear-gradient(165deg,rgba(42,14,2,.94),rgba(120,45,6,.78));box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 20px rgba(255,120,20,.32),inset 0 1px 0 rgba(255,220,180,.12);}
+#tb-brake .tbtn,#btn-brake>.tbtn{border-color:rgba(255,70,55,.88);background:linear-gradient(165deg,rgba(36,4,4,.94),rgba(110,12,8,.8));box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 20px rgba(255,50,30,.3),inset 0 1px 0 rgba(255,200,190,.1);}
+#tb-nitro .tbtn,#btn-nitro>.tbtn{border-color:rgba(0,230,255,.9);background:linear-gradient(165deg,rgba(2,18,32,.94),rgba(0,70,110,.82));box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 22px rgba(0,200,255,.38),inset 0 1px 0 rgba(180,245,255,.14);}
+#tb-left .tbtn,#tb-right .tbtn,#btn-left>.tbtn,#btn-right>.tbtn{font-size:22px;}
 #btn-shift-down .tbtn,#btn-shift-up .tbtn{border-radius:16px 22px 22px 16px;background:linear-gradient(145deg,rgba(12,20,30,.78),rgba(0,70,145,.54));border-color:rgba(180,230,255,.75);font-size:34px;font-weight:900;line-height:1;box-shadow:0 12px 28px rgba(0,0,0,.42),0 0 20px rgba(0,150,255,.3),inset 0 0 22px rgba(255,255,255,.09);transform:skewX(-8deg);}
 #btn-shift-down .tbtn{border-radius:22px 16px 16px 22px;transform:skewX(8deg);}
 #btn-shift-down::after,#btn-shift-up::after{content:'SHIFT';position:absolute;left:50%;top:-17px;transform:translateX(-50%);font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(210,240,255,.86);text-shadow:0 0 8px rgba(0,180,255,.9);pointer-events:none;}
@@ -88,27 +93,51 @@ body.manual-transmission.shift-zone #btn-shift-up::after{content:'PERFECT';color
 #mobile-race-bar #mobile-end-btn{width:56px;border-color:rgba(255,60,30,.72);background:rgba(110,0,0,.58);color:#ffb2a4;font-size:10px;font-weight:900;letter-spacing:1px;}
 #end-race-btn{position:fixed;top:max(14px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:35;display:none;pointer-events:all;touch-action:manipulation;border:1px solid rgba(255,60,30,.76);border-radius:999px;background:rgba(75,0,0,.62);color:#ffd1c8;font:900 10px Orbitron,monospace;letter-spacing:2px;padding:9px 15px;box-shadow:0 0 18px rgba(255,40,0,.25),inset 0 0 14px rgba(255,255,255,.06);-webkit-user-select:none;user-select:none;}
 #end-race-btn:active,#end-race-btn:hover{background:rgba(170,20,0,.72);box-shadow:0 0 24px rgba(255,60,0,.45);}
-.tbtn.pressed{background:rgba(0,180,255,.4);border-color:#00d4ff;box-shadow:0 0 18px rgba(0,180,255,.6);}
+.tbtn.pressed{transform:scale(.94);border-color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.5),0 0 28px rgba(0,210,255,.55),inset 0 0 20px rgba(255,255,255,.12);}
+#tb-accel.pressed,#btn-accel>.tbtn.pressed{box-shadow:0 4px 14px rgba(0,0,0,.5),0 0 28px rgba(255,140,30,.6);}
+#tb-brake.pressed,#btn-brake>.tbtn.pressed{box-shadow:0 4px 14px rgba(0,0,0,.5),0 0 28px rgba(255,60,40,.55);}
+#tb-nitro.pressed,#btn-nitro>.tbtn.pressed{box-shadow:0 4px 14px rgba(0,0,0,.5),0 0 28px rgba(0,220,255,.6);}
 @media (max-width: 900px), (pointer: coarse) {
   #speedo-wrap{right:max(8px,env(safe-area-inset-right));bottom:calc(6px + env(safe-area-inset-bottom));transform:scale(.82);transform-origin:bottom right;}
-  #btn-accel,#btn-brake,#btn-left,#btn-right,#btn-nitro{width:82px;height:82px;}
-  #btn-shift-down,#btn-shift-up{width:64px;height:76px;bottom:calc(132px + env(safe-area-inset-bottom));}
-  #btn-shift-down{left:calc(102px + env(safe-area-inset-left));}
-  #btn-shift-up{right:calc(102px + env(safe-area-inset-right));left:auto;}
-  #btn-accel{bottom:calc(132px + env(safe-area-inset-bottom));right:max(12px,env(safe-area-inset-right));}
-  #btn-brake{bottom:calc(42px + env(safe-area-inset-bottom));right:max(12px,env(safe-area-inset-right));}
-  #btn-nitro{bottom:calc(132px + env(safe-area-inset-bottom));right:calc(102px + env(safe-area-inset-right));}
-  #btn-left{bottom:calc(42px + env(safe-area-inset-bottom));left:max(12px,env(safe-area-inset-left));}
-  #btn-right{bottom:calc(42px + env(safe-area-inset-bottom));left:calc(102px + env(safe-area-inset-left));}
+  #btn-accel,#btn-brake,#btn-left,#btn-right,#btn-nitro{width:72px;height:72px;}
+  #btn-shift-down,#btn-shift-up{width:58px;height:64px;bottom:calc(6px + env(safe-area-inset-bottom));}
+  #btn-shift-down{left:calc(154px + env(safe-area-inset-left));}
+  #btn-shift-up{right:calc(154px + env(safe-area-inset-right));left:auto;}
+  #btn-accel{bottom:calc(6px + env(safe-area-inset-bottom));right:calc(86px + env(safe-area-inset-right));}
+  #btn-brake{bottom:calc(6px + env(safe-area-inset-bottom));right:max(10px,env(safe-area-inset-right));}
+  #btn-nitro{bottom:calc(6px + env(safe-area-inset-bottom));right:calc(162px + env(safe-area-inset-right));}
+  #btn-left{bottom:calc(6px + env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left));}
+  #btn-right{bottom:calc(6px + env(safe-area-inset-bottom));left:calc(86px + env(safe-area-inset-left));}
 }
+/* Portrait / landscape race layout (rotate device freely) */
+body.layout-portrait #top-bar{height:56px;padding-left:10px;padding-right:10px;}
+body.layout-portrait #lap-num,body.layout-portrait #pos-val{font-size:18px;}
+body.layout-portrait #timer{font-size:16px;}
+body.layout-portrait #bottom-hud{height:86px;padding:0 12px 12px;padding-bottom:max(12px,env(safe-area-inset-bottom));}
+body.layout-portrait #gear-val{font-size:34px;}
+body.layout-portrait #rpm-section{padding:0 8px 2px;}
+body.layout-portrait #speedo-wrap{transform:scale(.66);transform-origin:bottom right;bottom:calc(128px + env(safe-area-inset-bottom));right:max(6px,env(safe-area-inset-right));}
+body.layout-portrait #minimap{width:74px;height:74px;right:max(8px,env(safe-area-inset-right));bottom:calc(200px + env(safe-area-inset-bottom));}
+body.layout-portrait #race-stats{top:58px;left:8px;min-width:148px;font-size:7px;gap:4px;}
+body.layout-portrait #nitro-section{bottom:96px;}
+body.layout-portrait.race-touch-controls #btn-left{left:max(10px,env(safe-area-inset-left));right:auto;bottom:calc(6px + env(safe-area-inset-bottom));width:64px;height:64px;}
+body.layout-portrait.race-touch-controls #btn-right{left:calc(82px + env(safe-area-inset-left));right:auto;bottom:calc(6px + env(safe-area-inset-bottom));width:64px;height:64px;}
+body.layout-portrait.race-touch-controls #btn-brake{right:max(10px,env(safe-area-inset-right));left:auto;bottom:calc(6px + env(safe-area-inset-bottom));width:64px;height:64px;}
+body.layout-portrait.race-touch-controls #btn-accel{right:calc(82px + env(safe-area-inset-right));left:auto;bottom:calc(6px + env(safe-area-inset-bottom));width:64px;height:64px;}
+body.layout-portrait.race-touch-controls #btn-nitro{right:calc(154px + env(safe-area-inset-right));left:auto;bottom:calc(6px + env(safe-area-inset-bottom));width:64px;height:64px;}
+body.layout-portrait.race-touch-controls #btn-shift-down{left:calc(154px + env(safe-area-inset-left));right:auto;bottom:calc(6px + env(safe-area-inset-bottom));width:56px;height:60px;}
+body.layout-portrait.race-touch-controls #btn-shift-up{right:calc(154px + env(safe-area-inset-right));left:auto;bottom:calc(6px + env(safe-area-inset-bottom));width:56px;height:60px;}
+body.layout-portrait #end-race-btn{font-size:9px;padding:7px 12px;}
+body.layout-portrait #mobile-race-bar{top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));}
+body.layout-landscape #speedo-wrap{bottom:max(10px,env(safe-area-inset-bottom));}
 /* screens */
 .fullscreen{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
 #start-screen{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(72px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));box-sizing:border-box;text-align:center;background:linear-gradient(180deg,rgba(5,0,0,.5) 0%,rgba(0,0,0,.72) 45%,rgba(0,0,0,.88) 100%),url('menu-bg.png') center center/cover no-repeat #050000;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
 #car-select-screen,#city-select-screen,#champ-screen,#finish-screen,#champ-final-screen{position:fixed;inset:0;z-index:300;background:radial-gradient(ellipse at 50% 60%,#120500,#050000);display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;padding-top:30px;overflow-y:auto;overflow-x:hidden;gap:14px;isolation:isolate;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
 .screen-title{font-size:clamp(22px,5vw,36px);font-weight:900;letter-spacing:6px;color:#00d4ff;text-shadow:0 0 20px #00aaff;margin-bottom:4px;}
-#krc-title-main{position:relative;font-size:clamp(22px,6.2vw,48px);font-weight:900;line-height:1.08;letter-spacing:1px;max-width:min(94vw,520px);background:linear-gradient(110deg,#fff 0%,#ffcc00 22%,#ff6600 42%,#fff3b0 50%,#ff6600 58%,#cc2200 78%,#fff 100%);background-size:260% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 30px rgba(255,100,0,.7));animation:titleIntro .75s cubic-bezier(.2,.9,.16,1) both,titlePulse 2s ease-in-out .75s infinite,titleShimmer 3.4s linear .2s infinite;will-change:transform,filter,background-position;}
-#krc-title-main::after{content:"";position:absolute;left:4%;right:4%;bottom:-8px;height:2px;border-radius:999px;background:linear-gradient(90deg,transparent,#ffcc00,#ff3300,transparent);box-shadow:0 0 18px rgba(255,102,0,.8);animation:titleUnderline 1.8s ease-in-out infinite;pointer-events:none;}
-#krc-subtitle{font-size:clamp(10px,2vw,14px);letter-spacing:8px;color:#e8c080;margin-top:2px;margin-bottom:4px;text-shadow:0 1px 4px #000,0 0 12px rgba(0,0,0,.85);}
+#krc-title-block::after{content:"";position:absolute;left:4%;right:4%;bottom:-8px;height:2px;border-radius:999px;background:linear-gradient(90deg,transparent,#ffcc00,#ff3300,transparent);box-shadow:0 0 18px rgba(255,102,0,.8);animation:titleUnderline 1.8s ease-in-out infinite;pointer-events:none;}
+#krc-title-row{margin:0;padding:0;border:0;font:inherit;}
+#krc-subtitle{font-size:clamp(10px,2vw,14px);letter-spacing:8px;color:#e8c080;margin-top:2px;margin-bottom:4px;text-shadow:0 1px 4px #000,0 0 12px rgba(0,0,0,.85);opacity:0;animation:titleRestIn .55s ease-out .5s forwards;}
 #nfs-divider{width:min(300px,80vw);height:1px;background:linear-gradient(to right,transparent,#ff6600,transparent);margin:16px 0;}
 #menu-btns{display:flex;flex-direction:column;gap:12px;align-items:center;}
 .menu-btn{font-size:13px;font-weight:700;letter-spacing:5px;padding:14px 44px;border:1px solid #ff6600;background:rgba(180,60,0,.15);color:#ffcc00;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;border-radius:6px;transition:background .2s;text-shadow:0 0 8px #ff8800;font-family:'Orbitron',monospace;position:relative;z-index:2;-webkit-tap-highlight-color:rgba(255,136,0,.35);text-decoration:none;text-align:center;}
@@ -240,6 +269,24 @@ body.manual-transmission.shift-zone #btn-shift-up::after{content:'PERFECT';color
 #finish-screen #restart-btn{display:none;}
 #countdown{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:50;pointer-events:none;}
 #countdown-num{font-size:180px;font-weight:900;color:#00d4ff;text-align:center;white-space:pre-line;text-shadow:0 0 80px #00aaff;}
+#splash-flames{position:absolute;left:50%;bottom:-18px;transform:translateX(-50%);width:min(96vw,520px);height:150px;pointer-events:none;z-index:0;overflow:visible;}
+.splash-flame{position:absolute;bottom:0;border-radius:50% 50% 18% 18%;filter:blur(.6px);transform-origin:50% 100%;animation:flameFlicker 1.1s ease-in-out infinite;}
+.splash-flame.f1{left:8%;width:42px;height:88px;background:linear-gradient(180deg,rgba(255,240,160,.95),rgba(255,120,0,.75) 42%,rgba(200,40,0,0) 100%);animation-delay:0s;}
+.splash-flame.f2{left:22%;width:34px;height:72px;background:linear-gradient(180deg,rgba(255,220,120,.9),rgba(255,80,0,.7) 45%,transparent);animation-delay:.15s;}
+.splash-flame.f3{left:38%;width:52px;height:110px;background:linear-gradient(180deg,#fff8c0,rgba(255,140,0,.85) 38%,rgba(180,30,0,0));animation-delay:.08s;}
+.splash-flame.f4{left:54%;width:48px;height:98px;background:linear-gradient(180deg,rgba(255,230,150,.95),rgba(255,100,0,.8) 40%,transparent);animation-delay:.22s;}
+.splash-flame.f5{left:68%;width:38px;height:78px;background:linear-gradient(180deg,rgba(255,200,100,.9),rgba(255,60,0,.65) 50%,transparent);animation-delay:.05s;}
+.splash-flame.f6{left:82%;width:44px;height:92px;background:linear-gradient(180deg,rgba(255,240,180,.92),rgba(255,110,0,.78) 42%,transparent);animation-delay:.18s;}
+.splash-flame-glow{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);width:min(88vw,440px);height:70px;background:radial-gradient(ellipse at 50% 100%,rgba(255,140,0,.55),rgba(255,60,0,.22) 45%,transparent 72%);animation:flameGlowPulse 1.4s ease-in-out infinite;pointer-events:none;}
+#krc-title-block{position:relative;display:inline-block;margin:0 auto 6px;z-index:1;}
+#krc-title-row{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:0 .12em;line-height:1.05;}
+#krc-title-full{display:flex;flex-direction:column;align-items:center;gap:.08em;line-height:1.05;text-align:center;animation:kadenExplode .82s cubic-bezier(.16,.92,.22,1) both,titlePulse 2s ease-in-out .9s infinite;will-change:transform,filter;}
+.krc-title-line1{font-size:clamp(30px,8.5vw,56px);font-weight:900;letter-spacing:.05em;background:linear-gradient(165deg,#fff 0%,#ffdd55 35%,#ff6600 72%,#cc2200 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 28px rgba(255,120,0,.85));animation:titleShimmer 3.4s linear .25s infinite;background-size:200% 100%;}
+.krc-title-line2{font-size:clamp(15px,4.2vw,28px);font-weight:900;letter-spacing:.12em;text-transform:uppercase;background:linear-gradient(110deg,#fff 0%,#ffcc00 30%,#ff8833 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 16px rgba(255,120,0,.55));animation:titleShimmer 3.4s linear .35s infinite;background-size:200% 100%;}
+@keyframes flameFlicker{0%,100%{transform:scaleX(1) scaleY(1) skewX(0deg);opacity:.88;}25%{transform:scaleX(1.08) scaleY(1.12) skewX(-3deg);opacity:1;}50%{transform:scaleX(.94) scaleY(1.05) skewX(2deg);opacity:.92;}75%{transform:scaleX(1.05) scaleY(1.08) skewX(-2deg);opacity:.96;}}
+@keyframes flameGlowPulse{0%,100%{opacity:.75;transform:translateX(-50%) scale(1);}50%{opacity:1;transform:translateX(-50%) scale(1.08);}}
+@keyframes kadenExplode{0%{opacity:0;transform:scale(2.65) translateY(-28px);filter:blur(16px) drop-shadow(0 0 0 rgba(255,120,0,0));letter-spacing:.28em;}52%{opacity:1;transform:scale(.9) translateY(6px);filter:blur(0) drop-shadow(0 0 40px rgba(255,140,0,1));letter-spacing:.04em;}72%{transform:scale(1.1) translateY(-3px);}100%{opacity:1;transform:scale(1) translateY(0);letter-spacing:.06em;filter:drop-shadow(0 0 30px rgba(255,100,0,.7));}}
+@keyframes titleRestIn{from{opacity:0;transform:translateX(-12px);}to{opacity:1;transform:translateX(0);}}
 @keyframes titleIntro{0%{opacity:0;transform:translateY(-18px) scale(.88);filter:blur(8px) drop-shadow(0 0 0 rgba(255,100,0,0));}70%{opacity:1;transform:translateY(2px) scale(1.04);}100%{opacity:1;transform:translateY(0) scale(1);}}
 @keyframes titlePulse{0%,100%{filter:drop-shadow(0 0 24px rgba(255,100,0,.62)) drop-shadow(0 0 8px rgba(255,220,120,.45));transform:scale(1);}50%{filter:drop-shadow(0 0 58px rgba(255,180,0,1)) drop-shadow(0 0 16px rgba(255,60,0,.86));transform:scale(1.018);}}
 @keyframes titleShimmer{0%{background-position:120% 50%;}100%{background-position:-120% 50%;}}
@@ -322,7 +369,35 @@ body.manual-transmission.shift-zone #btn-shift-up::after{content:'PERFECT';color
 </div>
 <button type="button" id="end-race-btn">END RACE</button>
 <div id="start-screen">
-  <div id="krc-title-main">Kaden's Racing Championships</div>
+  <div id="menu-bg-motion" aria-hidden="true">
+    <div class="menu-bg-layer menu-bg-photo"></div>
+    <div class="menu-bg-layer menu-bg-gradient"></div>
+    <div class="menu-bg-layer menu-bg-aurora"></div>
+    <div class="menu-bg-layer menu-bg-speedlines"></div>
+    <div class="menu-bg-layer menu-bg-grid"></div>
+    <div class="menu-bg-layer menu-bg-logo"><img src="app-icon.png" alt="" width="420" height="420" decoding="async"></div>
+    <canvas id="menu-bg-canvas" aria-hidden="true"></canvas>
+    <div class="menu-bg-layer menu-bg-vignette"></div>
+    <div class="menu-bg-layer menu-bg-scan"></div>
+  </div>
+  <div id="start-screen-content">
+  <div id="krc-title-block">
+    <div id="splash-flames" aria-hidden="true">
+      <div class="splash-flame-glow"></div>
+      <div class="splash-flame f1"></div>
+      <div class="splash-flame f2"></div>
+      <div class="splash-flame f3"></div>
+      <div class="splash-flame f4"></div>
+      <div class="splash-flame f5"></div>
+      <div class="splash-flame f6"></div>
+    </div>
+    <h1 id="krc-title-row">
+      <span id="krc-title-full" aria-label="Kaden's Racing Championships">
+        <span class="krc-title-line1">Kaden's</span>
+        <span class="krc-title-line2">Racing Championships</span>
+      </span>
+    </h1>
+  </div>
   <div id="krc-subtitle">SEASON ONE</div>
   <div id="nfs-divider"></div>
   <div id="gamer-name-panel">
@@ -348,6 +423,7 @@ body.manual-transmission.shift-zone #btn-shift-up::after{content:'PERFECT';color
   </div>
   <div id="controls-hint">WASD · SPACE NITRO · P PAUSE · M MUTE<br>MOBILE: On-screen buttons</div>
   <div id="global-status">GLOBAL PLAY CHECKING</div>
+  </div>
 </div>
 
 <!-- City Selector -->
@@ -524,44 +600,51 @@ function readViewportSize() {
   return { w: w, h: h };
 }
 
+function syncOrientationLayout() {
+  const vp = readViewportSize();
+  const portrait = vp.h >= vp.w;
+  document.body.classList.toggle('layout-portrait', portrait);
+  document.body.classList.toggle('layout-landscape', !portrait);
+}
+
 // Cars + menu handlers must exist before WebGL init — if WebGLRenderer throws (Simulator / GPU), onclick still works.
 let difficultyIdx = 1;
 const CARS = [
-  { id:'f40',       model:'f40',       name:'KRC VELOCE 40',        color:0xcc0000, topSpeed:100, accel:90,  handling:80, desc:'Raw power. Legend.' },
-  { id:'lambo',     model:'lambo',     name:'KRC BULLSTORM',        color:0xdd8800, topSpeed:98,  accel:95,  handling:75, desc:'Roar of the street.' },
-  { id:'gtr',       model:'gtr',       name:'KRC NIGHT R35',        color:0x224488, topSpeed:92,  accel:85,  handling:95, desc:'Precision machine.' },
-  { id:'911',       model:'911',       name:'KRC NINE-ONE',         color:0xeeeeee, topSpeed:88,  accel:82,  handling:98, desc:'Born on the track.' },
-  { id:'mclaren',   model:'mclaren',   name:'KRC AERO 720',         color:0xff6600, topSpeed:100, accel:98,  handling:88, desc:'Aerodynamic beast.' },
-  { id:'bugatti',   model:'bugatti',   name:'KRC ROYAL W16',        color:0x112266, topSpeed:100, accel:100, handling:78, desc:'Extreme hyper power.' },
-  { id:'amg',       model:'amg',       name:'KRC BLACKLINE GT',      color:0x1a1a1a, topSpeed:94,  accel:88,  handling:90, desc:'Dark precision.' },
-  { id:'m4',        model:'m4',        name:'KRC M-STRIKE',         color:0x002255, topSpeed:90,  accel:86,  handling:94, desc:'Driver-focused coupe.' },
-  { id:'rx7',       model:'rx7',       name:'KRC ROTARY 7',         color:0xcc2200, topSpeed:85,  accel:84,  handling:96, desc:'Light, loud, and sharp.' },
-  { id:'supra',     model:'supra',     name:'KRC STREET KING',      color:0xff9900, topSpeed:89,  accel:87,  handling:92, desc:'Tuner icon energy.' },
-  { id:'r34',       model:'r34',       name:'KRC SKY R34',          color:0x55aadd, topSpeed:91,  accel:88,  handling:93, desc:'All-wheel grip legend.' },
-  { id:'evo',       model:'evo',       name:'KRC RALLY EVO',        color:0x0044bb, topSpeed:84,  accel:90,  handling:99, desc:'Rally DNA.' },
-  { id:'viper',     model:'viper',     name:'KRC VENOM V10',        color:0xaa0000, topSpeed:97,  accel:92,  handling:80, desc:'American-style muscle.' },
-  { id:'koenigsegg',model:'koenigsegg',name:'KRC APEX ONE',         color:0xff1493, topSpeed:100, accel:100, handling:85, desc:'Top-speed prototype.' },
-  { id:'mustang',   model:'viper',     name:'KRC STALLION GT',      color:0x003f8f, topSpeed:90,  accel:86,  handling:82, desc:'Wide street power.' },
-  { id:'camaro',    model:'amg',       name:'KRC CAMBER SS',        color:0xffcc00, topSpeed:89,  accel:87,  handling:83, desc:'Muscle coupe with bite.' },
-  { id:'challenger',model:'viper',     name:'KRC OUTLAW WIDE',      color:0x261300, topSpeed:91,  accel:84,  handling:76, desc:'Heavyweight straight-line bruiser.' },
-  { id:'corvette',  model:'mclaren',   name:'KRC STING ZR',         color:0xffdd00, topSpeed:96,  accel:94,  handling:89, desc:'Track-ready super coupe.' },
-  { id:'charger',   model:'amg',       name:'KRC PURSUIT RT',       color:0x111111, topSpeed:88,  accel:84,  handling:78, desc:'Four-door chase machine.' },
-  { id:'nsx',       model:'mclaren',   name:'KRC NOVA X',           color:0xffffff, topSpeed:93,  accel:92,  handling:94, desc:'Hybrid precision supercar.' },
-  { id:'s2000',     model:'rx7',       name:'KRC ROADSTER S2',      color:0xeeeeee, topSpeed:82,  accel:80,  handling:100,desc:'Lightweight corner hunter.' },
-  { id:'sti',       model:'evo',       name:'KRC RALLY X',          color:0x0044cc, topSpeed:83,  accel:88,  handling:97, desc:'Rally grip for city circuits.' },
-  { id:'civic',     model:'evo',       name:'KRC TYPE RUSH',        color:0xffffff, topSpeed:81,  accel:86,  handling:99, desc:'Hot hatch attack mode.' },
-  { id:'audi-r8',   model:'mclaren',   name:'KRC V10 RUSH',         color:0xcfd4d8, topSpeed:95,  accel:91,  handling:91, desc:'V10 balance and grip.' },
-  { id:'rs7',       model:'amg',       name:'KRC EXECUTIVE RS',     color:0x2a2d34, topSpeed:92,  accel:90,  handling:86, desc:'Luxury missile.' },
-  { id:'gt500',     model:'viper',     name:'KRC SUPER STALLION',   color:0x0033aa, topSpeed:96,  accel:94,  handling:79, desc:'Supercharged street fury.' },
-  { id:'r35-nismo', model:'gtr',       name:'KRC NIGHT R35-R',      color:0xffffff, topSpeed:96,  accel:93,  handling:96, desc:'Race-trim grip monster.' },
-  { id:'huracan',   model:'lambo',     name:'KRC HURRICANE EVO',    color:0x39ff14, topSpeed:98,  accel:96,  handling:90, desc:'Sharp neon supercar.' },
-  { id:'senna',     model:'mclaren',   name:'KRC AERO S',           color:0xff5500, topSpeed:99,  accel:97,  handling:99, desc:'Aero grip monster.' },
-  { id:'police',    model:'viper',     name:'KRC INTERCEPTOR',      color:0x07111f, topSpeed:94,  accel:92,  handling:86, desc:'Wide-body police muscle car built to chase racers.' },
-  { id:'jesko',     model:'koenigsegg',name:'KRC JETSTREAM',        color:0x00d4ff, topSpeed:100, accel:100, handling:88, desc:'Extreme top-speed prototype.' },
+  { id:'f40',       model:'f40',       name:'KRC VELOCE 40',        color:0xe10600, topSpeed:100, accel:90,  handling:80, desc:'Raw power. Legend.' },
+  { id:'lambo',     model:'lambo',     name:'KRC BULLSTORM',        color:0xff8a00, topSpeed:98,  accel:95,  handling:75, desc:'Roar of the street.' },
+  { id:'gtr',       model:'gtr',       name:'KRC NIGHT R35',        color:0x1e3a8a, topSpeed:92,  accel:85,  handling:95, desc:'Precision machine.' },
+  { id:'911',       model:'911',       name:'KRC NINE-ONE',         color:0xffd100, topSpeed:88,  accel:82,  handling:98, desc:'Born on the track.' },
+  { id:'mclaren',   model:'mclaren',   name:'KRC AERO 720',         color:0x9aa3ad, topSpeed:100, accel:98,  handling:88, desc:'Aerodynamic beast.' },
+  { id:'bugatti',   model:'bugatti',   name:'KRC ROYAL W16',        color:0x0f1f5c, topSpeed:100, accel:100, handling:78, desc:'Extreme hyper power.' },
+  { id:'amg',       model:'amg',       name:'KRC BLACKLINE GT',      color:0x101010, topSpeed:94,  accel:88,  handling:90, desc:'Dark precision.' },
+  { id:'m4',        model:'m4',        name:'KRC M-STRIKE',         color:0x0077c8, topSpeed:90,  accel:86,  handling:94, desc:'Driver-focused coupe.' },
+  { id:'rx7',       model:'rx7',       name:'KRC ROTARY 7',         color:0x00b4d8, topSpeed:85,  accel:84,  handling:96, desc:'Light, loud, and sharp.' },
+  { id:'supra',     model:'supra',     name:'KRC STREET KING',      color:0xff2a4a, topSpeed:89,  accel:87,  handling:92, desc:'Tuner icon energy.' },
+  { id:'r34',       model:'r34',       name:'KRC SKY R34',          color:0x2a8f8f, topSpeed:91,  accel:88,  handling:93, desc:'All-wheel grip legend.' },
+  { id:'evo',       model:'evo',       name:'KRC RALLY EVO',        color:0xf0f2f5, topSpeed:84,  accel:90,  handling:99, desc:'Rally DNA.' },
+  { id:'viper',     model:'viper',     name:'KRC VENOM V10',        color:0x6a0008, topSpeed:97,  accel:92,  handling:80, desc:'American-style muscle.' },
+  { id:'koenigsegg',model:'koenigsegg',name:'KRC APEX ONE',         color:0xff2db8, topSpeed:100, accel:100, handling:85, desc:'Hot-pink top-speed prototype.' },
+  { id:'mustang',   model:'viper',     name:'KRC STALLION GT',      color:0x003da5, topSpeed:90,  accel:86,  handling:82, desc:'Wide street power.' },
+  { id:'camaro',    model:'amg',       name:'KRC CAMBER SS',        color:0xffb400, topSpeed:89,  accel:87,  handling:83, desc:'Muscle coupe with bite.' },
+  { id:'challenger',model:'viper',     name:'KRC OUTLAW WIDE',      color:0x7a2e0a, topSpeed:91,  accel:84,  handling:76, desc:'Heavyweight straight-line bruiser.' },
+  { id:'corvette',  model:'mclaren',   name:'KRC STING ZR',         color:0x00a090, topSpeed:96,  accel:94,  handling:89, desc:'Track-ready super coupe.' },
+  { id:'charger',   model:'amg',       name:'KRC PURSUIT RT',       color:0x3e4248, topSpeed:88,  accel:84,  handling:78, desc:'Four-door chase machine.' },
+  { id:'nsx',       model:'mclaren',   name:'KRC NOVA X',           color:0xff5c00, topSpeed:93,  accel:92,  handling:94, desc:'Hybrid precision supercar.' },
+  { id:'s2000',     model:'rx7',       name:'KRC ROADSTER S2',      color:0x6ec1ff, topSpeed:82,  accel:80,  handling:100,desc:'Lightweight corner hunter.' },
+  { id:'sti',       model:'evo',       name:'KRC RALLY X',          color:0x0a4db3, topSpeed:83,  accel:88,  handling:97, desc:'Rally grip for city circuits.' },
+  { id:'civic',     model:'evo',       name:'KRC TYPE RUSH',        color:0x2480ff, topSpeed:81,  accel:86,  handling:99, desc:'Hot hatch attack mode.' },
+  { id:'audi-r8',   model:'mclaren',   name:'KRC V10 RUSH',         color:0xd4a017, topSpeed:95,  accel:91,  handling:91, desc:'V10 balance and grip.' },
+  { id:'rs7',       model:'amg',       name:'KRC EXECUTIVE RS',     color:0x6e747c, topSpeed:92,  accel:90,  handling:86, desc:'Luxury missile.' },
+  { id:'gt500',     model:'viper',     name:'KRC SUPER STALLION',   color:0x8b1c1c, topSpeed:96,  accel:94,  handling:79, desc:'Supercharged street fury.' },
+  { id:'r35-nismo', model:'gtr',       name:'KRC NIGHT R35-R',      color:0xc8102e, topSpeed:96,  accel:93,  handling:96, desc:'Race-trim grip monster.' },
+  { id:'huracan',   model:'lambo',     name:'KRC HURRICANE EVO',    color:0x0090ff, topSpeed:98,  accel:96,  handling:90, desc:'Sharp neon supercar.' },
+  { id:'senna',     model:'mclaren',   name:'KRC AERO S',           color:0xff3a00, topSpeed:99,  accel:97,  handling:99, desc:'Aero grip monster.' },
+  { id:'police',    model:'viper',     name:'KRC INTERCEPTOR',      color:0x0c0e12, topSpeed:94,  accel:92,  handling:86, desc:'Wide-body police muscle car built to chase racers.' },
+  { id:'jesko',     model:'koenigsegg',name:'KRC JETSTREAM',        color:0x00e5ff, topSpeed:100, accel:100, handling:88, desc:'Extreme top-speed prototype.' },
 ];
 let selectedCarIdx = 0;
 let modeSelected = 'quick';
-let selectedLaps = 5;
+let selectedLaps = 8;
 let transmissionMode = 'automatic';
 let currentGear = 1;
 let manualGear = 1;
@@ -588,6 +671,32 @@ function loadProgress() {
 
 function saveProgress(p) {
   try { localStorage.setItem('krc-progress', JSON.stringify(p)); } catch (err) {}
+}
+
+function recordDriverProfile(result) {
+  const p = loadProgress();
+  p.totalRaces = Math.max(0, parseInt(p.totalRaces, 10) || 0) + 1;
+  p.totalCreditsEarned = Math.max(0, parseInt(p.totalCreditsEarned, 10) || 0) + Math.max(0, Math.round(result.credits || 0));
+  p.bestDrift = Math.max(Math.max(0, parseInt(p.bestDrift, 10) || 0), Math.round(result.drift || 0));
+  p.bestFinish = p.bestFinish == null ? result.pos : Math.min(Math.max(1, parseInt(p.bestFinish, 10) || result.pos), result.pos);
+  if (!result.forfeited && result.pos === 1) p.wins = Math.max(0, parseInt(p.wins, 10) || 0) + 1;
+  if (!result.forfeited && result.pos <= 3) p.podiums = Math.max(0, parseInt(p.podiums, 10) || 0) + 1;
+  if (!result.forfeited && Math.round(result.damage || 0) <= 8) {
+    p.cleanRaceStreak = Math.max(0, parseInt(p.cleanRaceStreak, 10) || 0) + 1;
+  } else {
+    p.cleanRaceStreak = 0;
+  }
+  if (!result.forfeited && result.mode === 'daily' && result.pos === 1) {
+    p.dailyWins = Math.max(0, parseInt(p.dailyWins, 10) || 0) + 1;
+  }
+  if (!result.forfeited && result.mode === 'career' && result.pos <= 3) {
+    p.careerPodiums = Math.max(0, parseInt(p.careerPodiums, 10) || 0) + 1;
+  }
+  if (!result.forfeited && result.mode === 'police' && result.policeOutcome === 'escaped') {
+    p.policeEscapes = Math.max(0, parseInt(p.policeEscapes, 10) || 0) + 1;
+  }
+  saveProgress(p);
+  return p;
 }
 
 function getCredits() {
@@ -1369,8 +1478,8 @@ function updateRaceHeadlights() {
 }
 
 // ── Track · 20 circuits ─────────────────────────────────
-const TW = 52;
-const LANE_COUNT = 4;
+const TW = 112;
+const LANE_COUNT = 3;
 const LANE_W = TW / LANE_COUNT;
 const TRACK_SCALE = 1.45;
 
@@ -1385,74 +1494,77 @@ function buildClosedPoints(genFn, segments) {
   return arr;
 }
 
+function trackSuperellipse(t, a, b, exp) {
+  var c = Math.cos(t), s = Math.sin(t);
+  return {
+    x: a * (c >= 0 ? 1 : -1) * Math.pow(Math.abs(c), exp),
+    z: b * (s >= 0 ? 1 : -1) * Math.pow(Math.abs(s), exp)
+  };
+}
+
 const TRACK_DEFS = [
   { name: 'HARBOR LOOP', tag: 'Bay City', pts: buildClosedPoints(function(t) {
     return { x: Math.sin(t) * 85 + Math.sin(2 * t) * 28, z: Math.cos(t) * 62 + Math.cos(3 * t) * 16 };
-  }, 72) },
+  }, 80) },
   { name: 'SUNSET OVAL', tag: 'Speedway', pts: buildClosedPoints(function(t) {
-    return { x: Math.sin(t) * 100, z: Math.cos(t) * 54 };
-  }, 72) },
+    return { x: Math.sin(t) * 108, z: Math.cos(t) * 48 };
+  }, 80) },
   { name: 'ALPINE RIDGE', tag: 'Elevation', pts: buildClosedPoints(function(t) {
-    return { x: Math.sin(t) * 52, z: Math.cos(t) * 98 };
-  }, 72) },
+    return { x: Math.sin(t) * 48, z: Math.cos(t) * 102 };
+  }, 80) },
   { name: 'NOVA RING', tag: 'Circuit', pts: buildClosedPoints(function(t) {
-    const R = 78;
+    var R = 78;
     return { x: Math.sin(t) * R, z: Math.cos(t) * R };
   }, 64) },
   { name: 'PULSE GP', tag: 'Technical', pts: buildClosedPoints(function(t) {
-    const R = 70 + 28 * Math.cos(2 * t);
-    return { x: Math.sin(t) * R, z: Math.cos(t) * R };
-  }, 80) },
+    return trackSuperellipse(t, 92, 52, 0.34);
+  }, 96) },
   { name: 'TRIDENT RUN', tag: 'Tri-lobe', pts: buildClosedPoints(function(t) {
-    const R = 62 + 38 * Math.cos(3 * t);
-    return { x: Math.sin(t) * R, z: Math.cos(t) * R };
-  }, 84) },
+    return { x: 70 * Math.cos(t) + 36 * Math.cos(3 * t), z: 70 * Math.sin(t) - 36 * Math.sin(3 * t) };
+  }, 90) },
   { name: 'THUNDER DOME', tag: 'Woven', pts: buildClosedPoints(function(t) {
-    const R = 72 + 26 * Math.sin(5 * t);
-    return { x: Math.sin(t) * R, z: Math.cos(t) * R };
-  }, 88) },
+    return { x: 74 * Math.cos(t) + 32 * Math.cos(5 * t), z: 74 * Math.sin(t) + 32 * Math.sin(5 * t) };
+  }, 90) },
   { name: 'COASTAL SWEEP', tag: 'Asymmetric', pts: buildClosedPoints(function(t) {
-    return { x: Math.sin(t) * 88 + 14 * Math.sin(3 * t), z: Math.cos(t) * 58 };
-  }, 72) },
+    return { x: Math.sin(t) * 88 + 14 * Math.sin(3 * t), z: Math.cos(t) * 58 * (1 + 0.42 * Math.sin(2 * t)) };
+  }, 88) },
   { name: 'DESERT MILE', tag: 'Long', pts: buildClosedPoints(function(t) {
-    return { x: Math.sin(t) * 118, z: Math.cos(t) * 48 };
-  }, 72) },
+    return { x: Math.sin(t) * 128, z: Math.cos(t) * 44 };
+  }, 80) },
   { name: 'GLACIER TECH', tag: 'Tight', pts: buildClosedPoints(function(t) {
-    const R = 48 + 12 * Math.sin(6 * t);
-    return { x: Math.sin(t) * R, z: Math.cos(t) * R };
+    return trackSuperellipse(t, 58, 58, 0.22);
   }, 96) },
   { name: 'INFINITY EIGHT', tag: 'Figure-8', pts: buildClosedPoints(function(t) {
-    const a = 88;
+    var a = 88;
     return { x: a * Math.sin(t), z: a * Math.sin(t) * Math.cos(t) };
   }, 96) },
   { name: 'RIVERSIDE', tag: 'Flow', pts: buildClosedPoints(function(t) {
-    return { x: Math.sin(t) * 76, z: Math.cos(t) * 92 + 18 * Math.sin(4 * t) };
-  }, 72) },
-  { name: 'CANYON RAID', tag: 'Aggressive', pts: buildClosedPoints(function(t) {
-    return { x: Math.sin(t) * (82 + 24 * Math.cos(3 * t)), z: Math.cos(t) * (64 + 18 * Math.sin(5 * t)) };
+    return { x: Math.sin(t) * 72, z: Math.sin(2 * t) * 38 + Math.cos(t) * 34 };
   }, 88) },
+  { name: 'CANYON RAID', tag: 'Aggressive', pts: buildClosedPoints(function(t) {
+    return { x: 78 * Math.cos(t) + 30 * Math.cos(6 * t), z: 78 * Math.sin(t) + 30 * Math.sin(6 * t) };
+  }, 90) },
   { name: 'IRON PEAK', tag: 'Mountain', pts: buildClosedPoints(function(t) {
-    return { x: Math.sin(t) * 68 + 22 * Math.sin(5 * t), z: Math.cos(t) * 74 + 16 * Math.sin(4 * t) };
+    return { x: Math.sin(t) * (68 + 24 * Math.cos(5 * t)) + 22 * Math.sin(7 * t), z: Math.cos(t) * (74 + 16 * Math.sin(4 * t)) };
   }, 88) },
   { name: 'VELOCITY BAY', tag: 'Hybrid', pts: buildClosedPoints(function(t) {
-    return { x: Math.sin(t) * 80 + Math.sin(2 * t) * 22, z: Math.cos(t) * 58 + Math.cos(3 * t) * 14 };
-  }, 72) },
-  { name: 'NEON CIRCUIT', tag: 'Night', pts: buildClosedPoints(function(t) {
-    const R = 75 + 30 * Math.cos(4 * t);
-    return { x: Math.sin(t) * R, z: Math.cos(t) * R };
+    return { x: 85 * Math.cos(t) + 28 * Math.cos(3 * t), z: 55 * Math.sin(t) };
   }, 80) },
+  { name: 'NEON CIRCUIT', tag: 'Night', pts: buildClosedPoints(function(t) {
+    return { x: 85 * Math.cos(t) * Math.abs(Math.cos(t)), z: 85 * Math.sin(t) * Math.abs(Math.sin(t)) };
+  }, 96) },
   { name: 'STORM HARBOR', tag: 'Dynamic', pts: buildClosedPoints(function(t) {
     return { x: Math.sin(t) * 90 + Math.cos(3 * t) * 20, z: Math.cos(t) * 55 + Math.sin(5 * t) * 12 };
   }, 88) },
   { name: 'GRAND PRIX RING', tag: 'Pro', pts: buildClosedPoints(function(t) {
-    return { x: Math.sin(t) * 92, z: Math.cos(t) * 68 };
-  }, 72) },
+    return { x: Math.sin(t) * 92, z: Math.cos(t) * 68 + Math.sin(6 * t) * 14 };
+  }, 88) },
   { name: 'MIDNIGHT SPRINT', tag: 'Short', pts: buildClosedPoints(function(t) {
-    return { x: Math.sin(t) * 56, z: Math.cos(t) * 52 };
+    return { x: Math.sin(t) * 54, z: Math.cos(t) * 50 };
   }, 64) },
   { name: 'KRC SHOWDOWN', tag: 'Finals', pts: buildClosedPoints(function(t) {
     return { x: Math.sin(t) * 102 + Math.sin(2 * t) * 22, z: Math.cos(t) * 72 + Math.cos(3 * t) * 20 };
-  }, 80) }
+  }, 96) }
 ];
 
 // Gold medal target (one lap, ms) — silver ≈ +12%, bronze ≈ +28%
@@ -2272,7 +2384,7 @@ let trackFeatures = [];
 let bridgeTunnelGroup = null;
 let lightBase = { amb: 0.75, sun: 2.2, fill: 0.55, hem: 0.45 };
 const TRACK_CLEAR_HALF = TW / 2 + 3.8;
-const TRACK_ROADSIDE_HALF = TW / 2 + 6.5;
+const TRACK_ROADSIDE_HALF = TW / 2 + 14;
 
 function generateTrackFeatures(trackIdx) {
   const j = (trackIdx % 11) * 0.014;
@@ -2412,19 +2524,84 @@ function buildBridgeTunnelDecor(crv) {
   return grp;
 }
 
+function krcMakeAsphaltTexture() {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 512;
+  const g = c.getContext('2d');
+  g.fillStyle = '#000000';
+  g.fillRect(0, 0, 512, 512);
+  for (let b = 0; b < 3; b++) {
+    g.fillStyle = 'rgba(8,8,10,0.18)';
+    g.fillRect(0, b * 102 + Math.random() * 8, 512, 18 + Math.random() * 14);
+  }
+  for (let i = 0; i < 900; i++) {
+    const px = Math.random() * 512, py = Math.random() * 512;
+    const v = 4 + Math.random() * 10;
+    g.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',' + (0.08 + Math.random() * 0.14) + ')';
+    g.fillRect(px, py, 1 + Math.random(), 1 + Math.random());
+  }
+  for (let i = 0; i < 18; i++) {
+    g.fillStyle = 'rgba(12,14,16,' + (0.06 + Math.random() * 0.1) + ')';
+    g.beginPath();
+    g.ellipse(Math.random() * 512, Math.random() * 512, 12 + Math.random() * 36, 8 + Math.random() * 20, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 4);
+  return tex;
+}
+function krcMakeGravelTexture() {
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#3a4238';
+  g.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 420; i++) {
+    const v = 50 + Math.random() * 40;
+    g.fillStyle = 'rgba(' + v + ',' + (v + 4) + ',' + (v - 6) + ',0.55)';
+    g.fillRect(Math.random() * 128, Math.random() * 128, 1 + Math.random() * 2, 1 + Math.random() * 2);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(6, 6);
+  return tex;
+}
+function krcMakeBarrierTexture() {
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 64;
+  const g = c.getContext('2d');
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      g.fillStyle = (row + col) % 2 === 0 ? '#e81c10' : '#f4f4f4';
+      g.fillRect(col * 8, row * 8, 8, 8);
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 1);
+  return tex;
+}
+
 function buildRoadMesh(crv) {
-  const pts = crv.getPoints(760);
+  const pts = crv.getPoints(820);
   const grp = new THREE.Group();
   grp.renderOrder = 5;
-  const roadColA = new THREE.MeshBasicMaterial({ color: 0x010203, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
-  const roadColB = new THREE.MeshBasicMaterial({ color: 0x050607, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
-  const curbRed  = new THREE.MeshLambertMaterial({ color: 0xcc1100 });
-  const curbWht  = new THREE.MeshLambertMaterial({ color: 0xffffff });
-  const dashMat  = new THREE.MeshBasicMaterial({ color: 0xf0c300, side: THREE.DoubleSide, transparent: true, opacity: 0.88, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -8 });
-  const laneMat  = new THREE.MeshBasicMaterial({ color: 0xf4f7f8, side: THREE.DoubleSide, transparent: true, opacity: 0.9, polygonOffset: true, polygonOffsetFactor: -9, polygonOffsetUnits: -9 });
-  const edgeMat  = new THREE.MeshBasicMaterial({ color: 0xcfd6d8, side: THREE.DoubleSide, transparent: true, opacity: 0.72, polygonOffset: true, polygonOffsetFactor: -10, polygonOffsetUnits: -10 });
+  const roadMat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+  const curbRed  = new THREE.MeshStandardMaterial({ color: 0xd81810, roughness: 0.5, metalness: 0.04 });
+  const curbWht  = new THREE.MeshStandardMaterial({ color: 0xf8f8f8, roughness: 0.45, metalness: 0.02 });
+  const dashMat  = new THREE.MeshBasicMaterial({ color: 0xffd200, side: THREE.DoubleSide, transparent: true, opacity: 0.95, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -8 });
+  const laneMat  = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.94, polygonOffset: true, polygonOffsetFactor: -9, polygonOffsetUnits: -9 });
+  const edgeMat  = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.92, polygonOffset: true, polygonOffsetFactor: -10, polygonOffsetUnits: -10 });
+  const grassMat = new THREE.MeshStandardMaterial({ color: 0x3d6b32, roughness: 0.94, metalness: 0 });
+  const rumbleRed = new THREE.MeshBasicMaterial({ color: 0xe81810, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -7, polygonOffsetUnits: -7 });
+  const rumbleWht = new THREE.MeshBasicMaterial({ color: 0xf2f2f2, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -7, polygonOffsetUnits: -7 });
+  const gravelTex = krcMakeGravelTexture();
+  const runOffMat = new THREE.MeshStandardMaterial({ map: gravelTex, color: 0xb8b8b8, roughness: 0.96, metalness: 0 });
+  const barrierTex = krcMakeBarrierTexture();
+  const barrierMat = new THREE.MeshStandardMaterial({ map: barrierTex, color: 0xdddddd, roughness: 0.55, metalness: 0.12 });
   const hw = TW / 2;
-  const laneOffsets = [-LANE_W, LANE_W];
+  const laneOffsets = [-LANE_W / 2, LANE_W / 2];
   const nSeg = pts.length - 1;
   const rights = pts.map(function(p, idx) {
     const prev = pts[idx === 0 ? nSeg - 1 : idx - 1];
@@ -2457,46 +2634,48 @@ function buildRoadMesh(crv) {
       tr.x, yR0, tr.z,  br.x, yR1, br.z,  bl.x, yR1, bl.z
     ]), 3));
     geo.computeVertexNormals();
-    const rm = new THREE.Mesh(geo, i % 12 < 6 ? roadColA : roadColB);
+    const rm = new THREE.Mesh(geo, roadMat);
     rm.receiveShadow = true;
     rm.renderOrder = 5;
     grp.add(rm);
 
-    if (i % 4 === 0) {
+    if (i % 3 === 0) {
       for (const side of ['l', 'r']) {
-        const cw  = 0.9;
+        const cw  = 1.05;
         const c0  = side === 'l' ? tl : tr;
         const c1  = side === 'l' ? bl : br;
         const cv0 = c0.clone().addScaledVector(r0, side === 'l' ? -cw : cw);
         const cv1 = c1.clone().addScaledVector(r1, side === 'l' ? -cw : cw);
         const cg  = new THREE.BufferGeometry();
         cg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-          c0.x, yR0, c0.z,  cv0.x, yR0, cv0.z,  c1.x, yR1, c1.z,
-          cv0.x, yR0, cv0.z,  cv1.x, yR1, cv1.z,  c1.x, yR1, c1.z
+          c0.x, yR0 + 0.12, c0.z,  cv0.x, yR0 + 0.14, cv0.z,  c1.x, yR1 + 0.12, c1.z,
+          cv0.x, yR0 + 0.14, cv0.z,  cv1.x, yR1 + 0.14, cv1.z,  c1.x, yR1 + 0.12, c1.z
         ]), 3));
         cg.computeVertexNormals();
-        grp.add(new THREE.Mesh(cg, Math.floor(i / 4) % 2 === 0 ? curbRed : curbWht));
+        grp.add(new THREE.Mesh(cg, Math.floor(i / 3) % 2 === 0 ? curbRed : curbWht));
       }
     }
-	    const dw = 0.34;
     const yD0 = h0 + 0.17;
     const yD1 = h1 + 0.17;
-    const dg = new THREE.BufferGeometry();
-    dg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-      p0.x - r0.x * dw, yD0, p0.z - r0.z * dw,
-      p0.x + r0.x * dw, yD0, p0.z + r0.z * dw,
-      p1.x - r1.x * dw, yD1, p1.z - r1.z * dw,
-      p0.x + r0.x * dw, yD0, p0.z + r0.z * dw,
-      p1.x + r1.x * dw, yD1, p1.z + r1.z * dw,
-      p1.x - r1.x * dw, yD1, p1.z - r1.z * dw
-    ]), 3));
-    dg.computeVertexNormals();
-    const dash = new THREE.Mesh(dg, dashMat);
-    dash.renderOrder = 7;
-    grp.add(dash);
-    if (i % 6 < 3) {
-	      for (const lo of laneOffsets) {
-	        const lw = 0.22;
+    if (Math.floor(i / 2) % 3 < 2) {
+      const dw = 0.28;
+      const dg = new THREE.BufferGeometry();
+      dg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+        p0.x - r0.x * dw, yD0, p0.z - r0.z * dw,
+        p0.x + r0.x * dw, yD0, p0.z + r0.z * dw,
+        p1.x - r1.x * dw, yD1, p1.z - r1.z * dw,
+        p0.x + r0.x * dw, yD0, p0.z + r0.z * dw,
+        p1.x + r1.x * dw, yD1, p1.z + r1.z * dw,
+        p1.x - r1.x * dw, yD1, p1.z - r1.z * dw
+      ]), 3));
+      dg.computeVertexNormals();
+      const dash = new THREE.Mesh(dg, dashMat);
+      dash.renderOrder = 7;
+      grp.add(dash);
+    }
+    if (Math.floor(i / 2) % 4 < 2) {
+      for (const lo of laneOffsets) {
+        const lw = 0.18;
         const lp0 = offsetPoint(p0, r0, lo);
         const lp1 = offsetPoint(p1, r1, lo);
         const lg = new THREE.BufferGeometry();
@@ -2511,28 +2690,127 @@ function buildRoadMesh(crv) {
         lg.computeVertexNormals();
         const lane = new THREE.Mesh(lg, laneMat);
         lane.renderOrder = 8;
-	        grp.add(lane);
-	      }
-	    }
-    for (const eo of [-hw + 1.2, hw - 1.2]) {
-      const ew = 0.16;
+        grp.add(lane);
+      }
+    }
+    for (const eo of [-hw + 0.55, hw - 0.55]) {
+      const ew = 0.2;
       const ep0 = offsetPoint(p0, r0, eo);
       const ep1 = offsetPoint(p1, r1, eo);
       const eg = new THREE.BufferGeometry();
       eg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-        ep0.x - r0.x * ew, yD0 + 0.006, ep0.z - r0.z * ew,
-        ep0.x + r0.x * ew, yD0 + 0.006, ep0.z + r0.z * ew,
-        ep1.x - r1.x * ew, yD1 + 0.006, ep1.z - r1.z * ew,
-        ep0.x + r0.x * ew, yD0 + 0.006, ep0.z + r0.z * ew,
-        ep1.x + r1.x * ew, yD1 + 0.006, ep1.z + r1.z * ew,
-        ep1.x - r1.x * ew, yD1 + 0.006, ep1.z - r1.z * ew
+        ep0.x - r0.x * ew, yD0, ep0.z - r0.z * ew,
+        ep0.x + r0.x * ew, yD0, ep0.z + r0.z * ew,
+        ep1.x - r1.x * ew, yD1, ep1.z - r1.z * ew,
+        ep0.x + r0.x * ew, yD0, ep0.z + r0.z * ew,
+        ep1.x + r1.x * ew, yD1, ep1.z + r1.z * ew,
+        ep1.x - r1.x * ew, yD1, ep1.z - r1.z * ew
       ]), 3));
       eg.computeVertexNormals();
       const edge = new THREE.Mesh(eg, edgeMat);
       edge.renderOrder = 8;
       grp.add(edge);
     }
+    if (i % 2 === 0) {
+      const rw = 0.34;
+      const rumbleOff = hw - 0.35;
+      const rumbleMat = (i / 2) % 2 === 0 ? rumbleRed : rumbleWht;
+      for (const ro of [-rumbleOff, rumbleOff]) {
+        const rp0 = offsetPoint(p0, r0, ro);
+        const rp1 = offsetPoint(p1, r1, ro);
+        const rg = new THREE.BufferGeometry();
+        rg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+          rp0.x - r0.x * rw, yD0 - 0.04, rp0.z - r0.z * rw,
+          rp0.x + r0.x * rw, yD0 - 0.04, rp0.z + r0.z * rw,
+          rp1.x - r1.x * rw, yD1 - 0.04, rp1.z - r1.z * rw,
+          rp0.x + r0.x * rw, yD0 - 0.04, rp0.z + r0.z * rw,
+          rp1.x + r1.x * rw, yD1 - 0.04, rp1.z + r1.z * rw,
+          rp1.x - r1.x * rw, yD1 - 0.04, rp1.z - r1.z * rw
+        ]), 3));
+        rg.computeVertexNormals();
+        const rumble = new THREE.Mesh(rg, rumbleMat);
+        rumble.renderOrder = 7;
+        grp.add(rumble);
+      }
+    }
+    if (i % 2 === 0) {
+      const yG0 = h0 + 0.04;
+      const yG1 = h1 + 0.04;
+      for (const side of ['l', 'r']) {
+        const inner = hw + 1.15;
+        const outer = hw + 4.2;
+        const sign = side === 'l' ? 1 : -1;
+        const g0a = offsetPoint(p0, r0, inner * sign);
+        const g0b = offsetPoint(p0, r0, outer * sign);
+        const g1a = offsetPoint(p1, r1, inner * sign);
+        const g1b = offsetPoint(p1, r1, outer * sign);
+        const gg = new THREE.BufferGeometry();
+        gg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+          g0a.x, yG0, g0a.z,  g0b.x, yG0, g0b.z,  g1a.x, yG1, g1a.z,
+          g0b.x, yG0, g0b.z,  g1b.x, yG1, g1b.z,  g1a.x, yG1, g1a.z
+        ]), 3));
+        gg.computeVertexNormals();
+        const grass = new THREE.Mesh(gg, grassMat);
+        grass.receiveShadow = true;
+        grass.renderOrder = 3;
+        grp.add(grass);
+      }
+    }
+    if (i % 5 === 0) {
+      const segLen = p0.distanceTo(p1) || 1;
+      for (const side of [1, -1]) {
+        const apron = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.14, segLen), runOffMat);
+        const mid = p0.clone().add(p1).multiplyScalar(0.5);
+        const off = r0.clone().multiplyScalar((hw + 5.8) * side);
+        apron.position.set(mid.x + off.x, mid.y + 0.03, mid.z + off.z);
+        apron.rotation.y = Math.atan2(p1.x - p0.x, p1.z - p0.z);
+        apron.receiveShadow = true;
+        grp.add(apron);
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.82, segLen), barrierMat);
+        const railOff = r0.clone().multiplyScalar((hw + 8.2) * side);
+        rail.position.set(mid.x + railOff.x, mid.y + 0.42, mid.z + railOff.z);
+        rail.rotation.y = apron.rotation.y;
+        rail.castShadow = true;
+        grp.add(rail);
+      }
+    }
   }
+
+  // Checkered start/finish + gantry at lap 0
+  const sfP = pts[0];
+  const sfR = rights[0];
+  const sfTan = new THREE.Vector3();
+  crv.getTangent(0, sfTan);
+  const sfYaw = Math.atan2(sfTan.x, sfTan.z);
+  const sfY = bridgeHeightAtT(0) + 0.12;
+  const sqW = 0.85;
+  const sqCols = Math.floor((hw * 2) / sqW);
+  for (let col = 0; col < sqCols; col++) {
+    const lat = col * sqW - hw + sqW * 0.5;
+    const sq = new THREE.Mesh(
+      new THREE.BoxGeometry(sqW, 0.025, sqW),
+      new THREE.MeshStandardMaterial({ color: col % 2 === 0 ? 0x111111 : 0xffffff, roughness: 0.45 })
+    );
+    const off = sfR.clone().multiplyScalar(lat);
+    sq.position.set(sfP.x + off.x, sfY, sfP.z + off.z);
+    sq.rotation.y = sfYaw;
+    sq.renderOrder = 9;
+    grp.add(sq);
+  }
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x6a7078, metalness: 0.55, roughness: 0.42 });
+  const bannerMat = new THREE.MeshBasicMaterial({ color: 0xf01810 });
+  [-1, 1].forEach(function(side) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.32, 5.6, 0.32), postMat);
+    const po = sfR.clone().multiplyScalar((hw + 1.4) * side);
+    post.position.set(sfP.x + po.x, sfY + 2.8, sfP.z + po.z);
+    post.castShadow = true;
+    grp.add(post);
+  });
+  const banner = new THREE.Mesh(new THREE.BoxGeometry(hw * 2 + 2.8, 0.55, 0.2), bannerMat);
+  banner.position.set(sfP.x, sfY + 5.15, sfP.z);
+  banner.rotation.y = sfYaw;
+  grp.add(banner);
+
   return grp;
 }
 
@@ -2669,76 +2947,2971 @@ function buildSky(def) {
   }
 }
 
-// ── City Definitions ──────────────────────────────────
-let cityPts = [];
+// 30 real-world cities (index order matches iOS CityThemeID)
 const CITY_DEFS = [
   {
-    name: 'LOS SANTOS',
-    desc: 'Sunny streets · golden hour',
-    isDay: true, isSunset: false, isNight: false,
-    sky: 0x6abaed, cloudCol: 0xffffff, cloudOp: 0.9,
-    fogColor: 0xc4dff5, fogNear: 100, fogFar: 420,
-    groundCol: 0x5a8a30,
-    ambCol: 0xfff8f0, ambInt: 0.75,
-    sunCol: 0xfff4d0, sunInt: 2.8, sunPos: [120, 200, 80],
-    fillCol: 0xb0d8ff, fillInt: 0.55,
-    hemisSky: 0x6abaed, hemisGnd: 0x5a8a30, hemisInt: 0.5,
-    curbA: 0xff3311, curbB: 0xffffff,
-    bldConfigs: [
-      [0xf5e8c8,0x5599ff,10,32,8,14],[0xe8d4a8,0xff8833,8,25,7,12],
-      [0xfaf0d8,0x33cc88,12,40,9,15],[0xdcc8a0,0xffcc44,9,28,8,13],
-      [0xf0e0c0,0x4488ff,14,46,10,16],[0xe4d4b0,0xff6644,11,36,7,11],
+    isDay: false,
+    isSunset: false,
+    isNight: true,
+    sky: 329744,
+    fogColor: 329744,
+    fogNear: 0,
+    fogFar: 0,
+    groundCol: 1052696,
+    ambCol: 2241365,
+    ambInt: 0.5,
+    sunCol: 10075135,
+    sunInt: 0.4,
+    sunPos: [
+      50,
+      100,
+      70
     ],
-    skylineWin: [0x5599ff,0x33cc88,0xffcc44,0xff8833,0x4488ff],
-    treeColor: 0x2d7a20, treeTrunk: 0x6b3a1f,
-    previewGrad: ['#6abaed','#f5deb3','#5a8a30'],
-    cityLights: [],
+    fillCol: 2245802,
+    fillInt: 0.35,
+    hemisSky: 2241365,
+    hemisGnd: 526352,
+    hemisInt: 0.32,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        857381,
+        17663,
+        18,
+        55,
+        8,
+        14
+      ],
+      [
+        1183770,
+        16711884,
+        12,
+        40,
+        7,
+        12
+      ],
+      [
+        660752,
+        65450,
+        20,
+        60,
+        9,
+        15
+      ],
+      [
+        1707277,
+        16720384,
+        15,
+        45,
+        8,
+        13
+      ],
+      [
+        1118488,
+        43775,
+        25,
+        70,
+        10,
+        16
+      ],
+      [
+        986904,
+        16763904,
+        14,
+        38,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      3368703,
+      16720486,
+      52394,
+      16763904,
+      4491519
+    ],
+    treeColor: 664074,
+    treeTrunk: 2757120,
+    previewGrad: [
+      "#050810",
+      "#2244aa",
+      "#ff2266"
+    ],
+    cityLights: [
+      [
+        3368703,
+        190
+      ],
+      [
+        16720486,
+        210
+      ],
+      [
+        52394,
+        170
+      ],
+      [
+        16763904,
+        160
+      ]
+    ],
+    name: "NEW YORK",
+    country: "United States",
+    desc: "Midtown grid · neon nights"
   },
   {
-    name: 'DUBAI SUNSET',
-    desc: 'Golden towers · desert heat',
-    isDay: false, isSunset: true, isNight: false,
-    sky: 0xe8642a, cloudCol: 0xffccaa, cloudOp: 0.65,
-    fogColor: 0xc05010, fogNear: 50, fogFar: 260,
-    groundCol: 0xc4a820,
-    ambCol: 0xff9966, ambInt: 0.55,
-    sunCol: 0xff5500, sunInt: 1.6, sunPos: [250, 30, 10],
-    fillCol: 0xff6633, fillInt: 0.4,
-    hemisSky: 0xe8642a, hemisGnd: 0xc4a820, hemisInt: 0.45,
-    curbA: 0xffcc00, curbB: 0xffffff,
-    bldConfigs: [
-      [0xd4a040,0xffcc00,22,80,10,18],[0xc88020,0xff6600,16,55,8,14],
-      [0xe8c060,0xffffff,25,90,12,20],[0xd09030,0xffaa00,18,60,9,16],
-      [0xdcb050,0xffdd44,20,70,10,17],[0xc89438,0xff8833,15,50,8,13],
+    isDay: false,
+    isSunset: false,
+    isNight: true,
+    sky: 131850,
+    fogColor: 131850,
+    fogNear: 0,
+    fogFar: 0,
+    groundCol: 921108,
+    ambCol: 1122884,
+    ambInt: 0.45,
+    sunCol: 11193599,
+    sunInt: 0.35,
+    sunPos: [
+      40,
+      120,
+      60
     ],
-    skylineWin: [0xffcc00,0xff6600,0xffffff,0xffaa00,0xffdd44],
-    treeColor: 0x3d5c10, treeTrunk: 0x7a5020,
-    previewGrad: ['#e8642a','#d4a040','#c4a820'],
-    cityLights: [],
+    fillCol: 26367,
+    fillInt: 0.3,
+    hemisSky: 1122884,
+    hemisGnd: 328976,
+    hemisInt: 0.3,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        857381,
+        17663,
+        18,
+        55,
+        8,
+        14
+      ],
+      [
+        1183770,
+        16711884,
+        12,
+        40,
+        7,
+        12
+      ],
+      [
+        660752,
+        65450,
+        20,
+        60,
+        9,
+        15
+      ],
+      [
+        1707277,
+        16720384,
+        15,
+        45,
+        8,
+        13
+      ],
+      [
+        1118488,
+        43775,
+        25,
+        70,
+        10,
+        16
+      ],
+      [
+        986904,
+        16763904,
+        14,
+        38,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      22015,
+      16711850,
+      65484,
+      16755200,
+      43775
+    ],
+    treeColor: 666122,
+    treeTrunk: 2757120,
+    previewGrad: [
+      "#02030a",
+      "#0044ff",
+      "#ff00cc"
+    ],
+    cityLights: [
+      [
+        17663,
+        180
+      ],
+      [
+        16711782,
+        200
+      ],
+      [
+        65450,
+        180
+      ],
+      [
+        16755200,
+        170
+      ]
+    ],
+    name: "TOKYO",
+    country: "Japan",
+    desc: "Shibuya lights · tight streets"
   },
   {
-    name: 'NEON TOKYO',
-    desc: 'Midnight city · neon rain',
-    isDay: false, isSunset: false, isNight: true,
-    sky: 0x02030a, fogColor: 0x02030a, fogNear: 0, fogFar: 0,
-    groundCol: 0x0e0e14,
-    ambCol: 0x112244, ambInt: 0.45,
-    sunCol: 0xaaccff, sunInt: 0.35, sunPos: [40, 120, 60],
-    fillCol: 0x0066ff, fillInt: 0.3,
-    hemisSky: 0x112244, hemisGnd: 0x050510, hemisInt: 0.3,
-    curbA: 0xcc1100, curbB: 0xffffff,
-    bldConfigs: [
-      [0x0d1525,0x0044ff,18,55,8,14],[0x12101a,0xff00cc,12,40,7,12],
-      [0x0a1510,0x00ffaa,20,60,9,15],[0x1a0d0d,0xff2200,15,45,8,13],
-      [0x111118,0x00aaff,25,70,10,16],[0x0f0f18,0xffcc00,14,38,7,11],
+    isDay: false,
+    isSunset: true,
+    isNight: false,
+    sky: 15229994,
+    cloudCol: 16764074,
+    cloudOp: 0.65,
+    fogColor: 12603408,
+    fogNear: 50,
+    fogFar: 260,
+    groundCol: 12888096,
+    ambCol: 16750950,
+    ambInt: 0.55,
+    sunCol: 16733440,
+    sunInt: 1.6,
+    sunPos: [
+      250,
+      30,
+      10
     ],
-    skylineWin: [0x0055ff,0xff00aa,0x00ffcc,0xffaa00,0x00aaff],
-    treeColor: 0x0a2a0a, treeTrunk: 0x2a1200,
-    previewGrad: ['#02030a','#0044ff','#ff00cc'],
-    cityLights: [[0x0044ff,180],[0xff0066,200],[0x00ffaa,180],[0xffaa00,170]],
+    fillCol: 16737843,
+    fillInt: 0.4,
+    hemisSky: 15229994,
+    hemisGnd: 12888096,
+    hemisInt: 0.45,
+    curbA: 16763904,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        13934656,
+        16763904,
+        22,
+        80,
+        10,
+        18
+      ],
+      [
+        13140000,
+        16737792,
+        16,
+        55,
+        8,
+        14
+      ],
+      [
+        15253600,
+        16777215,
+        25,
+        90,
+        12,
+        20
+      ],
+      [
+        13668400,
+        16755200,
+        18,
+        60,
+        9,
+        16
+      ],
+      [
+        14463056,
+        16768324,
+        20,
+        70,
+        10,
+        17
+      ],
+      [
+        13145144,
+        16746547,
+        15,
+        50,
+        8,
+        13
+      ]
+    ],
+    skylineWin: [
+      16763904,
+      16737792,
+      16777215,
+      16755200,
+      16768324
+    ],
+    treeColor: 4021264,
+    treeTrunk: 8015904,
+    previewGrad: [
+      "#e8642a",
+      "#d4a040",
+      "#c4a820"
+    ],
+    cityLights: [],
+    name: "DUBAI",
+    country: "United Arab Emirates",
+    desc: "Desert towers · golden heat"
   },
+  {
+    isDay: false,
+    isSunset: false,
+    isNight: false,
+    sky: 9083562,
+    cloudCol: 11581632,
+    cloudOp: 0.85,
+    fogColor: 10135736,
+    fogNear: 40,
+    fogFar: 220,
+    groundCol: 4876856,
+    ambCol: 12634320,
+    ambInt: 0.55,
+    sunCol: 14213352,
+    sunInt: 1.1,
+    sunPos: [
+      80,
+      120,
+      40
+    ],
+    fillCol: 10531008,
+    fillInt: 0.4,
+    hemisSky: 9083562,
+    hemisGnd: 4872768,
+    hemisInt: 0.45,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15261904,
+        6719658,
+        12,
+        38,
+        8,
+        13
+      ],
+      [
+        14209216,
+        10070715,
+        10,
+        30,
+        7,
+        11
+      ],
+      [
+        15789284,
+        7833753,
+        14,
+        42,
+        9,
+        14
+      ],
+      [
+        13156528,
+        5596791,
+        9,
+        26,
+        7,
+        10
+      ],
+      [
+        14736596,
+        8952234,
+        13,
+        40,
+        8,
+        12
+      ],
+      [
+        13683908,
+        6715272,
+        11,
+        32,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      8952234,
+      10070715,
+      6715272,
+      11189196,
+      7833753
+    ],
+    treeColor: 2775584,
+    treeTrunk: 4861976,
+    previewGrad: [
+      "#8a9aaa",
+      "#c0c8d0",
+      "#4a6a38"
+    ],
+    cityLights: [],
+    name: "LONDON",
+    country: "United Kingdom",
+    desc: "River bends · grey rain"
+  },
+  {
+    isDay: true,
+    isSunset: false,
+    isNight: false,
+    sky: 6994669,
+    cloudCol: 16777215,
+    cloudOp: 0.9,
+    fogColor: 12902389,
+    fogNear: 100,
+    fogFar: 420,
+    groundCol: 5933616,
+    ambCol: 16775408,
+    ambInt: 0.75,
+    sunCol: 16774352,
+    sunInt: 2.8,
+    sunPos: [
+      120,
+      200,
+      80
+    ],
+    fillCol: 11589887,
+    fillInt: 0.55,
+    hemisSky: 6994669,
+    hemisGnd: 5933616,
+    hemisInt: 0.5,
+    curbA: 16724753,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        16115912,
+        5609983,
+        10,
+        32,
+        8,
+        14
+      ],
+      [
+        15258792,
+        16746547,
+        8,
+        25,
+        7,
+        12
+      ],
+      [
+        16445656,
+        3394696,
+        12,
+        40,
+        9,
+        15
+      ],
+      [
+        14469280,
+        16763972,
+        9,
+        28,
+        8,
+        13
+      ],
+      [
+        15786176,
+        4491519,
+        14,
+        46,
+        10,
+        16
+      ],
+      [
+        14996656,
+        16737860,
+        11,
+        36,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      5609983,
+      3394696,
+      16763972,
+      16746547,
+      4491519
+    ],
+    treeColor: 2980384,
+    treeTrunk: 7027231,
+    previewGrad: [
+      "#6abaed",
+      "#f5deb3",
+      "#5a8a30"
+    ],
+    cityLights: [],
+    name: "LOS ANGELES",
+    country: "United States",
+    desc: "Pacific coast · palm highways"
+  },
+  {
+    isDay: false,
+    isSunset: true,
+    isNight: false,
+    sky: 16742212,
+    cloudCol: 16764074,
+    cloudOp: 0.7,
+    fogColor: 16746581,
+    fogNear: 60,
+    fogFar: 280,
+    groundCol: 3832360,
+    ambCol: 16755336,
+    ambInt: 0.6,
+    sunCol: 16737826,
+    sunInt: 1.8,
+    sunPos: [
+      200,
+      50,
+      30
+    ],
+    fillCol: 16746598,
+    fillInt: 0.45,
+    hemisSky: 16742212,
+    hemisGnd: 2779680,
+    hemisInt: 0.48,
+    curbA: 16724753,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15788232,
+        4500070,
+        11,
+        34,
+        8,
+        13
+      ],
+      [
+        15260864,
+        16746564,
+        9,
+        28,
+        7,
+        11
+      ],
+      [
+        16314584,
+        3390327,
+        13,
+        38,
+        9,
+        14
+      ],
+      [
+        14734520,
+        16755251,
+        10,
+        30,
+        7,
+        10
+      ],
+      [
+        16051416,
+        5622920,
+        12,
+        36,
+        8,
+        12
+      ],
+      [
+        14208176,
+        16750899,
+        9,
+        26,
+        7,
+        10
+      ]
+    ],
+    skylineWin: [
+      16737962,
+      52479,
+      16763904,
+      16729088,
+      4513279
+    ],
+    treeColor: 1731096,
+    treeTrunk: 5912592,
+    previewGrad: [
+      "#ff7744",
+      "#ffccaa",
+      "#2a6a20"
+    ],
+    cityLights: [
+      [
+        16729258,
+        160
+      ],
+      [
+        52479,
+        150
+      ]
+    ],
+    name: "MIAMI",
+    country: "United States",
+    desc: "Ocean drive · art-deco glow"
+  },
+  {
+    isDay: true,
+    isSunset: false,
+    isNight: false,
+    sky: 6994669,
+    cloudCol: 16777215,
+    cloudOp: 0.9,
+    fogColor: 12902389,
+    fogNear: 100,
+    fogFar: 420,
+    groundCol: 5933616,
+    ambCol: 16775408,
+    ambInt: 0.75,
+    sunCol: 16774352,
+    sunInt: 2.8,
+    sunPos: [
+      120,
+      200,
+      80
+    ],
+    fillCol: 11589887,
+    fillInt: 0.55,
+    hemisSky: 6994669,
+    hemisGnd: 5933616,
+    hemisInt: 0.5,
+    curbA: 16724753,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        16115912,
+        5609983,
+        10,
+        32,
+        8,
+        14
+      ],
+      [
+        15258792,
+        16746547,
+        8,
+        25,
+        7,
+        12
+      ],
+      [
+        16445656,
+        3394696,
+        12,
+        40,
+        9,
+        15
+      ],
+      [
+        14469280,
+        16763972,
+        9,
+        28,
+        8,
+        13
+      ],
+      [
+        15786176,
+        4491519,
+        14,
+        46,
+        10,
+        16
+      ],
+      [
+        14996656,
+        16737860,
+        11,
+        36,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      5609983,
+      3394696,
+      16763972,
+      16746547,
+      4491519
+    ],
+    treeColor: 2980384,
+    treeTrunk: 7027231,
+    previewGrad: [
+      "#6abaed",
+      "#f5deb3",
+      "#5a8a30"
+    ],
+    cityLights: [],
+    name: "SAN FRANCISCO",
+    country: "United States",
+    desc: "Bay bridges · steep grades"
+  },
+  {
+    isDay: true,
+    isSunset: false,
+    isNight: false,
+    sky: 5949678,
+    cloudCol: 16777215,
+    cloudOp: 0.7,
+    fogColor: 11069688,
+    fogNear: 85,
+    fogFar: 390,
+    groundCol: 4889144,
+    ambCol: 16775400,
+    ambInt: 0.78,
+    sunCol: 16773312,
+    sunInt: 2.5,
+    sunPos: [
+      95,
+      175,
+      55
+    ],
+    fillCol: 8969727,
+    fillInt: 0.5,
+    hemisSky: 5949678,
+    hemisGnd: 4889144,
+    hemisInt: 0.5,
+    curbA: 16724753,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15788232,
+        4500070,
+        11,
+        34,
+        8,
+        13
+      ],
+      [
+        15260864,
+        16746564,
+        9,
+        28,
+        7,
+        11
+      ],
+      [
+        16314584,
+        3390327,
+        13,
+        38,
+        9,
+        14
+      ],
+      [
+        14734520,
+        16755251,
+        10,
+        30,
+        7,
+        10
+      ],
+      [
+        16051416,
+        5622920,
+        12,
+        36,
+        8,
+        12
+      ],
+      [
+        14208176,
+        16750899,
+        9,
+        26,
+        7,
+        10
+      ]
+    ],
+    skylineWin: [
+      4508927,
+      16755268,
+      3399048,
+      16737860,
+      8974079
+    ],
+    treeColor: 2263064,
+    treeTrunk: 6963224,
+    previewGrad: [
+      "#5ac8ee",
+      "#fff0c0",
+      "#4a9a38"
+    ],
+    cityLights: [],
+    name: "RIO DE JANEIRO",
+    country: "Brazil",
+    desc: "Harbor curves · tropical hills"
+  },
+  {
+    isDay: false,
+    isSunset: false,
+    isNight: true,
+    sky: 656664,
+    fogColor: 656664,
+    fogNear: 0,
+    fogFar: 0,
+    groundCol: 1709088,
+    ambCol: 3346756,
+    ambInt: 0.48,
+    sunCol: 16746751,
+    sunInt: 0.45,
+    sunPos: [
+      30,
+      90,
+      50
+    ],
+    fillCol: 16711850,
+    fillInt: 0.35,
+    hemisSky: 3346756,
+    hemisGnd: 1050648,
+    hemisInt: 0.3,
+    curbA: 16763904,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        13934656,
+        16763904,
+        22,
+        80,
+        10,
+        18
+      ],
+      [
+        13140000,
+        16737792,
+        16,
+        55,
+        8,
+        14
+      ],
+      [
+        15253600,
+        16777215,
+        25,
+        90,
+        12,
+        20
+      ],
+      [
+        13668400,
+        16755200,
+        18,
+        60,
+        9,
+        16
+      ],
+      [
+        14463056,
+        16768324,
+        20,
+        70,
+        10,
+        17
+      ],
+      [
+        13145144,
+        16746547,
+        15,
+        50,
+        8,
+        13
+      ]
+    ],
+    skylineWin: [
+      16711884,
+      16763904,
+      65535,
+      16729088,
+      16738047
+    ],
+    treeColor: 1716240,
+    treeTrunk: 4859920,
+    previewGrad: [
+      "#0a0518",
+      "#ff00cc",
+      "#ffcc00"
+    ],
+    cityLights: [
+      [
+        16711884,
+        200
+      ],
+      [
+        16763904,
+        190
+      ],
+      [
+        65535,
+        170
+      ]
+    ],
+    name: "LAS VEGAS",
+    country: "United States",
+    desc: "Casino strip · desert night"
+  },
+  {
+    isDay: false,
+    isSunset: false,
+    isNight: false,
+    sky: 10518624,
+    cloudCol: 12101784,
+    cloudOp: 0.8,
+    fogColor: 9470064,
+    fogNear: 30,
+    fogFar: 200,
+    groundCol: 4872760,
+    ambCol: 13154472,
+    ambInt: 0.5,
+    sunCol: 16755302,
+    sunInt: 1.2,
+    sunPos: [
+      100,
+      80,
+      20
+    ],
+    fillCol: 10061943,
+    fillInt: 0.38,
+    hemisSky: 10518624,
+    hemisGnd: 4870208,
+    hemisInt: 0.42,
+    curbA: 13378048,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        13157564,
+        8952234,
+        14,
+        40,
+        8,
+        13
+      ],
+      [
+        12104876,
+        6715272,
+        11,
+        32,
+        7,
+        11
+      ],
+      [
+        13683908,
+        10070715,
+        16,
+        44,
+        9,
+        14
+      ],
+      [
+        11052188,
+        5596791,
+        10,
+        28,
+        7,
+        10
+      ],
+      [
+        12631220,
+        7833753,
+        13,
+        38,
+        8,
+        12
+      ],
+      [
+        11578532,
+        6715272,
+        11,
+        30,
+        7,
+        10
+      ]
+    ],
+    skylineWin: [
+      8952234,
+      16755302,
+      6715272,
+      10070715,
+      7824981
+    ],
+    treeColor: 2771488,
+    treeTrunk: 3811352,
+    previewGrad: [
+      "#a08060",
+      "#c8b8a8",
+      "#4a5a38"
+    ],
+    cityLights: [],
+    name: "CHICAGO",
+    country: "United States",
+    desc: "Lakefront industry · dusk fog"
+  },
+  {
+    isDay: true,
+    isSunset: false,
+    isNight: false,
+    sky: 6994669,
+    cloudCol: 16777215,
+    cloudOp: 0.9,
+    fogColor: 12902389,
+    fogNear: 100,
+    fogFar: 420,
+    groundCol: 5933616,
+    ambCol: 16775408,
+    ambInt: 0.75,
+    sunCol: 16774352,
+    sunInt: 2.8,
+    sunPos: [
+      120,
+      200,
+      80
+    ],
+    fillCol: 11589887,
+    fillInt: 0.55,
+    hemisSky: 6994669,
+    hemisGnd: 5933616,
+    hemisInt: 0.5,
+    curbA: 16724753,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        16115912,
+        5609983,
+        10,
+        32,
+        8,
+        14
+      ],
+      [
+        15258792,
+        16746547,
+        8,
+        25,
+        7,
+        12
+      ],
+      [
+        16445656,
+        3394696,
+        12,
+        40,
+        9,
+        15
+      ],
+      [
+        14469280,
+        16763972,
+        9,
+        28,
+        8,
+        13
+      ],
+      [
+        15786176,
+        4491519,
+        14,
+        46,
+        10,
+        16
+      ],
+      [
+        14996656,
+        16737860,
+        11,
+        36,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      5609983,
+      3394696,
+      16763972,
+      16746547,
+      4491519
+    ],
+    treeColor: 2980384,
+    treeTrunk: 7027231,
+    previewGrad: [
+      "#6abaed",
+      "#f5deb3",
+      "#5a8a30"
+    ],
+    cityLights: [],
+    name: "WASHINGTON, D.C.",
+    country: "United States",
+    desc: "Monument avenues · clear grid"
+  },
+  {
+    isDay: false,
+    isSunset: false,
+    isNight: false,
+    sky: 8034952,
+    cloudCol: 10533032,
+    cloudOp: 0.88,
+    fogColor: 8956056,
+    fogNear: 50,
+    fogFar: 240,
+    groundCol: 4024882,
+    ambCol: 12112064,
+    ambInt: 0.58,
+    sunCol: 13691096,
+    sunInt: 1.15,
+    sunPos: [
+      70,
+      130,
+      50
+    ],
+    fillCol: 9482400,
+    fillInt: 0.42,
+    hemisSky: 8034952,
+    hemisGnd: 4024882,
+    hemisInt: 0.46,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15261904,
+        6719658,
+        12,
+        38,
+        8,
+        13
+      ],
+      [
+        14209216,
+        10070715,
+        10,
+        30,
+        7,
+        11
+      ],
+      [
+        15789284,
+        7833753,
+        14,
+        42,
+        9,
+        14
+      ],
+      [
+        13156528,
+        5596791,
+        9,
+        26,
+        7,
+        10
+      ],
+      [
+        14736596,
+        8952234,
+        13,
+        40,
+        8,
+        12
+      ],
+      [
+        13683908,
+        6715272,
+        11,
+        32,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      6719607,
+      10075050,
+      4478310,
+      11193531,
+      5596791
+    ],
+    treeColor: 2779688,
+    treeTrunk: 4861976,
+    previewGrad: [
+      "#7a9a88",
+      "#b8d0c0",
+      "#3d6a32"
+    ],
+    cityLights: [],
+    name: "DUBLIN",
+    country: "Ireland",
+    desc: "Coastal rain · rolling lanes"
+  },
+  {
+    isDay: true,
+    isSunset: false,
+    isNight: false,
+    sky: 5949678,
+    cloudCol: 16777215,
+    cloudOp: 0.75,
+    fogColor: 11069688,
+    fogNear: 90,
+    fogFar: 400,
+    groundCol: 4889144,
+    ambCol: 16775400,
+    ambInt: 0.8,
+    sunCol: 16773312,
+    sunInt: 2.6,
+    sunPos: [
+      100,
+      180,
+      60
+    ],
+    fillCol: 8969727,
+    fillInt: 0.5,
+    hemisSky: 5949678,
+    hemisGnd: 4889144,
+    hemisInt: 0.52,
+    curbA: 16724753,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15788232,
+        4500070,
+        11,
+        34,
+        8,
+        13
+      ],
+      [
+        15260864,
+        16746564,
+        9,
+        28,
+        7,
+        11
+      ],
+      [
+        16314584,
+        3390327,
+        13,
+        38,
+        9,
+        14
+      ],
+      [
+        14734520,
+        16755251,
+        10,
+        30,
+        7,
+        10
+      ],
+      [
+        16051416,
+        5622920,
+        12,
+        36,
+        8,
+        12
+      ],
+      [
+        14208176,
+        16750899,
+        9,
+        26,
+        7,
+        10
+      ]
+    ],
+    skylineWin: [
+      4508927,
+      16755268,
+      3399048,
+      16737860,
+      8974079
+    ],
+    treeColor: 2263064,
+    treeTrunk: 6963224,
+    previewGrad: [
+      "#5ac8ee",
+      "#fff0c0",
+      "#4a9a38"
+    ],
+    cityLights: [],
+    name: "HONOLULU",
+    country: "United States",
+    desc: "Island ring · volcanic coast"
+  },
+  {
+    isDay: false,
+    isSunset: false,
+    isNight: true,
+    sky: 526866,
+    fogColor: 526866,
+    fogNear: 0,
+    fogFar: 0,
+    groundCol: 1184792,
+    ambCol: 2241348,
+    ambInt: 0.42,
+    sunCol: 8952251,
+    sunInt: 0.32,
+    sunPos: [
+      60,
+      90,
+      40
+    ],
+    fillCol: 3359829,
+    fillInt: 0.28,
+    hemisSky: 2241348,
+    hemisGnd: 658448,
+    hemisInt: 0.28,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        13157564,
+        8952234,
+        14,
+        40,
+        8,
+        13
+      ],
+      [
+        12104876,
+        6715272,
+        11,
+        32,
+        7,
+        11
+      ],
+      [
+        13683908,
+        10070715,
+        16,
+        44,
+        9,
+        14
+      ],
+      [
+        11052188,
+        5596791,
+        10,
+        28,
+        7,
+        10
+      ],
+      [
+        12631220,
+        7833753,
+        13,
+        38,
+        8,
+        12
+      ],
+      [
+        11578532,
+        6715272,
+        11,
+        30,
+        7,
+        10
+      ]
+    ],
+    skylineWin: [
+      5596791,
+      16755268,
+      8952234,
+      3359829,
+      6715272
+    ],
+    treeColor: 662026,
+    treeTrunk: 2758664,
+    previewGrad: [
+      "#080a12",
+      "#334455",
+      "#8899bb"
+    ],
+    cityLights: [
+      [
+        16755268,
+        140
+      ],
+      [
+        6719658,
+        150
+      ]
+    ],
+    name: "DETROIT",
+    country: "United States",
+    desc: "Factory skyline · night haze"
+  },
+  {
+    isDay: true,
+    isSunset: false,
+    isNight: false,
+    sky: 8964336,
+    cloudCol: 16777215,
+    cloudOp: 0.35,
+    fogColor: 13164784,
+    fogNear: 120,
+    fogFar: 450,
+    groundCol: 13150296,
+    ambCol: 16774368,
+    ambInt: 0.78,
+    sunCol: 16771248,
+    sunInt: 2.9,
+    sunPos: [
+      140,
+      190,
+      40
+    ],
+    fillCol: 16768426,
+    fillInt: 0.5,
+    hemisSky: 8964336,
+    hemisGnd: 13150296,
+    hemisInt: 0.48,
+    curbA: 16729088,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        13934656,
+        16763904,
+        22,
+        80,
+        10,
+        18
+      ],
+      [
+        13140000,
+        16737792,
+        16,
+        55,
+        8,
+        14
+      ],
+      [
+        15253600,
+        16777215,
+        25,
+        90,
+        12,
+        20
+      ],
+      [
+        13668400,
+        16755200,
+        18,
+        60,
+        9,
+        16
+      ],
+      [
+        14463056,
+        16768324,
+        20,
+        70,
+        10,
+        17
+      ],
+      [
+        13145144,
+        16746547,
+        15,
+        50,
+        8,
+        13
+      ]
+    ],
+    skylineWin: [
+      16755268,
+      16764006,
+      14518340,
+      16746564,
+      15645542
+    ],
+    treeColor: 4876320,
+    treeTrunk: 6965272,
+    previewGrad: [
+      "#88c8f0",
+      "#ffe8b0",
+      "#c8a858"
+    ],
+    cityLights: [],
+    name: "PHOENIX",
+    country: "United States",
+    desc: "Canyon heat · red dust"
+  },
+  {
+    isDay: false,
+    isSunset: false,
+    isNight: false,
+    sky: 10004664,
+    cloudCol: 12109008,
+    cloudOp: 0.92,
+    fogColor: 10531008,
+    fogNear: 25,
+    fogFar: 180,
+    groundCol: 3824176,
+    ambCol: 12109008,
+    ambInt: 0.52,
+    sunCol: 13688040,
+    sunInt: 0.95,
+    sunPos: [
+      60,
+      100,
+      30
+    ],
+    fillCol: 9478320,
+    fillInt: 0.38,
+    hemisSky: 10004664,
+    hemisGnd: 3824176,
+    hemisInt: 0.44,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        16115912,
+        5609983,
+        10,
+        32,
+        8,
+        14
+      ],
+      [
+        15258792,
+        16746547,
+        8,
+        25,
+        7,
+        12
+      ],
+      [
+        16445656,
+        3394696,
+        12,
+        40,
+        9,
+        15
+      ],
+      [
+        14469280,
+        16763972,
+        9,
+        28,
+        8,
+        13
+      ],
+      [
+        15786176,
+        4491519,
+        14,
+        46,
+        10,
+        16
+      ],
+      [
+        14996656,
+        16737860,
+        11,
+        36,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      7833753,
+      10070715,
+      5596791,
+      11189196,
+      6715272
+    ],
+    treeColor: 2775592,
+    treeTrunk: 4861976,
+    previewGrad: [
+      "#98a8b8",
+      "#d0dce8",
+      "#3a5a30"
+    ],
+    cityLights: [],
+    name: "SEATTLE",
+    country: "United States",
+    desc: "Puget mist · wet asphalt"
+  },
+  {
+    isDay: true,
+    isSunset: false,
+    isNight: false,
+    sky: 10143976,
+    cloudCol: 16775408,
+    cloudOp: 0.55,
+    fogColor: 14207144,
+    fogNear: 70,
+    fogFar: 320,
+    groundCol: 9083464,
+    ambCol: 16773336,
+    ambInt: 0.72,
+    sunCol: 16769184,
+    sunInt: 2.5,
+    sunPos: [
+      130,
+      170,
+      50
+    ],
+    fillCol: 16764040,
+    fillInt: 0.48,
+    hemisSky: 10143976,
+    hemisGnd: 9083464,
+    hemisInt: 0.46,
+    curbA: 16729088,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15788232,
+        4500070,
+        11,
+        34,
+        8,
+        13
+      ],
+      [
+        15260864,
+        16746564,
+        9,
+        28,
+        7,
+        11
+      ],
+      [
+        16314584,
+        3390327,
+        13,
+        38,
+        9,
+        14
+      ],
+      [
+        14734520,
+        16755251,
+        10,
+        30,
+        7,
+        10
+      ],
+      [
+        16051416,
+        5622920,
+        12,
+        36,
+        8,
+        12
+      ],
+      [
+        14208176,
+        16750899,
+        9,
+        26,
+        7,
+        10
+      ]
+    ],
+    skylineWin: [
+      16755268,
+      16746564,
+      14535782,
+      16737860,
+      13412949
+    ],
+    treeColor: 4878368,
+    treeTrunk: 6963224,
+    previewGrad: [
+      "#9ac8e8",
+      "#ffe0a0",
+      "#8a9a48"
+    ],
+    cityLights: [],
+    name: "MEXICO CITY",
+    country: "Mexico",
+    desc: "High plateau · dusty avenues"
+  },
+  {
+    isDay: true,
+    isSunset: false,
+    isNight: false,
+    sky: 7911656,
+    cloudCol: 16777215,
+    cloudOp: 0.8,
+    fogColor: 12640245,
+    fogNear: 90,
+    fogFar: 380,
+    groundCol: 4885048,
+    ambCol: 15792383,
+    ambInt: 0.78,
+    sunCol: 16775400,
+    sunInt: 2.4,
+    sunPos: [
+      90,
+      200,
+      70
+    ],
+    fillCol: 11063551,
+    fillInt: 0.52,
+    hemisSky: 7911656,
+    hemisGnd: 4885048,
+    hemisInt: 0.5,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15261904,
+        6719658,
+        12,
+        38,
+        8,
+        13
+      ],
+      [
+        14209216,
+        10070715,
+        10,
+        30,
+        7,
+        11
+      ],
+      [
+        15789284,
+        7833753,
+        14,
+        42,
+        9,
+        14
+      ],
+      [
+        13156528,
+        5596791,
+        9,
+        26,
+        7,
+        10
+      ],
+      [
+        14736596,
+        8952234,
+        13,
+        40,
+        8,
+        12
+      ],
+      [
+        13683908,
+        6715272,
+        11,
+        32,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      5609983,
+      8960989,
+      11193599,
+      6715289,
+      10079470
+    ],
+    treeColor: 2783784,
+    treeTrunk: 5912600,
+    previewGrad: [
+      "#78b8e8",
+      "#f0f8ff",
+      "#4a8a38"
+    ],
+    cityLights: [],
+    name: "ZURICH",
+    country: "Switzerland",
+    desc: "Mountain pass · crisp air"
+  },
+  {
+    isDay: false,
+    isSunset: false,
+    isNight: true,
+    sky: 264208,
+    fogColor: 264208,
+    fogNear: 0,
+    fogFar: 0,
+    groundCol: 790552,
+    ambCol: 1714244,
+    ambInt: 0.46,
+    sunCol: 10079487,
+    sunInt: 0.38,
+    sunPos: [
+      45,
+      110,
+      55
+    ],
+    fillCol: 35071,
+    fillInt: 0.32,
+    hemisSky: 1714244,
+    hemisGnd: 395280,
+    hemisInt: 0.3,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        857381,
+        17663,
+        18,
+        55,
+        8,
+        14
+      ],
+      [
+        1183770,
+        16711884,
+        12,
+        40,
+        7,
+        12
+      ],
+      [
+        660752,
+        65450,
+        20,
+        60,
+        9,
+        15
+      ],
+      [
+        1707277,
+        16720384,
+        15,
+        45,
+        8,
+        13
+      ],
+      [
+        1118488,
+        43775,
+        25,
+        70,
+        10,
+        16
+      ],
+      [
+        986904,
+        16763904,
+        14,
+        38,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      35071,
+      16711748,
+      65484,
+      16763904,
+      8930559
+    ],
+    treeColor: 664074,
+    treeTrunk: 2757120,
+    previewGrad: [
+      "#040810",
+      "#0088ff",
+      "#ff0044"
+    ],
+    cityLights: [
+      [
+        35071,
+        190
+      ],
+      [
+        16711748,
+        200
+      ],
+      [
+        65484,
+        170
+      ]
+    ],
+    name: "HONG KONG",
+    country: "China",
+    desc: "Victoria Harbour · neon rain"
+  },
+  {
+    isDay: false,
+    isSunset: true,
+    isNight: false,
+    sky: 13404262,
+    cloudCol: 16768443,
+    cloudOp: 0.75,
+    fogColor: 12093552,
+    fogNear: 45,
+    fogFar: 240,
+    groundCol: 3832360,
+    ambCol: 16764074,
+    ambInt: 0.58,
+    sunCol: 16746564,
+    sunInt: 1.5,
+    sunPos: [
+      180,
+      60,
+      20
+    ],
+    fillCol: 16755302,
+    fillInt: 0.42,
+    hemisSky: 13404262,
+    hemisGnd: 3832360,
+    hemisInt: 0.44,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15788232,
+        4500070,
+        11,
+        34,
+        8,
+        13
+      ],
+      [
+        15260864,
+        16746564,
+        9,
+        28,
+        7,
+        11
+      ],
+      [
+        16314584,
+        3390327,
+        13,
+        38,
+        9,
+        14
+      ],
+      [
+        14734520,
+        16755251,
+        10,
+        30,
+        7,
+        10
+      ],
+      [
+        16051416,
+        5622920,
+        12,
+        36,
+        8,
+        12
+      ],
+      [
+        14208176,
+        16750899,
+        9,
+        26,
+        7,
+        10
+      ]
+    ],
+    skylineWin: [
+      16746564,
+      16763904,
+      4500070,
+      16737860,
+      8965375
+    ],
+    treeColor: 1731096,
+    treeTrunk: 4861968,
+    previewGrad: [
+      "#cc8866",
+      "#ffccaa",
+      "#3a7a28"
+    ],
+    cityLights: [],
+    name: "HO CHI MINH CITY",
+    country: "Vietnam",
+    desc: "River delta · scooter flow"
+  },
+  {
+    isDay: false,
+    isSunset: true,
+    isNight: false,
+    sky: 15761472,
+    cloudCol: 16767152,
+    cloudOp: 0.7,
+    fogColor: 15241312,
+    fogNear: 70,
+    fogFar: 300,
+    groundCol: 4885040,
+    ambCol: 16764057,
+    ambInt: 0.62,
+    sunCol: 16742178,
+    sunInt: 1.7,
+    sunPos: [
+      220,
+      45,
+      15
+    ],
+    fillCol: 16750933,
+    fillInt: 0.45,
+    hemisSky: 15761472,
+    hemisGnd: 4885040,
+    hemisInt: 0.48,
+    curbA: 16724753,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15788232,
+        4500070,
+        11,
+        34,
+        8,
+        13
+      ],
+      [
+        15260864,
+        16746564,
+        9,
+        28,
+        7,
+        11
+      ],
+      [
+        16314584,
+        3390327,
+        13,
+        38,
+        9,
+        14
+      ],
+      [
+        14734520,
+        16755251,
+        10,
+        30,
+        7,
+        10
+      ],
+      [
+        16051416,
+        5622920,
+        12,
+        36,
+        8,
+        12
+      ],
+      [
+        14208176,
+        16750899,
+        9,
+        26,
+        7,
+        10
+      ]
+    ],
+    skylineWin: [
+      16746564,
+      4500223,
+      16763904,
+      3394696,
+      16737860
+    ],
+    treeColor: 2783776,
+    treeTrunk: 5912592,
+    previewGrad: [
+      "#f08040",
+      "#ffd8b0",
+      "#4a8a30"
+    ],
+    cityLights: [],
+    name: "SYDNEY",
+    country: "Australia",
+    desc: "Opera coast · golden hour"
+  },
+  {
+    isDay: false,
+    isSunset: false,
+    isNight: false,
+    sky: 8951976,
+    cloudCol: 11582664,
+    cloudOp: 0.9,
+    fogColor: 10004664,
+    fogNear: 20,
+    fogFar: 160,
+    groundCol: 4872768,
+    ambCol: 12634320,
+    ambInt: 0.48,
+    sunCol: 14213352,
+    sunInt: 0.9,
+    sunPos: [
+      50,
+      90,
+      30
+    ],
+    fillCol: 8951976,
+    fillInt: 0.35,
+    hemisSky: 8951976,
+    hemisGnd: 4872768,
+    hemisInt: 0.4,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15261904,
+        6719658,
+        12,
+        38,
+        8,
+        13
+      ],
+      [
+        14209216,
+        10070715,
+        10,
+        30,
+        7,
+        11
+      ],
+      [
+        15789284,
+        7833753,
+        14,
+        42,
+        9,
+        14
+      ],
+      [
+        13156528,
+        5596791,
+        9,
+        26,
+        7,
+        10
+      ],
+      [
+        14736596,
+        8952234,
+        13,
+        40,
+        8,
+        12
+      ],
+      [
+        13683908,
+        6715272,
+        11,
+        32,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      8952234,
+      13386820,
+      10070715,
+      6715272,
+      11189196
+    ],
+    treeColor: 2771488,
+    treeTrunk: 3811352,
+    previewGrad: [
+      "#8898a8",
+      "#d8e0e8",
+      "#4a5a40"
+    ],
+    cityLights: [],
+    name: "MOSCOW",
+    country: "Russia",
+    desc: "Wide boulevards · winter fog"
+  },
+  {
+    isDay: true,
+    isSunset: false,
+    isNight: false,
+    sky: 7516392,
+    cloudCol: 16777215,
+    cloudOp: 0.75,
+    fogColor: 12639733,
+    fogNear: 85,
+    fogFar: 400,
+    groundCol: 4880946,
+    ambCol: 16775408,
+    ambInt: 0.74,
+    sunCol: 16773328,
+    sunInt: 2.5,
+    sunPos: [
+      110,
+      190,
+      60
+    ],
+    fillCol: 11063551,
+    fillInt: 0.5,
+    hemisSky: 7516392,
+    hemisGnd: 4880946,
+    hemisInt: 0.48,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15261904,
+        6719658,
+        12,
+        38,
+        8,
+        13
+      ],
+      [
+        14209216,
+        10070715,
+        10,
+        30,
+        7,
+        11
+      ],
+      [
+        15789284,
+        7833753,
+        14,
+        42,
+        9,
+        14
+      ],
+      [
+        13156528,
+        5596791,
+        9,
+        26,
+        7,
+        10
+      ],
+      [
+        14736596,
+        8952234,
+        13,
+        40,
+        8,
+        12
+      ],
+      [
+        13683908,
+        6715272,
+        11,
+        32,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      5609983,
+      16763972,
+      8960989,
+      16737860,
+      10079470
+    ],
+    treeColor: 2980384,
+    treeTrunk: 5912600,
+    previewGrad: [
+      "#72b0e8",
+      "#fff0d0",
+      "#4a7a32"
+    ],
+    cityLights: [],
+    name: "BERLIN",
+    country: "Germany",
+    desc: "Spree banks · modern grid"
+  },
+  {
+    isDay: false,
+    isSunset: true,
+    isNight: false,
+    sky: 15245408,
+    cloudCol: 16769216,
+    cloudOp: 0.72,
+    fogColor: 14194792,
+    fogNear: 55,
+    fogFar: 260,
+    groundCol: 5933624,
+    ambCol: 16768443,
+    ambInt: 0.6,
+    sunCol: 16755268,
+    sunInt: 1.65,
+    sunPos: [
+      200,
+      55,
+      25
+    ],
+    fillCol: 16764040,
+    fillInt: 0.44,
+    hemisSky: 15245408,
+    hemisGnd: 5933624,
+    hemisInt: 0.46,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15261904,
+        6719658,
+        12,
+        38,
+        8,
+        13
+      ],
+      [
+        14209216,
+        10070715,
+        10,
+        30,
+        7,
+        11
+      ],
+      [
+        15789284,
+        7833753,
+        14,
+        42,
+        9,
+        14
+      ],
+      [
+        13156528,
+        5596791,
+        9,
+        26,
+        7,
+        10
+      ],
+      [
+        14736596,
+        8952234,
+        13,
+        40,
+        8,
+        12
+      ],
+      [
+        13683908,
+        6715272,
+        11,
+        32,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      16764006,
+      8956637,
+      16746564,
+      13413000,
+      16755268
+    ],
+    treeColor: 3828264,
+    treeTrunk: 5912600,
+    previewGrad: [
+      "#e8a060",
+      "#ffe0c0",
+      "#5a8a38"
+    ],
+    cityLights: [],
+    name: "PARIS",
+    country: "France",
+    desc: "Seine curves · limestone glow"
+  },
+  {
+    isDay: true,
+    isSunset: false,
+    isNight: false,
+    sky: 11063536,
+    cloudCol: 16775408,
+    cloudOp: 0.4,
+    fogColor: 15259832,
+    fogNear: 100,
+    fogFar: 420,
+    groundCol: 13152352,
+    ambCol: 16774368,
+    ambInt: 0.76,
+    sunCol: 16771240,
+    sunInt: 2.85,
+    sunPos: [
+      150,
+      200,
+      30
+    ],
+    fillCol: 16768409,
+    fillInt: 0.52,
+    hemisSky: 11063536,
+    hemisGnd: 13152352,
+    hemisInt: 0.45,
+    curbA: 16729088,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        13934656,
+        16763904,
+        22,
+        80,
+        10,
+        18
+      ],
+      [
+        13140000,
+        16737792,
+        16,
+        55,
+        8,
+        14
+      ],
+      [
+        15253600,
+        16777215,
+        25,
+        90,
+        12,
+        20
+      ],
+      [
+        13668400,
+        16755200,
+        18,
+        60,
+        9,
+        16
+      ],
+      [
+        14463056,
+        16768324,
+        20,
+        70,
+        10,
+        17
+      ],
+      [
+        13145144,
+        16746547,
+        15,
+        50,
+        8,
+        13
+      ]
+    ],
+    skylineWin: [
+      16764006,
+      16755268,
+      14522692,
+      16746564,
+      15649928
+    ],
+    treeColor: 5926944,
+    treeTrunk: 8015896,
+    previewGrad: [
+      "#a8d0f0",
+      "#ffe8a8",
+      "#c8b060"
+    ],
+    cityLights: [],
+    name: "CAIRO",
+    country: "Egypt",
+    desc: "Nile edge · desert sun"
+  },
+  {
+    isDay: false,
+    isSunset: false,
+    isNight: false,
+    sky: 8956104,
+    cloudCol: 11585752,
+    cloudOp: 0.82,
+    fogColor: 9480384,
+    fogNear: 40,
+    fogFar: 230,
+    groundCol: 3832360,
+    ambCol: 13162728,
+    ambInt: 0.58,
+    sunCol: 16764040,
+    sunInt: 1.4,
+    sunPos: [
+      120,
+      100,
+      40
+    ],
+    fillCol: 8960989,
+    fillInt: 0.42,
+    hemisSky: 8956104,
+    hemisGnd: 3832360,
+    hemisInt: 0.44,
+    curbA: 16724753,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15788232,
+        4500070,
+        11,
+        34,
+        8,
+        13
+      ],
+      [
+        15260864,
+        16746564,
+        9,
+        28,
+        7,
+        11
+      ],
+      [
+        16314584,
+        3390327,
+        13,
+        38,
+        9,
+        14
+      ],
+      [
+        14734520,
+        16755251,
+        10,
+        30,
+        7,
+        10
+      ],
+      [
+        16051416,
+        5622920,
+        12,
+        36,
+        8,
+        12
+      ],
+      [
+        14208176,
+        16750899,
+        9,
+        26,
+        7,
+        10
+      ]
+    ],
+    skylineWin: [
+      4500223,
+      16763972,
+      3394696,
+      16737860,
+      8969727
+    ],
+    treeColor: 1731096,
+    treeTrunk: 4861968,
+    previewGrad: [
+      "#88a8c8",
+      "#c8d8e8",
+      "#3a7a28"
+    ],
+    cityLights: [],
+    name: "LAGOS",
+    country: "Nigeria",
+    desc: "Atlantic coast · humid streets"
+  },
+  {
+    isDay: false,
+    isSunset: false,
+    isNight: true,
+    sky: 197900,
+    fogColor: 197900,
+    fogNear: 0,
+    fogFar: 0,
+    groundCol: 790038,
+    ambCol: 1583172,
+    ambInt: 0.46,
+    sunCol: 10075135,
+    sunInt: 0.36,
+    sunPos: [
+      42,
+      115,
+      58
+    ],
+    fillCol: 43775,
+    fillInt: 0.32,
+    hemisSky: 1583172,
+    hemisGnd: 395280,
+    hemisInt: 0.3,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        857381,
+        17663,
+        18,
+        55,
+        8,
+        14
+      ],
+      [
+        1183770,
+        16711884,
+        12,
+        40,
+        7,
+        12
+      ],
+      [
+        660752,
+        65450,
+        20,
+        60,
+        9,
+        15
+      ],
+      [
+        1707277,
+        16720384,
+        15,
+        45,
+        8,
+        13
+      ],
+      [
+        1118488,
+        43775,
+        25,
+        70,
+        10,
+        16
+      ],
+      [
+        986904,
+        16763904,
+        14,
+        38,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      43775,
+      16711850,
+      65484,
+      16763904,
+      8930559
+    ],
+    treeColor: 664074,
+    treeTrunk: 2757120,
+    previewGrad: [
+      "#03050c",
+      "#00aaff",
+      "#ff00aa"
+    ],
+    cityLights: [
+      [
+        43775,
+        185
+      ],
+      [
+        16711850,
+        195
+      ],
+      [
+        65484,
+        175
+      ]
+    ],
+    name: "SEOUL",
+    country: "South Korea",
+    desc: "Gangnam grid · electric night"
+  },
+  {
+    isDay: false,
+    isSunset: false,
+    isNight: false,
+    sky: 7899288,
+    cloudCol: 10004664,
+    cloudOp: 0.92,
+    fogColor: 8425632,
+    fogNear: 35,
+    fogFar: 200,
+    groundCol: 3828272,
+    ambCol: 11583688,
+    ambInt: 0.54,
+    sunCol: 13688040,
+    sunInt: 1,
+    sunPos: [
+      70,
+      110,
+      45
+    ],
+    fillCol: 8952234,
+    fillInt: 0.4,
+    hemisSky: 7899288,
+    hemisGnd: 3828272,
+    hemisInt: 0.44,
+    curbA: 13373696,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15788232,
+        4500070,
+        11,
+        34,
+        8,
+        13
+      ],
+      [
+        15260864,
+        16746564,
+        9,
+        28,
+        7,
+        11
+      ],
+      [
+        16314584,
+        3390327,
+        13,
+        38,
+        9,
+        14
+      ],
+      [
+        14734520,
+        16755251,
+        10,
+        30,
+        7,
+        10
+      ],
+      [
+        16051416,
+        5622920,
+        12,
+        36,
+        8,
+        12
+      ],
+      [
+        14208176,
+        16750899,
+        9,
+        26,
+        7,
+        10
+      ]
+    ],
+    skylineWin: [
+      8956603,
+      16755268,
+      6728328,
+      10075084,
+      7833753
+    ],
+    treeColor: 2779682,
+    treeTrunk: 4861976,
+    previewGrad: [
+      "#788898",
+      "#b0c0c8",
+      "#3a6a30"
+    ],
+    cityLights: [],
+    name: "MUMBAI",
+    country: "India",
+    desc: "Monsoon lanes · dense traffic"
+  },
+  {
+    isDay: false,
+    isSunset: true,
+    isNight: false,
+    sky: 14186552,
+    cloudCol: 16763040,
+    cloudOp: 0.68,
+    fogColor: 13133888,
+    fogNear: 55,
+    fogFar: 270,
+    groundCol: 6982200,
+    ambCol: 16759688,
+    ambInt: 0.58,
+    sunCol: 16737826,
+    sunInt: 1.55,
+    sunPos: [
+      210,
+      50,
+      20
+    ],
+    fillCol: 16746564,
+    fillInt: 0.42,
+    hemisSky: 14186552,
+    hemisGnd: 6982200,
+    hemisInt: 0.45,
+    curbA: 16729088,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        16115912,
+        5609983,
+        10,
+        32,
+        8,
+        14
+      ],
+      [
+        15258792,
+        16746547,
+        8,
+        25,
+        7,
+        12
+      ],
+      [
+        16445656,
+        3394696,
+        12,
+        40,
+        9,
+        15
+      ],
+      [
+        14469280,
+        16763972,
+        9,
+        28,
+        8,
+        13
+      ],
+      [
+        15786176,
+        4491519,
+        14,
+        46,
+        10,
+        16
+      ],
+      [
+        14996656,
+        16737860,
+        11,
+        36,
+        7,
+        11
+      ]
+    ],
+    skylineWin: [
+      16746564,
+      16763972,
+      8956484,
+      16737860,
+      14527061
+    ],
+    treeColor: 3828256,
+    treeTrunk: 5912600,
+    previewGrad: [
+      "#d87838",
+      "#ffc8a0",
+      "#6a8a38"
+    ],
+    cityLights: [],
+    name: "JOHANNESBURG",
+    country: "South Africa",
+    desc: "Highveld ridges · gold dusk"
+  },
+  {
+    isDay: true,
+    isSunset: false,
+    isNight: false,
+    sky: 6863080,
+    cloudCol: 16777215,
+    cloudOp: 0.82,
+    fogColor: 12116216,
+    fogNear: 95,
+    fogFar: 410,
+    groundCol: 4889144,
+    ambCol: 15792895,
+    ambInt: 0.76,
+    sunCol: 16774360,
+    sunInt: 2.4,
+    sunPos: [
+      100,
+      185,
+      65
+    ],
+    fillCol: 10017023,
+    fillInt: 0.52,
+    hemisSky: 6863080,
+    hemisGnd: 4889144,
+    hemisInt: 0.5,
+    curbA: 16724753,
+    curbB: 16777215,
+    bldConfigs: [
+      [
+        15788232,
+        4500070,
+        11,
+        34,
+        8,
+        13
+      ],
+      [
+        15260864,
+        16746564,
+        9,
+        28,
+        7,
+        11
+      ],
+      [
+        16314584,
+        3390327,
+        13,
+        38,
+        9,
+        14
+      ],
+      [
+        14734520,
+        16755251,
+        10,
+        30,
+        7,
+        10
+      ],
+      [
+        16051416,
+        5622920,
+        12,
+        36,
+        8,
+        12
+      ],
+      [
+        14208176,
+        16750899,
+        9,
+        26,
+        7,
+        10
+      ]
+    ],
+    skylineWin: [
+      4500223,
+      8969727,
+      3394696,
+      16755268,
+      6732799
+    ],
+    treeColor: 2783778,
+    treeTrunk: 5914640,
+    previewGrad: [
+      "#68b8e8",
+      "#f0faff",
+      "#4a9a38"
+    ],
+    cityLights: [],
+    name: "AUCKLAND",
+    country: "New Zealand",
+    desc: "Waitematā breeze · harbours"
+  }
 ];
-let selectedCityIdx = 0;
+
+let cityPts = [];
+dx = 0;
 let selectedTrackIdx = 0;
 
 // ── City Scene Objects ────────────────────────────────
@@ -2805,7 +5978,7 @@ function buildCity(cityIdx) {
     const d = new THREE.Vector3().subVectors(p1, p0).normalize();
     const r = new THREE.Vector3(-d.z, 0, d.x);
     for (const side of [1, -1]) {
-      const sw = TW / 2 + 1.5, ew = sw + 9;
+      const sw = TW / 2 + 3.5, ew = sw + 11;
       const s0 = p0.clone().addScaledVector(r, side * sw);
       const s1 = p0.clone().addScaledVector(r, side * ew);
       const e0 = p1.clone().addScaledVector(r, side * sw);
@@ -3470,7 +6643,7 @@ function projectToTrack(x, z) {
 }
 
 function keepPlayerOnTrack() {
-  const edge = TW / 2 - 2.35;
+  const edge = TW / 2 - 3.0;
   const pr = projectToTrack(carX, carZ);
   if (Math.abs(pr.signedLat) <= edge) return false;
   const side = pr.signedLat < 0 ? -1 : 1;
@@ -3996,7 +7169,7 @@ function resetPoliceChaser(ai, idx) {
   const trapPos = curve.getPoint(trapT);
   const trapTan = new THREE.Vector3(); curve.getTangent(trapT, trapTan);
   const trapRight = new THREE.Vector3(-trapTan.z, 0, trapTan.x);
-  const shoulder = (idx % 2 === 0 ? 1 : -1) * (TW * 0.5 - 4.2);
+  const shoulder = (idx % 2 === 0 ? 1 : -1) * (TW * 0.5 - 5.5);
   ai.wx = trapPos.x + trapRight.x * shoulder;
   ai.wz = trapPos.z + trapRight.z * shoulder;
   ai.chaseAngle = Math.atan2(trapTan.x, trapTan.z);
@@ -4016,7 +7189,7 @@ function keepPointOnTrackForPolice(ai) {
   const center = curve.getPoint(nt.t);
   const dx = ai.wx - center.x, dz = ai.wz - center.z;
   const dist = Math.sqrt(dx * dx + dz * dz);
-  const maxDist = TW * 0.5 - 3.5;
+  const maxDist = TW * 0.5 - 4.5;
   if (dist > maxDist) {
     const k = maxDist / Math.max(0.001, dist);
     ai.wx = center.x + dx * k;
@@ -4312,7 +7485,7 @@ function loopFrame(now) {
       if (deltaProg > -0.04 && deltaProg < 0.06) {
         targetLat += deltaProg > 0 ? -LANE_W * 0.32 : LANE_W * 0.32;
       }
-      targetLat = Math.max(-TW / 2 + 4.2, Math.min(TW / 2 - 4.2, targetLat));
+      targetLat = Math.max(-TW / 2 + 5.5, Math.min(TW / 2 - 5.5, targetLat));
       ai.lat += (targetLat - ai.lat) * Math.min(1, 3.2 * dt);
 
       const prevAiSpd = ai.spd || ai.base;
@@ -4636,45 +7809,127 @@ const Music = (function() {
 })();
 
 const EngineAudio = (function() {
-  let ctx, osc, gn, active = false;
-  function ensure() {
-    if (ctx) return;
-    ctx = new (window.AudioContext || window.webkitAudioContext)();
-    gn = ctx.createGain();
-    gn.gain.value = 0;
+  const AUDIO_BASE = 'audio/';
+  let ctx, lowEl, highEl, lowGain, highGain, lowNode, highNode, osc, synthGain;
+  let samplesReady = false, useSynth = false, active = false;
+
+  function wireSamples() {
+    if (!ctx || samplesReady || useSynth || !lowEl || !highEl) return;
+    if (lowEl.readyState < 3 || highEl.readyState < 3) return;
+    try {
+      lowNode = ctx.createMediaElementSource(lowEl);
+      highNode = ctx.createMediaElementSource(highEl);
+      lowNode.connect(lowGain);
+      highNode.connect(highGain);
+      samplesReady = true;
+    } catch (e) {
+      useSynth = true;
+    }
+  }
+
+  function ensureSynth() {
+    if (osc || !ctx) return;
+    synthGain = ctx.createGain();
+    synthGain.gain.value = 0;
     osc = ctx.createOscillator();
     osc.type = 'sawtooth';
     osc.frequency.value = 72;
-    osc.connect(gn);
-    gn.connect(ctx.destination);
+    osc.connect(synthGain);
+    synthGain.connect(ctx.destination);
     osc.start();
   }
+
+  function ensure() {
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    lowGain = ctx.createGain();
+    highGain = ctx.createGain();
+    lowGain.gain.value = 0;
+    highGain.gain.value = 0;
+    lowGain.connect(ctx.destination);
+    highGain.connect(ctx.destination);
+
+    lowEl = new Audio(AUDIO_BASE + 'muscle_v8_loop.mp3');
+    lowEl.loop = true;
+    lowEl.preload = 'auto';
+    highEl = new Audio(AUDIO_BASE + 'muscle_v8_high.mp3');
+    highEl.loop = true;
+    highEl.preload = 'auto';
+    lowEl.addEventListener('canplaythrough', wireSamples);
+    highEl.addEventListener('canplaythrough', wireSamples);
+    lowEl.addEventListener('error', function() { useSynth = true; ensureSynth(); });
+    highEl.addEventListener('error', function() { useSynth = true; ensureSynth(); });
+    lowEl.load();
+    highEl.load();
+  }
+
+  function playSamples() {
+    if (!samplesReady) return;
+    lowEl.play().catch(function() {});
+    highEl.play().catch(function() {});
+  }
+
   return {
-    start: function() { active = true; ensure(); },
+    start: function() {
+      active = true;
+      ensure();
+      wireSamples();
+      if (samplesReady) playSamples();
+      else ensureSynth();
+    },
     stop: function() {
       active = false;
-      if (gn && ctx) gn.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+      if (lowGain && ctx) lowGain.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+      if (highGain && ctx) highGain.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+      if (synthGain && ctx) synthGain.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+      if (lowEl) { lowEl.pause(); lowEl.currentTime = 0; }
+      if (highEl) { highEl.pause(); highEl.currentTime = 0; }
     },
     tick: function(kmh, throttle) {
       if (!active) return;
       if (audioMuted) {
-        if (gn && ctx) gn.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+        if (lowGain && ctx) lowGain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+        if (highGain && ctx) highGain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+        if (synthGain && ctx) synthGain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
         return;
       }
       ensure();
       if (ctx.state === 'suspended') ctx.resume();
+      wireSamples();
+      const sn = Math.min(1, kmh / 420);
+      const load = Math.max(sn, throttle ? 0.22 : 0);
+      const rate = 0.68 + sn * 0.72 + (throttle ? 0.07 : 0);
+      const highRate = rate * 1.12 + (throttle ? 0.05 : 0);
+
+      if (samplesReady && !useSynth) {
+        if (lowEl.paused) playSamples();
+        lowEl.playbackRate = rate;
+        highEl.playbackRate = highRate;
+        const lowVol = 0.14 + load * 0.55 + (throttle ? 0.06 : 0);
+        const highMix = Math.min(1, Math.max(0, (sn - 0.12) / 0.55));
+        const highVol = highMix * highMix * (0.1 + load * 0.45) * (throttle ? 1.15 : 1);
+        lowGain.gain.setTargetAtTime(Math.min(0.85, lowVol), ctx.currentTime, 0.06);
+        highGain.gain.setTargetAtTime(Math.min(0.75, highVol), ctx.currentTime, 0.06);
+        return;
+      }
+      ensureSynth();
       const f = 58 + Math.min(340, kmh) * 0.5 + (throttle ? 28 : 0);
       osc.frequency.setTargetAtTime(f, ctx.currentTime, 0.08);
       const vol = 0.032 + Math.min(1, kmh / 310) * 0.09 + (throttle ? 0.045 : 0);
-      gn.gain.setTargetAtTime(vol, ctx.currentTime, 0.06);
+      synthGain.gain.setTargetAtTime(vol, ctx.currentTime, 0.06);
     },
     syncMute: function() {
-      if (!gn || !ctx) return;
-      gn.gain.setTargetAtTime(audioMuted || !active ? 0 : 0.07, ctx.currentTime, 0.05);
+      if (!ctx) return;
+      const v = audioMuted || !active ? 0 : 0.07;
+      if (lowGain) lowGain.gain.setTargetAtTime(v, ctx.currentTime, 0.05);
+      if (highGain) highGain.gain.setTargetAtTime(v * 0.85, ctx.currentTime, 0.05);
+      if (synthGain) synthGain.gain.setTargetAtTime(v, ctx.currentTime, 0.05);
     },
     resumeFromGesture: function() {
       ensure();
+      wireSamples();
       if (ctx && ctx.state === 'suspended') ctx.resume();
+      if (active && samplesReady) playSamples();
     }
   };
 })();
@@ -4934,7 +8189,7 @@ function buildCityGrid() {
     card.innerHTML =
       '<div class="city-preview" style="background:' + grad + '"></div>' +
       '<div class="city-card-name">' + city.name + '</div>' +
-      '<div class="city-card-desc">' + city.desc + '</div>';
+      '<div class="city-card-desc">' + city.country + ' · ' + city.desc + '</div>';
     grid.appendChild(card);
   });
   buildTrackGrid();
@@ -5284,6 +8539,15 @@ function endRace(forfeited, leftOnline) {
   const modeBonus = modeSelected === 'career' ? 160 : modeSelected === 'daily' ? 140 : modeSelected === 'police' ? (policePlayerRole() ? 120 + policeBusts * 120 : (policeOutcome === 'escaped' ? 360 : 70)) : 0;
   raceCreditsEarned = raceForfeited ? 0 : Math.max(0, Math.round(baseCredits + driftScore * 0.08 + modeBonus - damage * 1.5));
   addCredits(raceCreditsEarned, modeSelected.toUpperCase() + ' REWARD');
+  const driverProfile = recordDriverProfile({
+    pos: pos,
+    credits: raceCreditsEarned,
+    drift: driftScore,
+    damage: damage,
+    mode: modeSelected,
+    forfeited: raceForfeited,
+    policeOutcome: policeOutcome
+  });
   if (!raceForfeited && modeSelected === 'career' && pos <= 3) {
     const p = loadProgress();
     p.careerLevel = Math.max((parseInt(p.careerLevel, 10) || 0), ((parseInt(p.careerLevel, 10) || 0) + 1));
@@ -5331,7 +8595,7 @@ function endRace(forfeited, leftOnline) {
   }
   fr.style.display = 'block';
   if (raceForfeited) {
-    fr.textContent = (raceLeftOnline ? 'LEFT ONLINE RACE' : 'RACE ENDED BY PLAYER') + ' · NO GLOBAL SCORE · +0 CR';
+    fr.textContent = (raceLeftOnline ? 'LEFT ONLINE RACE' : 'RACE ENDED BY PLAYER') + ' · NO GLOBAL SCORE · +0 CR · CLEAN STREAK RESET';
   } else if (modeSelected === 'police') {
     if (policePlayerRole()) {
       fr.textContent = (policeOutcome === 'caught' ? 'ALL RACERS BUSTED' : 'SUSPECTS ESCAPED') +
@@ -5343,6 +8607,11 @@ function endRace(forfeited, leftOnline) {
   } else {
     fr.textContent = (fr.textContent ? fr.textContent + ' · ' : '') + 'DRIFT ' + Math.round(driftScore) + ' · DAMAGE ' + Math.round(damage) + '% · +' + raceCreditsEarned + ' CR';
   }
+  fr.textContent = (fr.textContent ? fr.textContent + ' · ' : '') +
+    'WINS ' + Math.max(0, parseInt(driverProfile.wins, 10) || 0) +
+    ' · PODIUMS ' + Math.max(0, parseInt(driverProfile.podiums, 10) || 0) +
+    ' · CLEAN STREAK ' + Math.max(0, parseInt(driverProfile.cleanRaceStreak, 10) || 0) +
+    ' · BEST DRIFT ' + Math.round(Math.max(0, parseInt(driverProfile.bestDrift, 10) || 0));
 
 	  // Tournament points and elimination from real race progress
 	  if (champState) {
@@ -5470,6 +8739,7 @@ function restartGame() {
 
 function onViewportResize() {
   try {
+    syncOrientationLayout();
     const vp = readViewportSize();
     camera.aspect = vp.w / vp.h;
     camera.updateProjectionMatrix();

@@ -13,6 +13,8 @@ struct CityRuntimeConfig {
     let trafficScale: Float
     let policeScale: Float
     let decorBatchCount: Int
+    let trackProfile: EnvironmentTrackProfile
+    let catalogTrackIndex: Int?
 
     var visualNight: Bool { definition.lighting.forceNightGeometry }
     var lightingProfile: LightingProfile { definition.lighting }
@@ -23,9 +25,15 @@ struct CityRuntimeConfig {
 
 enum CityRuntimeConfigFactory {
 
-    static func make(theme: CityThemeID, seed: UInt64) -> CityRuntimeConfig {
+    static func make(theme: CityThemeID, seed: UInt64, catalogTrackIndex: Int? = nil) -> CityRuntimeConfig {
+        let profile = EnvironmentTrackProfile.from(catalogTrackIndex: catalogTrackIndex)
         let def = CityThemeCatalog.definition(for: theme)
-        let track = ModularTrackGenerator.makeTrack(definition: def, seed: seed)
+        let track: ClosedTrackSpline = {
+            if let idx = catalogTrackIndex, idx >= 0, idx < GameCatalog.activeTracks.count {
+                return CatalogTrackGenerator.makeTrack(index: idx)
+            }
+            return ModularTrackGenerator.makeTrack(definition: def, seed: seed)
+        }()
         let ring = ModularTrackGenerator.moduleRing(
             definition: def,
             seed: seed,
@@ -40,7 +48,12 @@ enum CityRuntimeConfigFactory {
             displayName: theme.displayName,
             trafficScale: 0.75 + def.trafficDensity * 0.35,
             policeScale: 0.7 + def.policeDifficulty * 0.45,
-            decorBatchCount: min(32, max(8, def.trackResolution / 6))
+            decorBatchCount: min(
+                36,
+                max(8, Int(Float(def.trackResolution / 6) * profile.decorDensityMultiplier))
+            ),
+            trackProfile: profile,
+            catalogTrackIndex: catalogTrackIndex
         )
     }
 }

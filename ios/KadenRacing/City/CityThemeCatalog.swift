@@ -162,19 +162,23 @@ enum CityThemeCatalog {
 
     /// Championship uses **fixed** cities per round (deterministic career progression).
     static func championshipTheme(round: Int) -> CityThemeID {
-        switch min(max(round, 0), 2) {
+        switch min(max(round, 0), 3) {
         case 0: return .sunsetStripBay
         case 1: return .pacificTerrace
-        default: return .desertLuxStrip
+        case 2: return .gulfSpires
+        default: return .libertyMetro
         }
     }
 
     static func championshipSeed(round: Int) -> UInt64 {
-        switch min(max(round, 0), 2) {
-        case 0: return 0xCAFE_F00D_C0DE_0001
-        case 1: return 0xCAFE_F00D_C0DE_0002
-        default: return 0xCAFE_F00D_C0DE_0003
+        let trackIdx = GameCatalog.championshipRounds[min(max(round, 0), 3)].trackIndex
+        let base: UInt64 = switch min(max(round, 0), 3) {
+        case 0: 0xCAFE_F00D_C0DE_0001
+        case 1: 0xCAFE_F00D_C0DE_0002
+        case 2: 0xCAFE_F00D_C0DE_0003
+        default: 0xCAFE_F00D_C0DE_0004
         }
+        return base ^ UInt64(trackIdx &* 17_389)
     }
 }
 

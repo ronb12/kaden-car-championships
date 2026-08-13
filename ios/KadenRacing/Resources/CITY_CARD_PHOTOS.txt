@@ -1,0 +1,3 @@
+City card photos: curated Unsplash landmark skylines (1x/2x/3x, light color grade).
+Not LoremFlickr. Re-download: python3 scripts/fetch_city_card_photos.py --force
+Credits: ../../ASSET_CREDITS.txt (repo root)

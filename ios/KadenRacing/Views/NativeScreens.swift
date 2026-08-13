@@ -10,11 +10,24 @@ func formatRaceTime(_ t: TimeInterval) -> String {
     return String(format: "%d:%02d.%03d", m, s, ms)
 }
 
+/// Compact HUD format: `m:ss.t` (tenths only) — 6 chars max, fits in the stats row.
+func formatHUDTime(_ t: TimeInterval) -> String {
+    let totalMs = max(0, Int((t * 1000.0).rounded()))
+    let tenths = (totalMs % 1000) / 100
+    let s = (totalMs / 1000) % 60
+    let m = (totalMs / 1000) / 60
+    return String(format: "%d:%02d.%01d", m, s, tenths)
+}
+
 // MARK: - Root
 
 struct NativeRootView: View {
     @StateObject private var flow = GameFlowState()
     @EnvironmentObject private var progress: PlayerProgressStore
+    @ObservedObject private var gameCenter = GameCenterService.shared
+    #if DEBUG
+    @State private var didApplyDebugLaunch = false
+    #endif
 
     var body: some View {
         ZStack {
@@ -31,10 +44,25 @@ struct NativeRootView: View {
                 ActiveRaceScreen(flow: flow, progress: progress)
                     .id(raceSessionId(flow))
             case .raceFinished(let elapsed):
-                RaceFinishedScreen(flow: flow, lastTime: elapsed)
+                RaceFinishedScreen(flow: flow, progress: progress, lastTime: elapsed)
             case .champComplete(let total):
                 ChampCompleteScreen(flow: flow, totalTime: total)
             }
+        }
+        .sheet(item: $gameCenter.sheetRequest) { request in
+            GameCenterUIKitSheet(
+                state: request.viewState,
+                leaderboardID: request.leaderboardID,
+                onDismiss: { gameCenter.sheetRequest = nil }
+            )
+            .ignoresSafeArea()
+        }
+        .onAppear {
+            #if DEBUG
+            guard !didApplyDebugLaunch else { return }
+            didApplyDebugLaunch = true
+            flow.applyDebugLaunchRouteIfNeeded(progress: progress)
+            #endif
         }
     }
 
@@ -48,97 +76,388 @@ struct NativeRootView: View {
 struct MainMenuScreen: View {
     @ObservedObject var flow: GameFlowState
     @EnvironmentObject private var progress: PlayerProgressStore
+    @ObservedObject private var online = KRCOnlineService.shared
+    @ObservedObject private var gameCenter = GameCenterService.shared
     @State private var showSettings = false
+    @State private var showPrivacy = false
+    @State private var showTerms = false
+    @State private var showWeekly = false
+    @State private var titleScale: CGFloat = 1.0
+    @State private var titleOpacity: Double = 1.0
+    @State private var titleBlur: CGFloat = 0
+    @State private var seasonOpacity: Double = 1.0
+    @State private var explodeRingScale: CGFloat = 0.2
+    @State private var explodeRingOpacity: Double = 0
+    @State private var carIntroNonce = 0
+    @State private var menuAppearToken = UUID()
 
     var body: some View {
         ZStack {
-            backgroundLayer
-            VStack(spacing: 20) {
-                HStack {
-                    Spacer()
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape.fill")
-                            .font(.title2)
-                            .foregroundStyle(.white.opacity(0.9))
-                    }
-                }
-                .padding(.horizontal)
-                Spacer()
-                Text("Kaden's Racing Championships")
-                    .font(.system(size: 26, weight: .black, design: .rounded))
-                    .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.55)
-                    .lineLimit(2)
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.6), radius: 4, y: 2)
-                Text("Hot Pursuit Edition")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(Color(white: 0.9))
-                Text("Credits \(progress.credits)")
-                    .font(.subheadline.monospacedDigit().weight(.medium))
-                    .foregroundStyle(.cyan)
-                Spacer()
-                menuButton("PLAY") { flow.openModeSelect() }
-                Spacer()
-                    .frame(height: 40)
-            }
-            .padding()
-        }
-        .sheet(isPresented: $showSettings) {
-            NavigationView {
-                Form {
-                    Section(header: Text("Driving")) {
-                        Picker("Steering", selection: Binding(
-                            get: { ControlPreferences.scheme },
-                            set: { ControlPreferences.scheme = $0 }
-                        )) {
-                            ForEach(ControlScheme.allCases) { scheme in
-                                Text(scheme.label).tag(scheme)
-                            }
-                        }
-                        .pickerStyle(.inline)
-                    }
-                }
-                .navigationTitle("Settings")
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { showSettings = false }
-                    }
-                }
-            }
-        }
-    }
-
-    private var backgroundLayer: some View {
-        ZStack {
-            Image("MenuBackground")
-                .resizable()
-                .scaledToFill()
+            KRCDesign.MenuBackdrop()
                 .ignoresSafeArea()
-            LinearGradient(
-                colors: [Color.black.opacity(0.45), Color.black.opacity(0.7)],
-                startPoint: .top,
-                endPoint: .bottom
+
+            GeometryReader { geo in
+                let landscape = geo.size.width > geo.size.height
+                VStack(spacing: 0) {
+                    // ── Top bar (always visible) ───────────────────────────
+                    HStack {
+                        KRCDesign.CreditsChip(credits: progress.credits)
+                        Spacer()
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape.fill")
+                                .font(.title3)
+                                .foregroundStyle(.white.opacity(0.85))
+                                .padding(10)
+                                .background(Circle().fill(Color.black.opacity(0.40)))
+                                .overlay(Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
+                        }
+                        .accessibilityLabel("Settings")
+                        .accessibilityIdentifier("menu.settings.gear")
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+
+                    if landscape {
+                        // Compact hero + car side-by-side so the mode list keeps scroll room.
+                        HStack(alignment: .center, spacing: 12) {
+                            KRCDesign.MenuHeroTitle(
+                                flameIntensity: 0.45,
+                                titleScale: titleScale,
+                                titleOpacity: titleOpacity,
+                                titleBlur: titleBlur,
+                                seasonOpacity: seasonOpacity,
+                                ringScale: explodeRingScale,
+                                ringOpacity: explodeRingOpacity
+                            )
+                            .scaleEffect(0.52)
+                            .frame(maxWidth: geo.size.width * 0.42, maxHeight: 96)
+                            .clipped()
+
+                            Spacer(minLength: 0)
+
+                            MenuCarDriveInView(
+                                car: GameCatalog.cars[flow.selectedCarIndex],
+                                introNonce: carIntroNonce
+                            )
+                            .frame(width: min(280, geo.size.width * 0.42), height: 88)
+                            .zIndex(2)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 2)
+                    } else {
+                        KRCDesign.MenuHeroTitle(
+                            flameIntensity: 0.5,
+                            titleScale: titleScale,
+                            titleOpacity: titleOpacity,
+                            titleBlur: titleBlur,
+                            seasonOpacity: seasonOpacity,
+                            ringScale: explodeRingScale,
+                            ringOpacity: explodeRingOpacity
+                        )
+                        .padding(.top, 4)
+                        .padding(.bottom, 2)
+
+                        HStack(spacing: 0) {
+                            Spacer(minLength: 0)
+                            MenuCarDriveInView(
+                                car: GameCatalog.cars[flow.selectedCarIndex],
+                                introNonce: carIntroNonce
+                            )
+                            .frame(width: min(380, geo.size.width * 0.88), height: 128)
+                            .zIndex(2)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                    }
+
+                    // ── SOLO / ONLINE mode bar ─────────────────────────────
+                    HStack(spacing: 0) {
+                        playModeButton("SOLO", solo: true)
+                        playModeButton("ONLINE", solo: false)
+                    }
+                    .frame(maxWidth: 300)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.white.opacity(0.12)))
+                    .padding(.horizontal, 40)
+                    .padding(.top, landscape ? 2 : 6)
+                    .padding(.bottom, landscape ? 4 : 8)
+
+                    // ── Race modes — must be height-bounded to scroll ──────
+                    ScrollView(.vertical, showsIndicators: landscape) {
+                        VStack(spacing: 10) {
+                            RaceMenuButton(
+                                icon: "star.fill",
+                                title: progress.careerComplete
+                                    ? "CAREER MODE"
+                                    : (progress.careerTierCompleted > 0 ? "CONTINUE CAREER" : "CAREER MODE"),
+                                subtitle: progress.careerComplete
+                                    ? "Ladder complete — showcase races"
+                                    : (progress.currentCareerMission.map {
+                                        "\($0.title) · \(progress.careerTierCompleted)/\(CareerMissions.all.count)"
+                                    } ?? "Earn credits & unlock cars"),
+                                accent: KRCDesign.neonCyan
+                            ) { flow.beginCareerMode(progress: progress) }
+
+                            RaceMenuButton(
+                                icon: "flag.checkered",
+                                title: "QUICK RACE",
+                                subtitle: "Jump straight into a circuit",
+                                accent: KRCDesign.gold
+                            ) { flow.beginQuickRace() }
+
+                            RaceMenuButton(
+                                icon: "trophy.fill",
+                                title: "CHAMPIONSHIP",
+                                subtitle: "Multi-round series",
+                                accent: Color(red: 1, green: 0.65, blue: 0)
+                            ) { flow.beginChampionshipSerie() }
+
+                            RaceMenuButton(
+                                icon: "calendar",
+                                title: "DAILY CHALLENGE",
+                                subtitle: progress.dailySubtitle,
+                                accent: Color(red: 0.4, green: 0.9, blue: 0.6)
+                            ) { flow.beginDailyChallenge(progress: progress) }
+
+                            RaceMenuButton(
+                                icon: "flame.fill",
+                                title: "WEEKLY CONTRACTS",
+                                subtitle: progress.weeklySubtitle,
+                                accent: Color(red: 1, green: 0.45, blue: 0.2)
+                            ) { showWeekly = true }
+
+                            RaceMenuButton(
+                                icon: "shield.fill",
+                                title: "HOT PURSUIT",
+                                subtitle: {
+                                    let ch = PursuitCampaign.chapter(at: progress.pursuitChapterUnlocked)
+                                    return "\(ch.title) · \(ch.blurb)"
+                                }(),
+                                accent: Color(red: 0.3, green: 0.6, blue: 1)
+                            ) { flow.beginPoliceChase(progress: progress) }
+
+                            RaceMenuButton(
+                                icon: "gamecontroller.fill",
+                                title: "ARCADE MODES",
+                                subtitle: "Endless · drift · ghost duel",
+                                accent: Color(red: 0.85, green: 0.3, blue: 1)
+                            ) { flow.openModeSelect() }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 4)
+                        .padding(.bottom, 12)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+                    // ── Footer ─────────────────────────────────────────────
+                    HStack(spacing: 4) {
+                        menuFooterLink("GAME CENTER", id: "menu.footer.game_center") {
+                            gameCenter.presentLeaderboards()
+                        }
+                        menuFooterLink("SETTINGS", id: "menu.footer.settings") {
+                            showSettings = true
+                        }
+                        menuFooterLink("PRIVACY", id: "menu.footer.privacy") {
+                            showPrivacy = true
+                        }
+                        menuFooterLink("TERMS", id: "menu.footer.terms") {
+                            showTerms = true
+                        }
+                    }
+                    .padding(.top, landscape ? 2 : 6)
+                    .padding(.bottom, landscape ? 10 : 20)
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+            }
+        }
+        .id(menuAppearToken)
+        .sheet(isPresented: $showSettings) {
+            NativeSettingsView(onDismiss: { showSettings = false })
+                .environmentObject(progress)
+        }
+        .sheet(isPresented: $showPrivacy) {
+            NavigationView {
+                PrivacyPolicyView()
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showPrivacy = false } } }
+            }
+            .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showTerms) {
+            NavigationView {
+                TermsOfServiceView()
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showTerms = false } } }
+            }
+            .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showWeekly) {
+            WeeklyContractsSheet(progress: progress, onDismiss: { showWeekly = false })
+        }
+        .alert(
+            "Game Center",
+            isPresented: Binding(
+                get: { gameCenter.signInAlertMessage != nil },
+                set: { if !$0 { gameCenter.signInAlertMessage = nil } }
             )
-            .ignoresSafeArea()
+        ) {
+            Button("OK", role: .cancel) { gameCenter.signInAlertMessage = nil }
+        } message: {
+            Text(gameCenter.signInAlertMessage ?? "")
+        }
+        .onDisappear {
+            MenuIntroAudioController.shared.stop()
+            KRCMusicDirector.shared.play(.menu)
+        }
+        .onAppear {
+            runMenuIntro()
+            #if DEBUG
+            if KRCDebugUI.openSettingsOnMenu {
+                KRCDebugUI.openSettingsOnMenu = false
+                showSettings = true
+            }
+            if KRCDebugUI.openPrivacyOnMenu {
+                KRCDebugUI.openPrivacyOnMenu = false
+                showPrivacy = true
+            }
+            if KRCDebugUI.openTermsOnMenu {
+                KRCDebugUI.openTermsOnMenu = false
+                showTerms = true
+            }
+            if KRCDebugUI.showGameCenterAlertOnMenu {
+                KRCDebugUI.showGameCenterAlertOnMenu = false
+                gameCenter.signInAlertMessage =
+                    "Sign in to Game Center in the iOS Settings app to view leaderboards."
+            }
+            #endif
         }
     }
 
-    private func menuButton(_ title: String, action: @escaping () -> Void) -> some View {
+    /// Replay logo, flames, and drive-in whenever the menu is shown.
+    private func runMenuIntro() {
+        menuAppearToken = UUID()
+        titleScale = 2.6
+        titleOpacity = 0
+        titleBlur = 14
+        seasonOpacity = 0
+        explodeRingScale = 0.2
+        explodeRingOpacity = 0
+        carIntroNonce += 1
+
+        Task { await online.refreshGlobalSummary() }
+
+        DispatchQueue.main.async {
+            withAnimation(.easeOut(duration: 0.45)) {
+                explodeRingScale = 2.2
+                explodeRingOpacity = 0.85
+            }
+            withAnimation(.easeOut(duration: 0.55).delay(0.05)) {
+                explodeRingOpacity = 0
+            }
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.58)) {
+                titleScale = 1.0
+                titleOpacity = 1.0
+                titleBlur = 0
+            }
+            withAnimation(.easeOut(duration: 0.45).delay(0.55)) {
+                seasonOpacity = 1.0
+            }
+        }
+
+        // If SwiftUI skips animations (e.g. after returning from a race), force visible UI.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            if titleOpacity < 0.5 {
+                titleScale = 1.0
+                titleOpacity = 1.0
+                titleBlur = 0
+                seasonOpacity = 1.0
+                explodeRingOpacity = 0
+            }
+        }
+    }
+
+    private func menuFooterLink(_ title: String, id: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.headline.weight(.bold))
-                .frame(maxWidth: 360)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.orange.opacity(0.88))
-                )
-                .foregroundStyle(.black)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(KRCDesign.neonCyan.opacity(0.82))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(id)
+    }
+
+    private func playModeButton(_ title: String, solo: Bool) -> some View {
+        let active = KRCPlayerProfile.onlinePlayEnabled != solo
+        return Button {
+            KRCPlayerProfile.onlinePlayEnabled = !solo
+            Task { await online.refreshGlobalSummary() }
+        } label: {
+            Text(title)
+                .font(.system(size: 12, weight: .black))
+                .kerning(1)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 9)
+                .background(active ? KRCDesign.gold : Color.clear)
+                .foregroundStyle(active ? Color.black : Color.white.opacity(0.6))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// Cinematic race-mode button row
+private struct RaceMenuButton: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let accent: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                // Icon badge
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(accent.opacity(0.18))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: icon)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(accent)
+                }
+
+                // Labels
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 15, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text(subtitle)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(accent.opacity(0.7))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.black.opacity(0.38))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(accent.opacity(0.28), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("menu.\(title.replacingOccurrences(of: " ", with: "_").lowercased())")
     }
 }
 
@@ -149,53 +468,68 @@ struct ModeSelectScreen: View {
     @EnvironmentObject private var progress: PlayerProgressStore
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Button("← Back") { flow.openMainMenu() }
-                    Spacer()
-                    Text("Credits \(progress.credits)")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
+        KRCArcadeScreen(title: "ARCADE MODES", subtitle: "Pick a challenge style") {
+            KRCDesign.ArcadeTopBar(
+                backTitle: "Menu",
+                backAction: { flow.openMainMenu() },
+                credits: progress.credits
+            )
+            KRCDesign.Panel {
+                Toggle(isOn: $flow.nightRace) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Night race")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                        Text("Darker city lighting & neon roads")
+                            .font(.caption)
+                            .foregroundStyle(KRCDesign.mutedText)
+                    }
                 }
-                Text("GAME MODE")
-                    .font(.title.weight(.bold))
-                Toggle("Night race (visual)", isOn: $flow.nightRace)
-                    .tint(.orange)
+                .tint(KRCDesign.hotOrange)
+            }
+            VStack(spacing: 10) {
                 ForEach(GameModeKind.allCases) { mode in
                     modeRow(mode)
                 }
             }
-            .padding()
         }
-        .background(Color(white: 0.08).ignoresSafeArea())
+    }
+
+    private func modeIcon(_ mode: GameModeKind) -> String {
+        switch mode {
+        case .circuit: return "flag.checkered"
+        case .championshipSerie: return "trophy.fill"
+        case .policeChase: return "shield.fill"
+        case .endless: return "infinity"
+        case .timeTrial: return "stopwatch.fill"
+        case .ghostDuel: return "figure.run"
+        case .career: return "star.fill"
+        case .courier: return "shippingbox.fill"
+        }
     }
 
     private func modeRow(_ mode: GameModeKind) -> some View {
         Button {
             switch mode {
-            case .circuit: flow.beginCircuit()
-            case .championshipSerie: flow.beginChampionshipSerie()
-            case .policeChase: flow.beginPoliceChase()
+            case .circuit:
+                flow.beginCircuit()
+                flow.carSelectBackScreen = .modeSelect
+            case .championshipSerie:
+                flow.beginChampionshipSerie()
+                flow.carSelectBackScreen = .modeSelect
+            case .policeChase: flow.beginPoliceChase(progress: progress)
             case .endless: flow.beginEndless()
             case .timeTrial: flow.beginTimeTrial()
-            case .ghostDuel: flow.beginGhostDuelPlaceholder()
-            case .career: flow.beginCareerPlaceholder()
+            case .ghostDuel: flow.beginGhostDuel()
+            case .career: flow.beginCareerPlaceholder(progress: progress)
+            case .courier: flow.beginCourier(progress: progress)
             }
         } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(mode.displayTitle)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(.white)
-                Text(mode.subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.06))
+            KRCDesign.ListRow(
+                icon: modeIcon(mode),
+                title: mode.displayTitle,
+                subtitle: mode.subtitle,
+                accent: KRCDesign.neonCyan
             )
         }
         .buttonStyle(.plain)
@@ -207,67 +541,353 @@ struct ModeSelectScreen: View {
 struct CarSelectScreen: View {
     @ObservedObject var flow: GameFlowState
     @EnvironmentObject private var progress: PlayerProgressStore
+    @State private var styleTick = 0
     private let columns = [GridItem(.adaptive(minimum: 150), spacing: 12)]
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button("← Back") { flow.screen = .modeSelect }
-                Spacer()
-            }
-            .padding()
-            Text("SELECT YOUR CAR")
-                .font(.title2.weight(.bold))
-                .padding(.bottom, 8)
-            if flow.activeGameMode != .championshipSerie {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("City")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    Picker("City theme", selection: $flow.selectedCityTheme) {
-                        ForEach(CityThemeID.allCases) { city in
-                            Text(city.displayName).tag(city)
+        ZStack {
+            KRCDesign.MenuBackdrop()
+            VStack(spacing: 0) {
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        KRCDesign.ArcadeTopBar(
+                            backTitle: "Back",
+                            backAction: { flow.screen = flow.carSelectBackScreen },
+                            credits: progress.credits,
+                            trailing: "\(GameCatalog.cars.count) CARS"
+                        )
+                        KRCDesign.ScreenHeader(
+                            title: "KRC GARAGE",
+                            subtitle: flow.activeGameMode.displayTitle.uppercased()
+                        )
+                        raceSetupBar
+                        if flow.activeGameMode == .championshipSerie, let round = flow.currentChampionshipRound() {
+                            KRCDesign.Panel {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    KRCDesign.SectionLabel(text: "CHAMPIONSHIP ROUND")
+                                    Text("\(round.name) · \(GameCatalog.activeTracks[round.trackIndex].name)")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(.white)
+                                    Text("\(round.laps) laps")
+                                        .font(.caption)
+                                        .foregroundStyle(KRCDesign.mutedText)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        } else if !flow.needsTrackSelect() {
+                            KRCDesign.Panel {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    KRCDesign.SectionLabel(text: "CITY THEME")
+                                    CityThemePicker(selection: $flow.selectedCityTheme)
+                                }
+                            }
+                        }
+                        ZStack {
+                            CarPreview3DView(
+                                car: selectedCar,
+                                height: 150,
+                                bodyColorOverride: GarageCustomization.bodyColor(for: selectedCar)
+                            )
+                            // Remount only when the car identity changes — styleTick used to
+                            // rebuild the whole SCNView on every paint/wrap tweak and flash the spin.
+                            .id(selectedCar.id)
+                        }
+                            .frame(height: 150)
+                            .background(Color(red: 0.04, green: 0.05, blue: 0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(
+                                        LinearGradient(
+                                            colors: [KRCDesign.gold.opacity(0.6), KRCDesign.neonCyan.opacity(0.35)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                            )
+                            .shadow(color: Color.black.opacity(0.35), radius: 10, y: 4)
+                        if canRace {
+                            garageCustomizePanel
+                        } else {
+                            lockedCarCallout
+                        }
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(sortedGarageCars, id: \.offset) { idx, car in
+                                carTile(car: car, index: idx)
+                            }
                         }
                     }
-                    .pickerStyle(.menu)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 16)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-            } else {
-                Text("Championship uses three fixed world-tour venues.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-            }
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(Array(GameCatalog.cars.enumerated()), id: \.offset) { idx, car in
-                        carTile(car: car, index: idx)
+                VStack(spacing: 0) {
+                    LinearGradient(
+                        colors: [Color.black.opacity(0), Color.black.opacity(0.95)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 20)
+                    KRCDesign.PrimaryButton(
+                        title: canRace
+                            ? "SELECT & RACE"
+                            : (flow.activeGameMode == .policeChase && selectedCar.id != "police"
+                               ? "NEED INTERCEPTOR"
+                               : "LOCKED — EARN THIS CAR"),
+                        enabled: canRace
+                    ) {
+                        proceedToRace()
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 10)
                 }
-                .padding()
+                .background(Color.black.opacity(0.95))
             }
-            Button {
-                proceedToRace()
-            } label: {
-                Text("SELECT & RACE")
-                    .font(.headline.weight(.bold))
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 12).fill(canRace ? Color.cyan : Color.gray))
-                    .foregroundStyle(.black)
-            }
-            .disabled(!canRace)
-            .padding()
         }
-        .background(Color(white: 0.08).ignoresSafeArea())
+        .onAppear {
+            KRCMusicDirector.shared.play(.garage)
+            // After economy migration, keep selection on an owned car.
+            if !progress.unlockedCarIds.contains(selectedCar.id),
+               let ownedIdx = GameCatalog.cars.firstIndex(where: { progress.unlockedCarIds.contains($0.id) }) {
+                flow.selectedCarIndex = ownedIdx
+            }
+            if !flow.needsTrackSelect() {
+                flow.preloadRaceEnvironment()
+            }
+        }
+        .onChange(of: flow.selectedCarIndex) { _ in
+            if !flow.needsTrackSelect() {
+                flow.preloadRaceEnvironment()
+            }
+        }
+        .onChange(of: flow.difficultyIndex) { _ in
+            if !flow.needsTrackSelect() {
+                flow.preloadRaceEnvironment()
+            }
+        }
+        .onChange(of: flow.selectedCityTheme) { _ in
+            if !flow.needsTrackSelect() {
+                flow.preloadRaceEnvironment()
+            }
+        }
     }
 
     private var selectedCar: CarChoice { GameCatalog.cars[flow.selectedCarIndex] }
 
+    private var sortedGarageCars: [(offset: Int, element: CarChoice)] {
+        Array(GameCatalog.cars.enumerated()).sorted { a, b in
+            let sa = GameCatalog.garageSortIndex(forCarId: a.element.id, progress: progress)
+            let sb = GameCatalog.garageSortIndex(forCarId: b.element.id, progress: progress)
+            if sa.0 != sb.0 { return sa.0 < sb.0 }
+            if sa.1 != sb.1 { return sa.1 < sb.1 }
+            return sa.2 < sb.2
+        }
+    }
+
     private var canRace: Bool {
         progress.unlockedCarIds.contains(selectedCar.id)
+            && (flow.activeGameMode != .policeChase || selectedCar.id == "police")
+    }
+
+    private var selectedUnlockStatus: PlayerProgressStore.CarUnlockStatus {
+        progress.unlockStatus(forCarId: selectedCar.id)
+    }
+
+    private var raceSetupBar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            KRCDesign.DifficultyChips(index: $flow.difficultyIndex)
+            if !flow.needsTrackSelect() {
+                HStack {
+                    KRCDesign.SectionLabel(text: "LAPS")
+                    Stepper(value: $flow.lapCount, in: 1...30) {
+                        Text("\(flow.lapCount)")
+                            .monospacedDigit()
+                            .foregroundStyle(.white)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var garageCustomizePanel: some View {
+        let carId = selectedCar.id
+        let style = GarageCustomization.style(for: carId)
+        let up = progress.upgrades[carId] ?? .baseline
+        return KRCDesign.Panel {
+            VStack(alignment: .leading, spacing: 10) {
+                KRCDesign.SectionLabel(text: "PAINT SHOP")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(GaragePaintSwatch.allCases) { swatch in
+                            Button {
+                                GarageCustomization.setPaint(swatch, for: carId)
+                                styleTick += 1
+                            } label: {
+                                Circle()
+                                    .fill(Color(swatch.color ?? selectedCar.uiColor))
+                                    .frame(width: 28, height: 28)
+                                    .overlay(
+                                        Circle().strokeBorder(
+                                            style.paint == swatch ? KRCDesign.gold : Color.white.opacity(0.25),
+                                            lineWidth: style.paint == swatch ? 2 : 1
+                                        )
+                                    )
+                            }
+                            .accessibilityLabel(swatch.label)
+                        }
+                    }
+                }
+                KRCDesign.SectionLabel(text: "WRAP")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(GarageWrapStyle.allCases) { wrap in
+                            Button {
+                                GarageCustomization.setWrap(wrap, for: carId)
+                                styleTick += 1
+                            } label: {
+                                VStack(spacing: 4) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                            .fill(Color(wrap.previewColor))
+                                            .frame(width: 52, height: 28)
+                                        if let second = wrap.secondaryPreviewColor {
+                                            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                                .fill(Color(second))
+                                                .frame(width: 8, height: 22)
+                                        }
+                                    }
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                            .strokeBorder(
+                                                style.wrap == wrap ? KRCDesign.gold : Color.white.opacity(0.2),
+                                                lineWidth: style.wrap == wrap ? 2 : 1
+                                            )
+                                    )
+                                    Text(wrap.label)
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundStyle(style.wrap == wrap ? KRCDesign.gold : .white.opacity(0.75))
+                                }
+                            }
+                            .accessibilityLabel(wrap.label)
+                        }
+                    }
+                }
+                KRCDesign.SectionLabel(text: "RIMS")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(GarageRimStyle.allCases) { rim in
+                            Button {
+                                GarageCustomization.setRim(rim, for: carId)
+                                styleTick += 1
+                            } label: {
+                                VStack(spacing: 4) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.black.opacity(0.55))
+                                            .frame(width: 34, height: 34)
+                                        Circle()
+                                            .strokeBorder(Color(rim.previewColor), lineWidth: 5)
+                                            .frame(width: 28, height: 28)
+                                        Circle()
+                                            .fill(Color(rim.previewColor).opacity(0.85))
+                                            .frame(width: 10, height: 10)
+                                    }
+                                    .overlay(
+                                        Circle()
+                                            .strokeBorder(
+                                                style.rim == rim ? KRCDesign.gold : Color.clear,
+                                                lineWidth: 2
+                                            )
+                                            .frame(width: 36, height: 36)
+                                    )
+                                    Text(rim.label)
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundStyle(style.rim == rim ? KRCDesign.gold : .white.opacity(0.75))
+                                }
+                            }
+                            .accessibilityLabel(rim.label)
+                        }
+                    }
+                }
+                KRCDesign.SectionLabel(text: "UPGRADES")
+                Text("Each level stacks — buy to raise race performance.")
+                    .font(.caption2)
+                    .foregroundStyle(KRCDesign.mutedText)
+                HStack(alignment: .top, spacing: 8) {
+                    upgradeButton(slot: .engine, level: up.engine, carId: carId)
+                    upgradeButton(slot: .nitro, level: up.nitro, carId: carId)
+                    upgradeButton(slot: .tires, level: up.tires, carId: carId)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .id(styleTick)
+        }
+    }
+
+    private func chipButton(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(on ? .black : .white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(on ? KRCDesign.neonCyan : Color.white.opacity(0.12)))
+        }
+    }
+
+    private func upgradeButton(slot: PlayerProgressStore.UpgradeSlot, level: Int, carId: String) -> some View {
+        let cost = progress.upgradeCost(level: level)
+        let maxed = level >= 5
+        let canBuy = !maxed && progress.credits >= cost
+        return Button {
+            _ = progress.upgrade(carId: carId, slot: slot, cost: cost)
+            styleTick += 1
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(slot.shortTitle)
+                        .font(.system(size: 10, weight: .heavy, design: .monospaced))
+                    Spacer(minLength: 0)
+                    Text("\(level)/5")
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundStyle(KRCDesign.neonCyan)
+                }
+                Text(slot.benefitHeadline)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.88))
+                    .fixedSize(horizontal: false, vertical: true)
+                if maxed {
+                    Text("MAXED")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(KRCDesign.gold)
+                } else {
+                    Text(slot.nextLevelGain)
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(KRCDesign.gold.opacity(0.95))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("\(cost) CR")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(canBuy ? KRCDesign.gold : .orange.opacity(0.85))
+                }
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.white.opacity(0.08))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(canBuy ? KRCDesign.neonCyan.opacity(0.35) : Color.clear, lineWidth: 1)
+                    )
+            )
+        }
+        .disabled(!canBuy)
+        .opacity(maxed ? 0.55 : (canBuy ? 1 : 0.5))
+        .accessibilityLabel("\(slot.shortTitle) level \(level). \(slot.benefitHeadline). \(maxed ? "Maxed" : slot.nextLevelGain)")
     }
 
     private func proceedToRace() {
@@ -275,32 +895,62 @@ struct CarSelectScreen: View {
         if flow.needsTrackSelect() {
             flow.screen = .trackSelect
         } else {
-            flow.screen = .racing
+            flow.preloadRaceEnvironment {
+                flow.screen = .racing
+            }
         }
     }
 
     private func carTile(car: CarChoice, index: Int) -> some View {
         let profile = GameCatalog.profile(forCarIndex: index)
         let unlocked = progress.unlockedCarIds.contains(car.id)
+        let status = progress.unlockStatus(forCarId: car.id)
         let on = flow.selectedCarIndex == index
         return VStack(alignment: .leading, spacing: 8) {
             Button {
                 flow.selectedCarIndex = index
             } label: {
                 VStack(alignment: .leading, spacing: 6) {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(car.uiColor))
-                        .frame(height: 44)
-                        .overlay {
-                            if !unlocked {
-                                Color.black.opacity(0.45)
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(car.uiColor).opacity(0.22),
+                                        Color(white: 0.1),
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                        GarageCarImage(car: car, paintColor: GarageCustomization.bodyColor(for: car))
+                            .frame(height: 72)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .id("tile-\(car.id)-\(styleTick)")
+                        if !unlocked {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.black.opacity(0.55))
+                            VStack(spacing: 4) {
                                 Image(systemName: "lock.fill")
                                     .foregroundStyle(.white)
+                                Text(profile.unlockTierLabel)
+                                    .font(.system(size: 9, weight: .black))
+                                    .foregroundStyle(KRCDesign.gold)
                             }
                         }
+                    }
+                    .frame(height: 72)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .strokeBorder(Color(car.uiColor).opacity(on ? 0.85 : 0.35), lineWidth: on ? 2 : 1)
+                    )
                     Text(car.name)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Text(unlocked ? "OWNED" : profile.formattedUnlockCost)
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(unlocked ? KRCDesign.neonCyan : .orange)
                     statLine("SPD", profile.speed)
                     statLine("ACC", profile.acceleration)
                     statLine("HAN", profile.handling)
@@ -308,19 +958,117 @@ struct CarSelectScreen: View {
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(on ? Color.cyan : Color.white.opacity(0.2), lineWidth: on ? 2 : 1)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(on ? KRCDesign.cardFill : Color.black.opacity(0.28))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(
+                                    on ? KRCDesign.neonCyan : Color.white.opacity(0.18),
+                                    lineWidth: on ? 2 : 1
+                                )
+                        )
+                        .shadow(color: on ? KRCDesign.neonCyan.opacity(0.2) : .clear, radius: 8)
                 )
             }
             .buttonStyle(.plain)
             if !unlocked {
-                Button("Unlock — \(profile.unlockCostCredits) cr") {
-                    _ = progress.unlockCar(id: car.id, cost: profile.unlockCostCredits)
-                }
+                unlockButton(for: car.id, status: status, profile: profile)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func unlockButton(
+        for carId: String,
+        status: PlayerProgressStore.CarUnlockStatus,
+        profile: CarStatProfile
+    ) -> some View {
+        switch status {
+        case .purchasable(let cost):
+            Button("BUY — \(profile.formattedUnlockCost)") {
+                _ = progress.unlockCar(id: carId, cost: cost)
+            }
+            .font(.caption.weight(.bold))
+            .foregroundStyle(KRCDesign.gold)
+        case .needCredits(let cost):
+            Text("NEED \(profile.formattedUnlockCost)")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.orange.opacity(0.85))
+            Text("\(progress.credits) / \(cost) CR")
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(KRCDesign.mutedText)
+        case .careerGated(let tiers):
+            Text("CAREER RANK \(tiers)+")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(KRCDesign.neonCyan.opacity(0.9))
+            Text("Complete more career missions")
+                .font(.caption2)
+                .foregroundStyle(KRCDesign.mutedText)
+        case .owned:
+            EmptyView()
+        case .locked(let reason):
+            Text(reason)
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.orange)
-                .disabled(progress.credits < profile.unlockCostCredits)
+        }
+    }
+
+    private var lockedCarCallout: some View {
+        let profile = GameCatalog.profile(forCarIndex: flow.selectedCarIndex)
+        let status = selectedUnlockStatus
+        return KRCDesign.Panel {
+            VStack(alignment: .leading, spacing: 10) {
+                KRCDesign.SectionLabel(text: "EARN THIS CAR")
+                Text(selectedCar.name)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                Text("\(profile.unlockTierLabel) · \(profile.category.rawValue.uppercased())")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(KRCDesign.gold)
+                switch status {
+                case .purchasable(let cost):
+                    Text("Buy with race credits or unlock it free through Career.")
+                        .font(.caption)
+                        .foregroundStyle(KRCDesign.mutedText)
+                    Button {
+                        _ = progress.unlockCar(id: selectedCar.id, cost: cost)
+                    } label: {
+                        Text("UNLOCK — \(profile.formattedUnlockCost)")
+                            .font(.subheadline.weight(.black))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Capsule().fill(KRCDesign.gold))
+                            .foregroundStyle(.black)
+                    }
+                    .buttonStyle(.plain)
+                case .needCredits(let cost):
+                    Text("Race to earn credits, then buy this ride.")
+                        .font(.caption)
+                        .foregroundStyle(KRCDesign.mutedText)
+                    Text("\(progress.credits) / \(cost) CR")
+                        .font(.title3.weight(.black).monospacedDigit())
+                        .foregroundStyle(.orange)
+                case .careerGated(let tiers):
+                    Text("Reach Career mission \(tiers) before this car hits the dealership.")
+                        .font(.caption)
+                        .foregroundStyle(KRCDesign.mutedText)
+                    Text("Career progress \(progress.careerTierCompleted)/\(tiers)")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(KRCDesign.neonCyan)
+                default:
+                    Text("Finish Career missions or grind credits to unlock the garage.")
+                        .font(.caption)
+                        .foregroundStyle(KRCDesign.mutedText)
+                }
+                if let rewardMission = CareerMissions.all.first(where: { $0.unlockCarId == selectedCar.id }),
+                   let idx = CareerMissions.all.firstIndex(where: { $0.id == rewardMission.id }),
+                   idx >= progress.careerTierCompleted {
+                    Text("Career reward: \(rewardMission.title)")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(KRCDesign.neonCyan.opacity(0.9))
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -328,7 +1076,7 @@ struct CarSelectScreen: View {
         HStack {
             Text(title)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(KRCDesign.mutedText)
             Spacer()
             Text("\(v)")
                 .font(.caption2.monospacedDigit())
@@ -341,55 +1089,151 @@ struct CarSelectScreen: View {
 
 struct TrackSelectScreen: View {
     @ObservedObject var flow: GameFlowState
+    @State private var trackEnvironmentReady = false
+    private let trackColumns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
 
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Button("← Back") { flow.screen = .carSelect }
-                Spacer()
-            }
-            .padding([.horizontal, .top])
-            Text("CIRCUIT & LAPS")
-                .font(.title2.weight(.bold))
-            Text("Procedural city modules seed from your picks — same theme + track + laps ⇒ identical layout.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            Picker("City theme", selection: $flow.selectedCityTheme) {
-                ForEach(CityThemeID.allCases) { city in
-                    Text(city.displayName).tag(city)
+        KRCArcadeScreen(
+            title: "SELECT CIRCUIT",
+            subtitle: "Same city + track + laps = identical layout"
+        ) {
+            KRCDesign.ArcadeTopBar(
+                backTitle: "Garage",
+                backAction: { flow.screen = .carSelect },
+                trailing: "\(GameCatalog.activeTracks.count) TRACKS"
+            )
+            KRCDesign.DifficultyChips(index: $flow.difficultyIndex)
+            let selectedTrack = GameCatalog.activeTracks[flow.selectedTrackIndex]
+            VStack(alignment: .leading, spacing: 8) {
+                TrackPreviewArt(
+                    trackIndex: flow.selectedTrackIndex,
+                    accent: KRCDesign.gold
+                )
+                .frame(height: 118)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(KRCDesign.gold.opacity(0.55), lineWidth: 1.5)
+                )
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(selectedTrack.name)
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.white)
+                        Text(selectedTrack.tag)
+                            .font(.caption)
+                            .foregroundStyle(KRCDesign.neonCyan.opacity(0.9))
+                    }
+                    Spacer()
+                    Text(String(format: "%02d", flow.selectedTrackIndex + 1))
+                        .font(.title2.weight(.black).monospacedDigit())
+                        .foregroundStyle(KRCDesign.gold)
                 }
             }
-            .pickerStyle(.wheel)
-            Picker("Track", selection: $flow.selectedTrackIndex) {
-                ForEach(0..<GameCatalog.tracks.count, id: \.self) { i in
-                    Text(GameCatalog.tracks[i].name).tag(i)
+            KRCDesign.Panel {
+                VStack(alignment: .leading, spacing: 8) {
+                    KRCDesign.SectionLabel(text: "CITY THEME")
+                    CityThemePicker(selection: $flow.selectedCityTheme, layout: .trackSelect)
                 }
             }
-            .pickerStyle(.wheel)
-            HStack {
-                Text("Laps")
-                Stepper(value: $flow.lapCount, in: 1...20) {
-                    Text("\(flow.lapCount)")
-                        .monospacedDigit()
+            LazyVGrid(columns: trackColumns, spacing: 10) {
+                ForEach(0..<GameCatalog.activeTracks.count, id: \.self) { i in
+                    trackCard(index: i)
                 }
             }
-            .padding(.horizontal)
-            Spacer()
-            Button {
-                flow.screen = .racing
-            } label: {
-                Text("RACE HERE")
-                    .font(.headline.weight(.bold))
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.orange))
-                    .foregroundStyle(.black)
+            KRCDesign.Panel {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        KRCDesign.SectionLabel(text: "LAPS")
+                        Text("Default 3 · up to 30")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.55))
+                    }
+                    Spacer()
+                    Stepper(value: $flow.lapCount, in: 1...30) {
+                        Text("\(flow.lapCount)")
+                            .font(.headline.monospacedDigit().weight(.bold))
+                            .foregroundStyle(KRCDesign.gold)
+                    }
+                }
             }
-            .padding()
+        } footer: {
+            let track = GameCatalog.activeTracks[flow.selectedTrackIndex]
+            KRCDesign.PrimaryButton(
+                title: trackEnvironmentReady ? "RACE · \(track.name.uppercased())" : "PREPARING TRACK…",
+                enabled: trackEnvironmentReady
+            ) {
+                flow.preloadRaceEnvironment {
+                    flow.screen = .racing
+                }
+            }
         }
-        .background(Color(white: 0.08).ignoresSafeArea())
+        .onAppear {
+            flow.syncLapsToSelectedTrack()
+            refreshTrackEnvironmentPreload()
+        }
+        .onChange(of: flow.selectedTrackIndex) { _ in
+            flow.syncLapsToSelectedTrack()
+            refreshTrackEnvironmentPreload()
+        }
+        .onChange(of: flow.selectedCityTheme) { _ in
+            refreshTrackEnvironmentPreload()
+        }
+        .onChange(of: flow.nightRace) { _ in
+            refreshTrackEnvironmentPreload()
+        }
+    }
+
+    private func refreshTrackEnvironmentPreload() {
+        let key = flow.environmentCacheKey()
+        if RaceEnvironmentPreloader.isReady(for: key) {
+            trackEnvironmentReady = true
+            return
+        }
+        trackEnvironmentReady = false
+        flow.preloadRaceEnvironment {
+            trackEnvironmentReady = true
+        }
+    }
+
+    private func trackCard(index: Int) -> some View {
+        let tr = GameCatalog.activeTracks[index]
+        let selected = flow.selectedTrackIndex == index
+        return Button {
+            flow.selectedTrackIndex = index
+            flow.lapCount = tr.lapsDefault
+            flow.selectedCityTheme = EnvironmentTrackProfile.from(catalogTrackIndex: index).suggestedCityTheme
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                TrackPreviewArt(
+                    trackIndex: index,
+                    accent: selected ? KRCDesign.gold : KRCDesign.neonCyan
+                )
+                .frame(height: 56)
+                Text(String(format: "%02d", index + 1))
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(KRCDesign.gold)
+                Text(tr.name)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+                Text(tr.tag)
+                    .font(.caption2)
+                    .foregroundStyle(KRCDesign.neonCyan.opacity(0.85))
+            }
+            .frame(maxWidth: .infinity, minHeight: 118, alignment: .leading)
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(selected ? Color.orange.opacity(0.18) : KRCDesign.panelFill)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(selected ? KRCDesign.gold : Color.cyan.opacity(0.35), lineWidth: selected ? 2 : 1)
+                    )
+                    .shadow(color: selected ? KRCDesign.gold.opacity(0.25) : .clear, radius: 8)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -398,8 +1242,14 @@ struct TrackSelectScreen: View {
 struct ActiveRaceScreen: View {
     @ObservedObject var flow: GameFlowState
     @ObservedObject var progress: PlayerProgressStore
+    @ObservedObject private var online = KRCOnlineService.shared
     @StateObject private var session: RaceSessionHost
     @State private var paused = false
+    @State private var environmentPreloaded = false
+    @State private var scenePrepared = false
+    @State private var matchGateReady = false
+    @State private var matchmakingTask: Task<Void, Never>?
+    @State private var showTutorial = !KRCTutorial.hasShownControlsTip && !KRCDebugUI.isQALaunch
     @State private var tilt = TiltSteeringController()
 
     init(flow: GameFlowState, progress: PlayerProgressStore) {
@@ -407,154 +1257,583 @@ struct ActiveRaceScreen: View {
         self.progress = progress
         let car = GameCatalog.cars[flow.selectedCarIndex]
         let stats = GameCatalog.runtimeStats(carIndex: flow.selectedCarIndex, progress: progress)
-        let city: CityRuntimeConfig = {
-            if flow.activeGameMode == .championshipSerie {
-                return CityManager.shared.resolveChampionship(round: flow.champRoundsCompleted)
-            }
-            return CityManager.shared.resolve(theme: flow.effectiveCityTheme(), seed: flow.effectiveCitySeed())
-        }()
+        let city = flow.cityForCurrentRace()
         let category = GameCatalog.profile(forCarIndex: flow.selectedCarIndex).category
+        let onlineCtx = RaceOnlineContext(
+            carId: car.id,
+            carName: car.name,
+            colorInt: car.colorUInt32,
+            cityThemeIndex: flow.selectedCityTheme.rawValue,
+            trackIndex: flow.trackIndexForCurrentRace(),
+            trackKey: "\(flow.selectedCityTheme.rawValue)-\(flow.trackIndexForCurrentRace())",
+            mode: flow.activeGameMode.rawValue
+        )
         _session = StateObject(wrappedValue: RaceSessionHost(
-            carColor: car.uiColor,
+            carColor: GarageCustomization.bodyColor(for: car),
+            carId: car.id,
             lapCount: flow.effectiveLapCount(),
             mode: flow.activeGameMode,
             stats: stats,
             city: city,
             nightOverride: flow.nightRace,
-            vehicleCategory: category
+            vehicleCategory: category,
+            difficultyGripMul: flow.difficultyGripMul(),
+            difficultyIndex: flow.difficultyIndex,
+            playerCarIndex: flow.selectedCarIndex,
+            onlineContext: KRCPlayerProfile.onlinePlayEnabled ? onlineCtx : nil,
+            pursuitSuspectCount: flow.pursuitSuspectCountOverride,
+            pursuitTimeLimit: flow.pursuitTimeLimitOverride,
+            pursuitRoadblocks: flow.pursuitRoadblocksEnabled,
+            ghostTrackKey: RaceGhostTape.trackKey(
+                trackIndex: flow.trackIndexForCurrentRace(),
+                laps: flow.effectiveLapCount()
+            ),
+            courierConfig: CourierSessionConfig.from(progress: progress, nightRace: flow.nightRace)
         ))
+        _matchGateReady = State(initialValue: !KRCPlayerProfile.onlinePlayEnabled)
     }
 
     private var useTiltSteer: Bool { ControlPreferences.scheme == .tilt }
+    private var useDPadControls: Bool { ControlPreferences.scheme == .dpad }
+
+    private var raceVisualReady: Bool { environmentPreloaded && scenePrepared }
+
+    private func beginRaceIfReady() {
+        guard raceVisualReady, matchGateReady, !paused else { return }
+        session.engine.setPaused(false)
+    }
+
+    private func startMatchmakingIfNeeded() {
+        guard KRCPlayerProfile.onlinePlayEnabled else {
+            matchGateReady = true
+            beginRaceIfReady()
+            return
+        }
+        guard matchmakingTask == nil else { return }
+        let car = GameCatalog.cars[flow.selectedCarIndex]
+        let trackKey = "\(flow.selectedCityTheme.rawValue)-\(flow.trackIndexForCurrentRace())"
+        matchmakingTask = Task { @MainActor in
+            session.engine.setPaused(true)
+            _ = await online.runMatchmaking(
+                trackKey: trackKey,
+                mode: flow.activeGameMode.rawValue,
+                carId: car.id,
+                carName: car.name,
+                colorInt: car.colorUInt32
+            )
+            // Brief GO flash then release.
+            try? await Task.sleep(nanoseconds: 280_000_000)
+            matchGateReady = true
+            beginRaceIfReady()
+        }
+    }
 
     var body: some View {
         ZStack {
-            SceneKitRaceView(engine: session.engine)
+            if environmentPreloaded {
+                SceneKitRaceView(engine: session.engine) {
+                    scenePrepared = true
+                    beginRaceIfReady()
+                }
                 .ignoresSafeArea()
-            raceOverlay
-                .zIndex(1)
+            } else {
+                Color.black.ignoresSafeArea()
+            }
+            if raceVisualReady {
+                raceOverlay
+                    .zIndex(1)
+            }
+            if !raceVisualReady {
+                Color.black.opacity(0.72)
+                    .ignoresSafeArea()
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .tint(KRCDesign.gold)
+                    Text("LOADING TRACK")
+                        .font(.caption.weight(.bold))
+                        .tracking(2)
+                        .foregroundStyle(KRCDesign.gold)
+                }
+                .zIndex(2)
+            }
+            if raceVisualReady && !matchGateReady {
+                matchmakingOverlay
+                    .zIndex(3)
+            }
         }
-        .raceLandscapePreferred()
+        .raceAllOrientationsAllowed()
         .onAppear {
-            session.engine.setPaused(false)
-            if useTiltSteer {
+            AppOrientationController.shared.supportedMask = .allButUpsideDown
+            environmentPreloaded = false
+            scenePrepared = false
+            matchGateReady = !KRCPlayerProfile.onlinePlayEnabled
+            session.engine.setPaused(true)
+            flow.preloadRaceEnvironment {
+                environmentPreloaded = true
+                #if DEBUG
+                if KRCDebugUI.startRacePaused {
+                    KRCDebugUI.startRacePaused = false
+                    paused = true
+                    session.engine.setPaused(true)
+                    return
+                }
+                #endif
+                startMatchmakingIfNeeded()
+                beginRaceIfReady()
+            }
+            KRCMusicDirector.shared.play(.race)
+            #if DEBUG
+            let qaDrive = RaceQAAutopilot.enabled
+            #else
+            let qaDrive = false
+            #endif
+            if useTiltSteer, !qaDrive {
                 tilt.start(updating: session.input)
             }
-            session.engine.onRaceFinished = { t in
-                DispatchQueue.main.async {
-                    session.engine.setPaused(true)
-                    flow.registerRaceFinish(
-                        segmentTime: t,
-                        driftScore: session.engine.driftScore,
-                        progress: progress
-                    )
+            if session.engine.onRaceFinished == nil {
+                session.engine.onRaceFinished = { t in
+                    DispatchQueue.main.async {
+                        session.engine.setPaused(true)
+                        // Finish ceremony beat — let victory music + last frame breathe.
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.35) {
+                            flow.registerRaceFinish(
+                                segmentTime: t,
+                                driftScore: session.engine.driftScore,
+                                arcadeBonusCredits: session.engine.arcadeBonusCredits(),
+                                position: session.engine.racePosition,
+                                racerCount: session.engine.racerCount,
+                                heat: session.engine.heatMeter(),
+                                damage: session.engine.damageMeter(),
+                                pursuitBusts: session.engine.isCourierRun()
+                                    ? session.engine.courierDeliveries
+                                    : session.engine.pursuitBusts,
+                                ticketFines: session.engine.ticketFinesTotal(),
+                                ticketLines: session.engine.issuedTickets.map { "\($0.driverName) · \($0.speedKmh) km/h · \($0.fineCredits) CR" },
+                                crystalsCollected: session.engine.arcadeCrystals,
+                                courierGrade: session.engine.isCourierRun()
+                                    ? session.engine.courierShiftGrade
+                                    : nil,
+                                progress: progress
+                            )
+                        }
+                    }
                 }
             }
         }
         .onDisappear {
+            matchmakingTask?.cancel()
+            matchmakingTask = nil
             tilt.stop()
+            session.engine.tearDown()
+            KRCMusicDirector.shared.stop()
+            flow.preloadRaceEnvironment()
         }
+    }
+
+    private var matchmakingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.7).ignoresSafeArea()
+            VStack(spacing: 14) {
+                Text("LIVE MULTIPLAYER")
+                    .font(.system(size: 12, weight: .black, design: .rounded))
+                    .tracking(2)
+                    .foregroundStyle(KRCDesign.gold)
+                Group {
+                    switch online.matchmakingPhase {
+                    case .searching:
+                        Text("FINDING RACE…")
+                    case .waiting(let seconds, let racers):
+                        if seconds > 3 {
+                            Text("MATCH FOUND")
+                            Text("\(racers) RACER\(racers == 1 ? "" : "S")")
+                                .foregroundStyle(KRCDesign.neonCyan)
+                        } else {
+                            Text("\(seconds)")
+                                .font(.system(size: 96, weight: .black, design: .rounded))
+                                .foregroundStyle(KRCDesign.gold)
+                        }
+                    case .go:
+                        Text("GO!")
+                            .font(.system(size: 72, weight: .black, design: .rounded))
+                            .foregroundStyle(KRCDesign.gold)
+                    case .offlineFallback:
+                        Text("SERVER UNAVAILABLE")
+                        Text("Continuing in Solo — no lobby required")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(KRCDesign.mutedText)
+                    default:
+                        Text(online.statusLine)
+                    }
+                }
+                .font(.system(size: 28, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                if !online.lobbyPlayers.isEmpty {
+                    Text(online.lobbyPlayers.map(\.name).joined(separator: " · "))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.75))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                }
+                ProgressView()
+                    .tint(KRCDesign.neonCyan)
+            }
+            .padding(28)
+        }
+    }
+
+    private var courierJobPicker: some View {
+        ZStack {
+            Color.black.opacity(0.55).ignoresSafeArea()
+            VStack(spacing: 12) {
+                Text(session.engine.courierNightPremium ? "NIGHT DISPATCH" : "DISPATCH BOARD")
+                    .font(.system(size: 12, weight: .black, design: .rounded))
+                    .tracking(2)
+                    .foregroundStyle(KRCDesign.gold)
+                Text(progress.courierRankSubtitle)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.7))
+                ForEach(session.engine.courierJobOffers) { offer in
+                    Button {
+                        session.engine.selectCourierOffer(id: offer.id)
+                        KRCUISounds.playClick()
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(offer.title)
+                                    .font(.system(size: 14, weight: .black, design: .rounded))
+                                    .foregroundStyle(.white)
+                                Text(offer.detail)
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.white.opacity(0.75))
+                                    .lineLimit(2)
+                            }
+                            Spacer()
+                            Text("+\(offer.payout)")
+                                .font(.system(size: 16, weight: .black, design: .rounded))
+                                .foregroundStyle(KRCDesign.gold)
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.black.opacity(0.55))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .strokeBorder(KRCDesign.neonCyan.opacity(0.45), lineWidth: 1)
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(20)
+            .frame(maxWidth: 420)
+        }
+        .allowsHitTesting(true)
     }
 
     private var raceOverlay: some View {
-        VStack {
-            TimelineView(.animation(minimumInterval: 1.0 / 30)) { _ in
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(flow.venueDisplayName())
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.white.opacity(0.9))
-                        Text(flow.activeGameMode.displayTitle.uppercased())
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.orange.opacity(0.95))
-                        Text("\(session.engine.speedKmh()) km/h")
-                            .font(.title2.monospacedDigit().weight(.bold))
-                            .foregroundStyle(.orange)
-                        Text("LAP \(session.engine.displayLapIndex) / \(session.engine.lapGoal)")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.white)
-                        Text(formatRaceTime(session.engine.elapsedTime))
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.cyan)
-                        meterBar(label: "NITRO", value: session.engine.nitroMeter(), tint: .cyan)
-                        if flow.activeGameMode.enablesPolice {
-                            meterBar(label: "HEAT", value: session.engine.heatMeter(), tint: .red)
-                        }
-                        HStack {
-                            Text("DRIFT ×\(String(format: "%.1f", session.engine.driftMultiplierDisplay()))")
-                                .font(.caption2.weight(.bold))
-                                .foregroundStyle(.yellow)
-                            Spacer()
-                            Text("\(session.engine.driftScore) PTS")
-                                .font(.caption2.monospacedDigit())
-                                .foregroundStyle(.white.opacity(0.9))
-                        }
-                        if useTiltSteer {
-                            Text("Tilt to steer · Touch brake / gas / nitro")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
+        GeometryReader { geo in
+            let portrait = geo.size.height > geo.size.width
+            let topInset = geo.safeAreaInsets.top
+            ZStack {
+                VStack(spacing: 0) {
+                    raceHUD(portrait: portrait, topInset: topInset)
+                    Spacer(minLength: 0)
+                    if !portrait && !useDPadControls {
+                        touchControls(portrait: false)
                     }
-                    Spacer()
-                    Button {
-                        paused.toggle()
-                        session.engine.setPaused(paused)
-                    } label: {
-                        Text(paused ? "RESUME" : "PAUSE")
-                            .font(.caption.weight(.bold))
-                            .padding(10)
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(8)
-                    }
-                    .foregroundStyle(.white)
                 }
-                .padding()
+                if portrait || useDPadControls {
+                    touchControls(portrait: portrait)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .ignoresSafeArea()
+                        .zIndex(10)
+                        .allowsHitTesting(true)
+                    if ControlPreferences.scheme == .wheel {
+                        SteeringWheelControl(input: session.input)
+                            .frame(width: geo.size.width, height: geo.size.height)
+                            .ignoresSafeArea()
+                    }
+                }
+                if VehicleDrivingPreferences.isManualTransmission {
+                    TransmissionShiftControls(
+                        input: session.input,
+                        portrait: portrait,
+                        shiftZone: session.engine.isShiftZone()
+                    )
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .ignoresSafeArea()
+                    .zIndex(11)
+                    .allowsHitTesting(true)
+                }
+                if session.engine.isCourierRun(),
+                   session.engine.courierAwaitingJobChoice,
+                   !session.engine.courierCarrying,
+                   session.engine.courierCargoHeld == 0 {
+                    courierJobPicker
+                        .zIndex(40)
+                }
             }
-            Spacer()
-            touchControls
+            .frame(width: geo.size.width, height: geo.size.height)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
         .overlay {
             if paused {
-                ZStack {
-                    Color.black.opacity(0.55).ignoresSafeArea()
-                    Text("PAUSED")
-                        .font(.largeTitle.weight(.bold))
-                        .foregroundStyle(.white)
-                }
-                .onTapGesture {
-                    paused = false
-                    session.engine.setPaused(false)
-                }
+                KRCDesign.PauseMenuOverlay(
+                    onResume: {
+                        paused = false
+                        session.engine.setPaused(false)
+                    },
+                    onMainMenu: {
+                        paused = false
+                        session.engine.setPaused(true)
+                        flow.openMainMenu()
+                    },
+                    onFlashback: {
+                        if session.engine.performFlashback() {
+                            paused = false
+                            session.engine.setPaused(false)
+                        }
+                    },
+                    flashbackAvailable: session.engine.flashbackAvailable()
+                )
+            }
+        }
+        .overlay {
+            if showTutorial && raceVisualReady && !paused {
+                tutorialOverlay
+            }
+        }
+        .overlay(alignment: .top) {
+            #if DEBUG
+            let skipCoach = KRCDebugUI.isQALaunch
+            #else
+            let skipCoach = false
+            #endif
+            if !KRCTutorial.hasCompletedGuidedRace && !skipCoach && raceVisualReady && !paused && !showTutorial {
+                guidedCoachBanner
             }
         }
     }
 
-    private func meterBar(label: String, value: Float, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(tint.opacity(0.9))
-            GeometryReader { g in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.15))
+    private var guidedCoachBanner: some View {
+        let step = KRCTutorial.currentGuidedStep
+        return TimelineView(.animation(minimumInterval: 0.25)) { _ in
+            let _ = advanceGuidedIfNeeded()
+            VStack(spacing: 4) {
+                Text("COACH · \(step.title)")
+                    .font(.system(size: 10, weight: .black, design: .rounded))
+                    .tracking(1.2)
+                    .foregroundStyle(KRCDesign.gold)
+                Text(step.tip)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.95))
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(Color.black.opacity(0.62))
+                    .overlay(Capsule().strokeBorder(KRCDesign.gold.opacity(0.35), lineWidth: 1))
+            )
+            .padding(.top, 8)
+        }
+    }
+
+    private func advanceGuidedIfNeeded() {
+        guard !KRCTutorial.hasCompletedGuidedRace else { return }
+        let step = KRCTutorial.currentGuidedStep
+        let speed = session.engine.speedKmh()
+        let drift = session.engine.driftMultiplierDisplay()
+        let nitro = session.engine.nitroMeter()
+        switch step {
+        case .steer:
+            if speed > 15 { KRCTutorial.advanceGuidedStep() }
+        case .gas:
+            if speed > 55 { KRCTutorial.advanceGuidedStep() }
+        case .drift:
+            if drift > 1.15 { KRCTutorial.advanceGuidedStep() }
+        case .nitro:
+            if nitro < 0.92 || speed > 110 { KRCTutorial.advanceGuidedStep() }
+        case .finish:
+            break
+        }
+    }
+
+    private var tutorialOverlay: some View {
+        VStack {
+            Spacer()
+            VStack(alignment: .leading, spacing: 10) {
+                Text("FIRST RACE COACH")
+                    .font(.system(size: 12, weight: .black, design: .rounded))
+                    .foregroundStyle(KRCDesign.gold)
+                Text("60-second primer — then the coach tips stay on-screen.")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.88))
+                ForEach(KRCTutorial.controlsTipLines, id: \.self) { line in
+                    Text("· \(line)")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.92))
+                }
+                Button {
+                    KRCTutorial.hasShownControlsTip = true
+                    showTutorial = false
+                } label: {
+                    Text("LET'S RACE")
+                        .font(.system(size: 12, weight: .bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Capsule().fill(KRCDesign.gold))
+                        .foregroundStyle(.black)
+                }
+                .padding(.top, 4)
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.black.opacity(0.78))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(KRCDesign.gold.opacity(0.35), lineWidth: 1)
+                    )
+            )
+            .padding(.horizontal, 20)
+            .padding(.bottom, 28)
+        }
+        .transition(.opacity)
+    }
+
+    @ViewBuilder
+    private func raceHUD(portrait: Bool, topInset: CGFloat = 0) -> some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30)) { _ in
+            let interceptor = session.engine.isHotPursuitInterceptor()
+            let courier = session.engine.isCourierRun()
+            let catchLeft = Int(session.engine.catchTimeDisplay().rounded(.down))
+            ModernRaceHUD(
+                portrait: portrait,
+                venue: flow.venueDisplayName(),
+                mode: flow.activeGameMode.displayTitle,
+                speedKmh: session.engine.speedKmh(),
+                rpm: session.engine.rpmNormalized(),
+                gear: session.engine.gearDisplay(),
+                lap: interceptor
+                    ? session.engine.pursuitBusts
+                    : (courier ? session.engine.courierDeliveries : session.engine.displayLapIndex),
+                lapGoal: interceptor
+                    ? session.engine.pursuitBustGoal
+                    : (courier ? session.engine.courierGoal : session.engine.lapGoal),
+                raceTime: (interceptor || courier)
+                    ? String(format: "%d:%02d", catchLeft / 60, catchLeft % 60)
+                    : formatHUDTime(session.engine.elapsedTime),
+                position: interceptor
+                    ? session.engine.pursuitBusts
+                    : (courier ? session.engine.courierDeliveries : session.engine.racePosition),
+                racerCount: interceptor
+                    ? session.engine.pursuitBustGoal
+                    : (courier ? session.engine.courierGoal : session.engine.racerCount),
+                showPosition: interceptor || courier || session.engine.racerCount > 1,
+                nitro: session.engine.nitroMeter(),
+                heat: session.engine.heatMeter(),
+                showHeat: interceptor || flow.activeGameMode == .endless,
+                heatLabel: interceptor ? "LOCK" : "HEAT",
+                damage: session.engine.damageMeter(),
+                showDamage: session.engine.damageMeter() > 0.02,
+                driftMultiplier: session.engine.driftMultiplierDisplay(),
+                driftScore: session.engine.driftScore,
+                progress: session.engine.trackProgressNormalized(),
+                crystals: session.engine.arcadeCrystals,
+                crystalTotal: session.engine.arcadeCrystalTotal,
+                objectiveLabel: session.engine.arcadeObjective,
+                objectiveProgress: session.engine.arcadeObjectiveProgress,
+                objectiveComplete: session.engine.arcadeObjectiveComplete,
+                arcadeToast: session.engine.arcadeToast,
+                draftActive: session.engine.arcadeDraftActive,
+                driftZoneActive: session.engine.arcadeDriftZoneActive,
+                manualTransmission: VehicleDrivingPreferences.isManualTransmission,
+                shiftZone: session.engine.isShiftZone(),
+                shiftNotice: session.engine.shiftNotice(),
+                reverseGear: session.engine.isReversingGear(),
+                positionPrefix: interceptor ? "BUSTS" : (courier ? "PKG" : nil),
+                onlineStatus: KRCPlayerProfile.onlinePlayEnabled ? online.statusLine : nil,
+                wrongWay: session.engine.wrongWayActive,
+                courierMode: courier,
+                courierBearing: session.engine.courierBearing,
+                courierDistance: session.engine.courierDistance,
+                courierDwell: session.engine.courierDwell,
+                courierInZone: session.engine.courierInZone,
+                courierCarrying: session.engine.courierCarrying,
+                courierEarned: session.engine.courierEarned,
+                courierNextPayout: session.engine.courierNextPayout,
+                courierStreak: session.engine.courierStreak,
+                courierUrgency: session.engine.courierUrgency,
+                courierPackageKind: session.engine.courierPackageKind.title,
+                courierRivalThreat: session.engine.courierRivalThreat,
+                courierCargoHeld: session.engine.courierCargoHeld,
+                courierCargoCapacity: session.engine.courierCargoCapacity,
+                courierNightPremium: session.engine.courierNightPremium,
+                decluttered: KRCTutorial.shouldDeclutterHUD
+            ) {
+                AnyView(Group {
+                    if !paused { pauseButton }
+                })
+            }
+        }
+        .padding(.horizontal, portrait ? 10 : 12)
+        .padding(.top, max(topInset + 4, portrait ? 6 : 8))
+        // Keep HUD as overlay chips — don't stretch a glass panel across the road.
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .allowsHitTesting(true)
+    }
+
+    private var pauseButton: some View {
+        Button {
+            paused.toggle()
+            if paused {
+                session.engine.setPaused(true)
+            } else {
+                beginRaceIfReady()
+            }
+        } label: {
+            Text("PAUSE")
+                .font(.system(size: 10, weight: .bold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background {
                     Capsule()
-                        .fill(tint)
-                        .frame(width: g.size.width * CGFloat(min(1, max(0, value))))
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(KRCDesign.neonCyan.opacity(0.5), lineWidth: 1)
+                        )
                 }
-            }
-            .frame(height: 6)
-            .frame(maxWidth: 160)
         }
+        .foregroundStyle(.white)
+        .accessibilityIdentifier("race.pause")
     }
 
-    private var touchControls: some View {
-        RacePedalCluster(input: session.input, tiltSteer: useTiltSteer)
-            .frame(maxWidth: .infinity)
-            .frame(height: 70)
-            .padding(.bottom, 24)
-            .padding(.horizontal, 10)
+    @ViewBuilder
+    private func touchControls(portrait: Bool) -> some View {
+        let layout = portrait ? RaceControlLayout.portrait : RaceControlLayout.landscape
+        if useDPadControls {
+            DPadRaceControls(input: session.input, layout: layout)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .allowsHitTesting(true)
+        } else {
+            let cluster = RacePedalCluster(
+                input: session.input,
+                tiltSteer: useTiltSteer,
+                layout: layout
+            )
+            // No fixed frosted dock height — pedals sit in a clear host (see RacePedalCluster).
+            cluster
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, portrait ? 0 : 6)
+                .padding(.bottom, portrait ? 0 : 2)
+        }
     }
 }
 
@@ -562,36 +1841,227 @@ struct ActiveRaceScreen: View {
 
 struct RaceFinishedScreen: View {
     @ObservedObject var flow: GameFlowState
+    @ObservedObject var progress: PlayerProgressStore
     let lastTime: TimeInterval
+    @ObservedObject private var online = KRCOnlineService.shared
+    @State private var appear = false
+
+    private var finishGrade: String {
+        if let g = flow.lastRaceReward?.courierGrade, !g.isEmpty { return g }
+        let pos = max(1, flow.lastFinishPlace)
+        switch pos {
+        case 1: return "S"
+        case 2: return "A"
+        case 3: return "B"
+        case 4: return "C"
+        default: return "D"
+        }
+    }
+
+    private var nextUnlockTeaser: String? {
+        guard !progress.careerComplete,
+              let mission = progress.currentCareerMission else { return nil }
+        return "Next career: \(mission.title)"
+    }
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.92).ignoresSafeArea()
-            VStack(spacing: 20) {
-                Text("FINISH")
-                    .font(.largeTitle.weight(.bold))
-                    .foregroundStyle(.orange)
-                Text(formatRaceTime(lastTime))
-                    .font(.system(size: 36, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.white)
-                if flow.activeGameMode == .championshipSerie, flow.champRoundsCompleted < 3 {
-                    Text(
-                        "Next: \(CityThemeCatalog.championshipTheme(round: flow.champRoundsCompleted).displayName)"
+            KRCDesign.MenuBackdrop()
+            Color.black.opacity(0.62).ignoresSafeArea()
+            ScrollView {
+                VStack(spacing: 20) {
+                    Image(systemName: flow.activeGameMode == .courier
+                          ? "shippingbox.fill"
+                          : "flag.checkered.circle.fill")
+                        .font(.system(size: 52))
+                        .foregroundStyle(KRCDesign.gold)
+                        .shadow(color: KRCDesign.gold.opacity(0.45), radius: 12)
+                        .scaleEffect(appear ? 1 : 0.55)
+                        .opacity(appear ? 1 : 0)
+                    KRCDesign.ScreenHeader(title: "FINISH", subtitle: flow.venueDisplayName())
+                    KRCDesign.ModeBadge(text: flow.activeGameMode.displayTitle)
+                    Text(finishGrade)
+                        .font(.system(size: 56, weight: .black, design: .rounded))
+                        .foregroundStyle(KRCDesign.gold)
+                        .shadow(color: KRCDesign.gold.opacity(0.35), radius: 10)
+                        .opacity(appear ? 1 : 0)
+                    KRCDesign.HighlightStatCard(
+                        label: flow.activeGameMode == .courier ? "ROUTE TIME" : "LAP TIME",
+                        value: formatRaceTime(lastTime)
                     )
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    Button("NEXT ROUND") {
-                        flow.continueChampionship()
+                    .padding(.horizontal, 24)
+                    .opacity(appear ? 1 : 0)
+                    .offset(y: appear ? 0 : 18)
+                    if let reward = flow.lastRaceReward {
+                        KRCDesign.Panel {
+                            VStack(spacing: 8) {
+                                KRCDesign.SectionLabel(text: "REWARDS")
+                                Text("+\(reward.total) CR")
+                                    .font(.system(size: 30, weight: .black, design: .rounded))
+                                    .foregroundStyle(KRCDesign.gold)
+                                VStack(spacing: 4) {
+                                    rewardLine(
+                                        flow.activeGameMode == .courier ? "Shift pay" : "Race purse",
+                                        reward.base
+                                    )
+                                    if reward.position > 0 { rewardLine("Position", reward.position) }
+                                    if reward.heatBonus > 0 {
+                                        rewardLine(
+                                            flow.activeGameMode == .policeChase
+                                                ? "Busts"
+                                                : (flow.activeGameMode == .courier ? "Deliveries" : "Heat survival"),
+                                            reward.heatBonus
+                                        )
+                                    }
+                                    if reward.daily > 0 { rewardLine("Daily challenge", reward.daily) }
+                                    if reward.ticketFines > 0 {
+                                        rewardLine("Speeding tickets", reward.ticketFines)
+                                    }
+                                    if reward.arcade > 0 {
+                                        rewardLine(
+                                            flow.activeGameMode == .courier ? "Courier bonus" : "Arcade bonus",
+                                            reward.arcade
+                                        )
+                                    }
+                                    if reward.damagePenalty > 0 {
+                                        rewardLine("Damage", -reward.damagePenalty)
+                                    }
+                                    if reward.career > 0 { rewardLine("Career mission", reward.career) }
+                                }
+                                if !reward.ticketLines.isEmpty {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        KRCDesign.SectionLabel(text: "CITATIONS")
+                                        ForEach(reward.ticketLines, id: \.self) { line in
+                                            Text(line)
+                                                .font(.caption2.weight(.semibold).monospacedDigit())
+                                                .foregroundStyle(.white.opacity(0.88))
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.top, 6)
+                                }
+                                if let unlocked = reward.unlockedCarName {
+                                    Text("Unlocked \(unlocked)")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundStyle(KRCDesign.neonCyan)
+                                        .padding(.top, 4)
+                                }
+                                if let teaser = nextUnlockTeaser {
+                                    Text(teaser)
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.white.opacity(0.8))
+                                        .padding(.top, 2)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .padding(.horizontal, 24)
                     }
-                    .buttonStyle(.borderedProminent)
+                    if KRCPlayerProfile.onlinePlayEnabled {
+                        if let live = online.lastLiveResult, live.humanCount > 1 {
+                            KRCDesign.Panel {
+                                VStack(spacing: 6) {
+                                    KRCDesign.SectionLabel(text: "LIVE LOBBY")
+                                    Text("P\(live.humanPosition)/\(live.humanCount)")
+                                        .font(.system(size: 32, weight: .black, design: .rounded))
+                                        .foregroundStyle(KRCDesign.neonCyan)
+                                    Text(live.players.map(\.name).joined(separator: " · "))
+                                        .font(.caption2.weight(.semibold))
+                                        .foregroundStyle(.white.opacity(0.75))
+                                        .multilineTextAlignment(.center)
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .padding(.horizontal, 24)
+                        }
+                        if let rank = online.lastSubmittedRank {
+                            KRCDesign.Panel {
+                                VStack(spacing: 6) {
+                                    KRCDesign.SectionLabel(text: "GLOBAL TRACK RANK")
+                                    Text("P\(rank)")
+                                        .font(.system(size: 32, weight: .black, design: .rounded))
+                                        .foregroundStyle(KRCDesign.gold)
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .padding(.horizontal, 24)
+                        }
+                        if !online.scoreboardMessage.isEmpty {
+                            Text(online.scoreboardMessage)
+                                .font(.caption)
+                                .foregroundStyle(KRCDesign.mutedText)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 28)
+                        }
+                        GlobalLeaderboardView()
+                            .padding(.horizontal, 20)
+                    }
+                    if flow.activeGameMode == .championshipSerie,
+                       flow.champRoundsCompleted < GameCatalog.activeChampionshipRounds.count {
+                        let next = GameCatalog.activeChampionshipRounds[flow.champRoundsCompleted]
+                        KRCDesign.Panel {
+                            VStack(spacing: 8) {
+                                KRCDesign.SectionLabel(text: "NEXT ROUND")
+                                Text("\(next.name) · \(GameCatalog.activeTracks[next.trackIndex].name)")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                    .multilineTextAlignment(.center)
+                                Text("\(next.laps) laps")
+                                    .font(.caption)
+                                    .foregroundStyle(KRCDesign.mutedText)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .padding(.horizontal, 24)
+                        KRCDesign.PrimaryButton(title: "NEXT ROUND") {
+                            flow.continueChampionship()
+                        }
+                        .padding(.horizontal, 32)
+                    } else if !progress.careerComplete {
+                        KRCDesign.PrimaryButton(title: "CONTINUE CAREER") {
+                            flow.beginCareerMode(progress: progress)
+                        }
+                        .padding(.horizontal, 32)
+                        KRCDesign.SecondaryButton(title: "MAIN MENU") {
+                            flow.openMainMenu()
+                        }
+                        .padding(.top, 4)
+                    } else {
+                        KRCDesign.PrimaryButton(title: "RACE AGAIN") {
+                            flow.beginQuickRace()
+                        }
+                        .padding(.horizontal, 32)
+                        KRCDesign.SecondaryButton(title: "MAIN MENU") {
+                            flow.openMainMenu()
+                        }
+                        .padding(.top, 4)
+                    }
                 }
-                Button("MAIN MENU") {
-                    flow.openMainMenu()
-                }
-                .foregroundStyle(.cyan)
+                .padding(.vertical, 32)
+                .padding(.horizontal, 16)
             }
-            .padding()
+        }
+        .onAppear {
+            KRCTutorial.markGuidedComplete()
+            KRCMusicDirector.shared.play(.victory)
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
+                appear = true
+            }
+            if KRCAudioPreferences.hapticsEnabled {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            }
+        }
+    }
+
+    private func rewardLine(_ label: String, _ amount: Int64) -> some View {
+        HStack {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(KRCDesign.mutedText)
+            Spacer()
+            Text(amount >= 0 ? "+\(amount)" : "\(amount)")
+                .font(.caption.weight(.bold).monospacedDigit())
+                .foregroundStyle(amount >= 0 ? .white.opacity(0.9) : Color.red.opacity(0.85))
         }
     }
 }
@@ -602,21 +2072,119 @@ struct ChampCompleteScreen: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.94).ignoresSafeArea()
-            VStack(spacing: 24) {
-                Text("CHAMPIONSHIP COMPLETE")
-                    .font(.title.weight(.bold))
-                    .foregroundStyle(Color(red: 1, green: 0.85, blue: 0.2))
-                Text("Total time")
-                    .foregroundStyle(.secondary)
-                Text(formatRaceTime(totalTime))
-                    .font(.system(size: 34, weight: .medium, design: .monospaced))
-                Button("MAIN MENU") {
+            KRCDesign.MenuBackdrop()
+            Color.black.opacity(0.65).ignoresSafeArea()
+            VStack(spacing: 22) {
+                Spacer(minLength: 24)
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [KRCDesign.gold, KRCDesign.hotOrange],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .shadow(color: KRCDesign.gold.opacity(0.55), radius: 16)
+                KRCDesign.ScreenHeader(
+                    title: "CHAMPIONSHIP COMPLETE",
+                    subtitle: "Total time · \(GameCatalog.activeChampionshipRounds.count) rounds"
+                )
+                KRCDesign.HighlightStatCard(
+                    label: "SERIES TIME",
+                    value: formatRaceTime(totalTime),
+                    accent: KRCDesign.neonCyan
+                )
+                .padding(.horizontal, 28)
+                Spacer()
+                KRCDesign.PrimaryButton(title: "MAIN MENU") {
                     flow.openMainMenu()
                 }
-                .buttonStyle(.borderedProminent)
+                .padding(.horizontal, 40)
+                .padding(.bottom, 28)
             }
-            .padding()
+            .padding(.bottom, 16)
         }
+    }
+}
+
+// MARK: - Weekly contracts
+
+private struct WeeklyContractsSheet: View {
+    @ObservedObject var progress: PlayerProgressStore
+    let onDismiss: () -> Void
+    @State private var claimToast: String?
+
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text(progress.weeklySubtitle)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(KRCDesign.mutedText)
+                        ForEach(WeeklyEvents.contracts(forWeekKey: progress.weeklyKey)) { contract in
+                            let prog = progress.weeklyProgress[contract.id, default: 0]
+                            let claimed = progress.weeklyClaimed.contains(contract.id)
+                            let ready = prog >= contract.target
+                            KRCDesign.Panel {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(contract.title)
+                                        .font(.headline.weight(.bold))
+                                        .foregroundStyle(.white)
+                                    Text(contract.blurb)
+                                        .font(.caption)
+                                        .foregroundStyle(KRCDesign.mutedText)
+                                    ProgressView(value: Double(min(prog, contract.target)), total: Double(contract.target))
+                                        .tint(KRCDesign.neonCyan)
+                                    HStack {
+                                        Text("\(min(prog, contract.target))/\(contract.target)")
+                                            .font(.caption.monospacedDigit())
+                                            .foregroundStyle(.white.opacity(0.85))
+                                        Spacer()
+                                        if claimed {
+                                            Text("CLAIMED")
+                                                .font(.caption.weight(.bold))
+                                                .foregroundStyle(KRCDesign.gold)
+                                        } else if ready {
+                                            Button("CLAIM +\(contract.rewardCredits)") {
+                                                let got = progress.claimWeeklyContract(contract.id)
+                                                claimToast = got > 0 ? "+\(got) CR" : nil
+                                            }
+                                            .font(.caption.weight(.bold))
+                                            .foregroundStyle(.black)
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 6)
+                                            .background(Capsule().fill(KRCDesign.gold))
+                                        } else {
+                                            Text("+\(contract.rewardCredits) CR")
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundStyle(KRCDesign.gold.opacity(0.7))
+                                        }
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        if let claimToast {
+                            Text(claimToast)
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(KRCDesign.neonCyan)
+                        }
+                    }
+                    .padding(16)
+                }
+            }
+            .navigationTitle("Weekly Contracts")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", action: onDismiss)
+                }
+            }
+            .onAppear { progress.rollWeeklyIfNeeded() }
+        }
+        .preferredColorScheme(.dark)
     }
 }

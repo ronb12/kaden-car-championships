@@ -6,11 +6,11 @@ The iOS app is **100% Swift**: **SwiftUI** for menus and HUD, **SceneKit** for t
 
 | Folder | Purpose |
 |--------|---------|
-| **`App/`** | App entry point (`KadenRacingApp.swift`) and root view (`ContentView.swift`). |
+| **`App/`** | App entry point (`KadenRacingApp.swift`) → `NativeRootView` (native only). |
 | **`Game/`** | SceneKit runtime: `NativeRaceEngine`, `TrackSpline`, `SceneKitRaceView`. |
 | **`Models/`** | Domain types and static data (`GameDefinitions` — cars, tracks, `GameRouteMode`, etc.). |
 | **`Views/`** | SwiftUI screens, navigation, and session state (`NativeScreens`, `GameFlowState`). |
-| **`Resources/`** | `Info.plist`, `PrivacyInfo.xcprivacy`, `LaunchScreen.storyboard`, `Assets.xcassets` (app icon + menu background image). |
+| **`Resources/`** | `Info.plist`, `PrivacyInfo.xcprivacy`, `LaunchScreen.storyboard`, `Assets.xcassets`, `garage-cars/` (symlink to repo `garage-cars/` — same PNGs as web). |
 | **`WebBundle/`** *(optional, excluded from target)* | Legacy HTML/JS assets only if you keep them for reference; not shipped in the app bundle. |
 
 ---
@@ -21,7 +21,9 @@ The iOS app is **100% Swift**: **SwiftUI** for menus and HUD, **SceneKit** for t
 |------|--------|
 | **App Icon** | `Resources/Assets.xcassets` — single 1024×1024 **universal** iOS icon; Xcode generates device sizes |
 | **Launch screen** | `Resources/LaunchScreen.storyboard` — black full-screen (all devices) |
-| **Privacy manifest** | `Resources/PrivacyInfo.xcprivacy` — not tracking; no native data collection (update if you add SDKs) |
+| **Privacy manifest** | `Resources/PrivacyInfo.xcprivacy` — UserDefaults API (CA92.1); optional online data types (user ID, nickname, gameplay); **no tracking** |
+| **Account deletion** | Settings → **Delete online account data** (calls `/api/delete-account`, resets local profile) — required for online profiles |
+| **In-app legal** | Settings → Privacy / Terms (in-app + web links), Support URL |
 | **Export compliance (encryption)** | `ITSAppUsesNonExemptEncryption` = **NO** in `Resources/Info.plist` (App Store Connect encryption question) |
 | **App category** | `LSApplicationCategoryType` = **Games** |
 | **Versioning** | `CFBundleShortVersionString` (marketing) + `CFBundleVersion` (build) — bump for each App Store upload |
@@ -40,12 +42,13 @@ These are **not** in the repo; Apple requires them at submission time.
 |------|--------|
 | **Apple Developer Program** | Paid membership, agreements active |
 | **App record** | Unique **Bundle ID** (match Xcode → Signing & Capabilities) |
-| **Privacy Policy URL** | **Required** for most apps; host a simple page describing data practices for the **website** loaded in the WebView (cookies, localStorage, analytics if any) |
-| **Support URL** | A contact or help page (can be the same site as the game, different path) |
+| **Privacy Policy URL** | **Required** — use `https://kaden-car-championships.vercel.app/privacy.html` (linked in app Settings) |
+| **Support URL** | **Required** — same host or a dedicated support page (linked in app Settings) |
+| **Game Center** | Enable capability on the app ID; in App Store Connect → **Game Center**, create leaderboards and achievements matching `GameCenterConfig` in `GameServices.swift` (lap time = elapsed ms, lower is better; drift = integer, higher is better) |
 | **Screenshots** | Required sizes for **6.7"**, **6.5"** (and others per Apple’s current list). Capture from Simulator or device (game plays in any orientation) |
 | **Copyright / trade name** | e.g. `© 2026 Your Name` |
 | **Age rating** | Complete the questionnaire (racing / mild violence, etc. as appropriate) |
-| **App Privacy** | Nutrition labels: declare what the **loaded web content** may collect (or “Data Not Collected” only if truly accurate). Align with your Privacy Policy. |
+| **App Privacy** | Declare **User ID**, **Nickname**, **Gameplay** (when online play is used), **not used for tracking**. Align with `PrivacyInfo.xcprivacy` and your Privacy Policy. |
 
 **Export compliance wizard:** If you only use HTTPS like this app, answers typically match **“No”** to custom encryption and standard TLS — consistent with `ITSAppUsesNonExemptEncryption` = false.
 
@@ -94,4 +97,4 @@ xcodegen generate
 
 ## Privacy manifest & your website
 
-`Resources/PrivacyInfo.xcprivacy` covers **native** code only (currently: no tracking, no collected data types). Declare any additional practices in **App Store Connect → App Privacy** and your public **Privacy Policy** URL. If you add ads or analytics SDKs to the iOS target, update the manifest and labels.
+`Resources/PrivacyInfo.xcprivacy` declares UserDefaults access and optional online data (player ID, gamer nickname, race stats). **Solo-only players** may not send data to your servers; App Store Connect labels should still describe what online mode *can* collect. If you add ads or analytics SDKs, update the manifest and labels.

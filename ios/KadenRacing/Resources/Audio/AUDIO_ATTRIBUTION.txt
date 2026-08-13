@@ -1,6 +1,28 @@
-Engine sample (car_engine_racing.mp3)
-- Source: BigSoundBank “Car Engine #2” (sound 0291)
-- License: CC0 (public domain) — https://bigsoundbank.com/car-engine-2-s0291.html
+muscle_v8_loop.mp3
+- Source: BigSoundBank “AC Cobra Engine” (sound 0534), trimmed loop
+- License: CC0 — https://bigsoundbank.com/ac-cobra-engine-s0534.html
 - Author: Denis Chardonnet
 
-You may replace this file with your own engine loop; keep the filename or update RaceAudioController resource names.
+muscle_v8_high.mp3
+- Source: BigSoundBank “Car Engine #2” (sound 0291), trimmed high-RPM segment
+- License: CC0 — https://bigsoundbank.com/car-engine-2-s0291.html
+- Author: Denis Chardonnet
+
+car_engine_racing.mp3 (fallback body layer)
+- Source: BigSoundBank “Car Engine #2” (sound 0291), full clip
+- License: CC0 — same as above
+
+race_intensity.mp3 / Music/Race/race_intensity.mp3
+- Source: “Pure Raceway” by MintoDog (OpenGameArt)
+- License: CC0 — https://opengameart.org/content/pure-raceway
+- File: pure_raceway_bpm160.mp3
+
+menu_theme.mp3 / garage_theme.mp3 / Music/Menu/*
+- Source: “Racing Game Menu” by MintoDog (OpenGameArt)
+- License: CC0 — https://opengameart.org/content/racing-game-menu
+- File: racing_game_menu_bpm165.mp3
+
+victory.mp3 / Music/Victory/victory.mp3
+- Source: “Pure Raceway Climax” by MintoDog (OpenGameArt)
+- License: CC0 — https://opengameart.org/content/pure-raceway
+- File: pure_raceway_climax_bpm175.mp3

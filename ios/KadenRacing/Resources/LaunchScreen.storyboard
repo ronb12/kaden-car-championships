@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="launch">
-    <device id="retina6_12" orientation="landscapeLeft" appearance="dark"/>
+    <device id="retina6_12" orientation="portrait" appearance="dark"/>
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
@@ -10,23 +10,52 @@
             <objects>
                 <viewController id="launch" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="view">
-                        <rect key="frame" x="0.0" y="0.0" width="852" height="393"/>
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
+                            <!-- Background image fills the screen -->
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" image="MenuBackground" translatesAutoresizingMaskIntoConstraints="NO" id="background">
-                                <rect key="frame" x="0.0" y="0.0" width="852" height="393"/>
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                             </imageView>
+                            <!-- Dark gradient overlay -->
                             <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="shade">
-                                <rect key="frame" x="0.0" y="0.0" width="852" height="393"/>
-                                <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.38" colorSpace="custom" customColorSpace="sRGB"/>
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                                <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.68" colorSpace="custom" customColorSpace="sRGB"/>
                             </view>
-                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Kaden's Racing Championships" textAlignment="center" lineBreakMode="wordWrapping" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="YES" translatesAutoresizingMaskIntoConstraints="NO" id="title">
-                                <fontDescription key="fontDescription" type="boldSystem" pointSize="28"/>
-                                <color key="textColor" red="1" green="0.64" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                            </label>
+                            <!-- Container centered vertically -->
+                            <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="container">
+                                <rect key="frame" x="20" y="300" width="353" height="220"/>
+                                <subviews>
+                                    <!-- KRC badge label (large decorative) -->
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="🏁" textAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="badge">
+                                        <rect key="frame" x="0" y="0" width="353" height="72"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="60"/>
+                                        <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    </label>
+                                    <!-- Main title -->
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="KADEN'S" textAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="title1">
+                                        <rect key="frame" x="0" y="80" width="353" height="48"/>
+                                        <fontDescription key="fontDescription" type="boldSystem" pointSize="42"/>
+                                        <color key="textColor" red="1" green="0.64" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    </label>
+                                    <!-- Subtitle -->
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="RACING CHAMPIONSHIPS" textAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="title2">
+                                        <rect key="frame" x="0" y="132" width="353" height="28"/>
+                                        <fontDescription key="fontDescription" type="boldSystem" pointSize="18"/>
+                                        <color key="textColor" red="1" green="1" blue="1" alpha="0.90" colorSpace="custom" customColorSpace="sRGB"/>
+                                    </label>
+                                    <!-- Season label -->
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="SEASON ONE" textAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="season">
+                                        <rect key="frame" x="0" y="170" width="353" height="22"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="13"/>
+                                        <color key="textColor" red="0.0" green="0.84" blue="1.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    </label>
+                                </subviews>
+                                <color key="backgroundColor" red="0" green="0" blue="0" alpha="0" colorSpace="custom" customColorSpace="sRGB"/>
+                            </view>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="safe"/>
-                        <color key="backgroundColor" red="0.01" green="0.01" blue="0.02" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" red="0.02" green="0.0" blue="0.01" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
                             <constraint firstItem="background" firstAttribute="top" secondItem="view" secondAttribute="top" id="bgTop"/>
                             <constraint firstItem="background" firstAttribute="bottom" secondItem="view" secondAttribute="bottom" id="bgBottom"/>
@@ -36,9 +65,10 @@
                             <constraint firstItem="shade" firstAttribute="bottom" secondItem="view" secondAttribute="bottom" id="shadeBottom"/>
                             <constraint firstItem="shade" firstAttribute="leading" secondItem="view" secondAttribute="leading" id="shadeLeading"/>
                             <constraint firstItem="shade" firstAttribute="trailing" secondItem="view" secondAttribute="trailing" id="shadeTrailing"/>
-                            <constraint firstItem="title" firstAttribute="leading" secondItem="safe" secondAttribute="leading" constant="16" id="titleLead"/>
-                            <constraint firstItem="safe" firstAttribute="trailing" secondItem="title" secondAttribute="trailing" constant="16" id="titleTrail"/>
-                            <constraint firstItem="title" firstAttribute="centerY" secondItem="safe" secondAttribute="centerY" id="cy"/>
+                            <constraint firstItem="container" firstAttribute="centerX" secondItem="safe" secondAttribute="centerX" id="cx"/>
+                            <constraint firstItem="container" firstAttribute="centerY" secondItem="safe" secondAttribute="centerY" id="cy"/>
+                            <constraint firstItem="container" firstAttribute="leading" secondItem="safe" secondAttribute="leading" constant="20" id="cLead"/>
+                            <constraint firstItem="safe" firstAttribute="trailing" secondItem="container" secondAttribute="trailing" constant="20" id="cTrail"/>
                         </constraints>
                     </view>
                 </viewController>

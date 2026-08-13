@@ -16,6 +16,8 @@ Production: https://kaden-car-championships.vercel.app/
 - `api/` - Vercel serverless endpoints for global scores, multiplayer presence, matchmaking, and account deletion
 - `db/schema.sql` - Neon/Postgres schema
 - `garage-cars/` - garage car images
+- `public/models/` - bundled GLB models (`krc-camber-ss.glb`, driver asset)
+- `GLTFLoader.js` - Three.js GLTF loader for web 3D cars
 - `ios/` - native iOS project and bundled web game assets
 
 ## Features

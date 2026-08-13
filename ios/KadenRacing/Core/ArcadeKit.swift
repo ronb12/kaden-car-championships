@@ -2,21 +2,23 @@ import Foundation
 
 // MARK: - Game modes (expandable; wire Firebase / MP per mode)
 
-enum GameModeKind: String, Codable, CaseIterable, Identifiable {
+enum GameModeKind: String, Codable, CaseIterable, Identifiable, Hashable {
     /// Standard lap race (former “quick race”).
     case circuit
     /// Three-track tour (existing championship flow).
     case championshipSerie
-    /// NFS-style pursuit — aggressive cops, heat system.
+    /// NFS/GT-style Hot Pursuit — player is the interceptor; bust fleeing suspects.
     case policeChase
     /// Long survival run — score + drift combo.
     case endless
     /// Best lap focus.
     case timeTrial
-    /// Placeholder: ghost replay async — leaderboard hooks ready.
+    /// Race a local personal-best ghost (+ translucent pace cars).
     case ghostDuel
-    /// Career ladder placeholder — missions JSON later.
+    /// Career ladder — structured missions with unlock rewards.
     case career
+    /// City apron package run — free-district drive between pickup/drop zones.
+    case courier
 
     var id: String { rawValue }
 
@@ -29,36 +31,39 @@ enum GameModeKind: String, Codable, CaseIterable, Identifiable {
         case .timeTrial: return "Time Trial"
         case .ghostDuel: return "Ghost Duel"
         case .career: return "Career"
+        case .courier: return "Courier Run"
         }
     }
 
     var subtitle: String {
         switch self {
         case .circuit: return "Classic arcade laps"
-        case .championshipSerie: return "3 venues · cumulative time"
-        case .policeChase: return "Escape the chase · heat rises"
+        case .championshipSerie: return "4 rounds · cumulative time"
+        case .policeChase: return "Drive the interceptor · bust fleeing racers"
         case .endless: return "One long session · chase score"
         case .timeTrial: return "Pure pace · minimal traffic"
-        case .ghostDuel: return "Beat leaderboard ghosts"
+        case .ghostDuel: return "Race your PB ghost + pace cars"
         case .career: return "Structured progression"
+        case .courier: return "Jobs · GPS · rivals · grades · courier ladder"
         }
     }
 
     func defaultLaps() -> Int {
         switch self {
-        case .circuit: return 5
-        case .championshipSerie: return 5
-        case .policeChase: return 5
+        case .circuit: return 3
+        case .championshipSerie: return 3
+        case .policeChase: return 3
         case .endless: return 999
         case .timeTrial: return 3
-        case .ghostDuel: return 5
-        case .career: return 4
+        case .ghostDuel: return 3
+        case .career: return 3
+        case .courier: return 1
         }
     }
 
     var enablesPolice: Bool {
         switch self {
-        case .policeChase, .endless, .career: return true
+        case .policeChase, .endless: return true
         default: return false
         }
     }
@@ -66,7 +71,7 @@ enum GameModeKind: String, Codable, CaseIterable, Identifiable {
     var enablesTraffic: Bool {
         switch self {
         case .circuit, .championshipSerie, .policeChase, .endless, .career: return true
-        case .timeTrial, .ghostDuel: return false
+        case .timeTrial, .ghostDuel, .courier: return false
         }
     }
 }
@@ -99,7 +104,27 @@ struct CarStatProfile: Codable, Equatable {
     let durability: Int
     let category: VehicleCategory
     let unlockCostCredits: Int64
+    /// Career missions completed required before purchase (0 = always buyable when locked).
+    var minCareerTiers: Int = 0
     let premiumSKU: String?
+
+    var unlockTierLabel: String {
+        switch category {
+        case .compact: return "ROOKIE"
+        case .muscle: return unlockCostCredits >= 10_000 ? "PRO" : "STREET"
+        case .sports: return unlockCostCredits >= 10_000 ? "PRO" : "STREET"
+        case .supercar: return "ELITE"
+        case .hypercar: return "LEGEND"
+        case .policeInterceptor: return "SPECIAL"
+        }
+    }
+
+    var formattedUnlockCost: String {
+        if unlockCostCredits <= 0 { return "STARTER" }
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return "\(formatter.string(from: NSNumber(value: unlockCostCredits)) ?? "\(unlockCostCredits)") CR"
+    }
 }
 
 struct CarRuntimeStats: Equatable {
@@ -114,14 +139,18 @@ struct CarRuntimeStats: Equatable {
 
 enum ControlScheme: String, Codable, CaseIterable, Identifiable {
     case touch
+    case dpad
     case tilt
+    case wheel
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .touch: return "Touch"
+        case .touch: return "Touch buttons"
+        case .dpad: return "D-pad + face buttons"
         case .tilt: return "Tilt steer"
+        case .wheel: return "Steering wheel"
         }
     }
 }

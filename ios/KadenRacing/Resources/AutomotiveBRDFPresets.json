@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "comment": "Disney-principled BRDF families fitted to automotive chip behavior (GT7-style). Colors are factory reference hues; in-game tint comes from the player color.",
+  "finishFamilies": {
+    "gloss": {
+      "baseMetalness": 0.05,
+      "baseRoughness": 0.46,
+      "clearCoat": 0.96,
+      "clearCoatRoughness": 0.06,
+      "flakeDensity": 0.0,
+      "flakeMetalness": 0.0,
+      "specularTint": [1.0, 1.0, 1.0],
+      "sheen": 0.02
+    },
+    "metallic": {
+      "baseMetalness": 0.14,
+      "baseRoughness": 0.40,
+      "clearCoat": 0.88,
+      "clearCoatRoughness": 0.06,
+      "flakeDensity": 0.48,
+      "flakeMetalness": 0.55,
+      "specularTint": [0.98, 0.99, 1.0],
+      "sheen": 0.04
+    },
+    "pearl": {
+      "baseMetalness": 0.12,
+      "baseRoughness": 0.34,
+      "clearCoat": 0.96,
+      "clearCoatRoughness": 0.04,
+      "flakeDensity": 0.58,
+      "flakeMetalness": 0.50,
+      "specularTint": [0.95, 0.97, 1.0],
+      "sheen": 0.12,
+      "pearlShift": 0.18
+    },
+    "matte": {
+      "baseMetalness": 0.04,
+      "baseRoughness": 0.82,
+      "clearCoat": 0.0,
+      "clearCoatRoughness": 1.0,
+      "flakeDensity": 0.0,
+      "flakeMetalness": 0.0,
+      "specularTint": [0.92, 0.92, 0.92],
+      "sheen": 0.0
+    }
+  },
+  "factorySamples": {
+    "rosso_corsa": { "finish": "gloss", "referenceHex": "CC0000", "label": "Rosso Corsa solid" },
+    "midnight_sapphire": { "finish": "metallic", "referenceHex": "0A1628", "label": "Midnight sapphire metallic" },
+    "champagne_pearl": { "finish": "pearl", "referenceHex": "C9B896", "label": "Champagne mica pearl" },
+    "stealth_matte": { "finish": "matte", "referenceHex": "1A1A1E", "label": "Stealth matte" }
+  },
+  "carOverrides": {
+    "bugatti": { "factorySample": "champagne_pearl", "flakeDensityMul": 1.08 },
+    "lambo": { "factorySample": "champagne_pearl", "flakeDensityMul": 1.12 },
+    "huracan": { "factorySample": "champagne_pearl" },
+    "gtr": { "factorySample": "midnight_sapphire", "flakeDensityMul": 1.05 },
+    "amg": { "factorySample": "stealth_matte" },
+    "police": { "factorySample": "stealth_matte" },
+    "f40": { "factorySample": "rosso_corsa" }
+  }
+}

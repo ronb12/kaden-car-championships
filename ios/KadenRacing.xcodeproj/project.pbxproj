@@ -7,82 +7,330 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		KRCCAREER000000000002 /* CareerMissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCCAREER000000000001 /* CareerMissions.swift */; };
+		COUR1ERCARR000000000001 /* CourierCareer.swift in Sources */ = {isa = PBXBuildFile; fileRef = COUR1ERCARR000000000002 /* CourierCareer.swift */; };
+		KRCTUTORIAL0000000002 /* KRCTutorial.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCTUTORIAL0000000001 /* KRCTutorial.swift */; };
+		KRCGHOSTTAPE0000000002 /* RaceGhostTape.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCGHOSTTAPE0000000001 /* RaceGhostTape.swift */; };
+		KRCPURSUITCMP000000002 /* PursuitCampaign.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCPURSUITCMP000000001 /* PursuitCampaign.swift */; };
+		KRCGARAGESTY0000000002 /* GarageCustomization.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCGARAGESTY0000000001 /* GarageCustomization.swift */; };
+		KRCWEEKLYEVT0000000002 /* WeeklyEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCWEEKLYEVT0000000001 /* WeeklyEvents.swift */; };
+		KRCSTOREPOLISH00000002 /* KRCAppStorePolish.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCSTOREPOLISH00000001 /* KRCAppStorePolish.swift */; };
 		011BE87B4584285C0D0D943E /* NativeRaceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47DCB73E68BDE7970EE2FFDE /* NativeRaceEngine.swift */; };
 		03811865CE19936A4375A23B /* AssetManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89E2B441EBF5F830A0B52232 /* AssetManager.swift */; };
-		182633BA42EDE23AD23DFFD0 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BB4BEC8CDD796E10EF9F07A /* ContentView.swift */; };
+		03F92D5C0AE22557A3D22396 /* RaceOpponentController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CBDE756686EF3E278C6CD01 /* RaceOpponentController.swift */; };
+		0435A2F202EB32DC586C81B6 /* car-22.png in Resources */ = {isa = PBXBuildFile; fileRef = 02977B518358E792CE70F1E5 /* car-22.png */; };
+		1116421C92F7AE4E280289FD /* TrackCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 362AB73213EF09C5AB13F8C1 /* TrackCatalog.swift */; };
+		1881C837B6263272ECE09BF6 /* car-19.png in Resources */ = {isa = PBXBuildFile; fileRef = 10CDA9F30617FF6DB7D1229C /* car-19.png */; };
+		1988B542EDF9E8327C74B48B /* car-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 39311201D35A0224B8995572 /* car-02.png */; };
+		1D3C8BEAC578EAC1692C02CA /* RaceTrackMesh.swift in Sources */ = {isa = PBXBuildFile; fileRef = F70744E5AA4762F2D9F93F6D /* RaceTrackMesh.swift */; };
 		1DE5D865A147481EABE466E8 /* NativeScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A4B4C5B4792FD7570D0076 /* NativeScreens.swift */; };
+		20833613E0154C5D869B5612 /* EnvironmentCameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29DEF5F037114B08B0742714 /* EnvironmentCameraRig.swift */; };
+		21A26942CE8C556EF1204B4A /* GlobalLeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B1A89B4E979C5DA741D524C /* GlobalLeaderboardView.swift */; };
+		22E9988FB029C6347FB658ED /* car-04.png in Resources */ = {isa = PBXBuildFile; fileRef = 154EFDE64E80F8FC4BB29C62 /* car-04.png */; };
+		24E77DE57E9443D33C1C849F /* CarPreview3DView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20B7167EEF54E3913F281965 /* CarPreview3DView.swift */; };
+		25E28B22DAA4A641DDCF2836 /* MenuCarDriveInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DB2A17844B11464A0B0A864 /* MenuCarDriveInView.swift */; };
 		27275E9438927B2ED62E4F87 /* TrafficObjectPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = B816EA46C6C95A7AA2A7CDCD /* TrafficObjectPool.swift */; };
+		2DA9BEFB5AAAAFA8EC16FEDE /* AppLegalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA8D9D2F9A77C1FFD9E901E /* AppLegalLinks.swift */; };
 		2F8192FF7EBD03DB3260C2B8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6B47351373932D157F2D3869 /* Assets.xcassets */; };
 		30BFAE56CFC16BF12101D5CC /* ModularTrackGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB50422B99F9B6159764217 /* ModularTrackGenerator.swift */; };
+		3152897AFBFAF728CABBF46B /* car-16.png in Resources */ = {isa = PBXBuildFile; fileRef = DFEFD30B2F7626A7EABB8689 /* car-16.png */; };
 		31D52EEDFE361334D425446F /* GameServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA31E56B0DB32C9099B31D9C /* GameServices.swift */; };
 		33F5C8FD5139F941F1A864B2 /* ArcadeKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6414E3206DF68149DE76094 /* ArcadeKit.swift */; };
 		351683A3FC3708F6788D4295 /* PlayerProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B5537B58EA6FB79966744F7 /* PlayerProgressStore.swift */; };
+		3A04144EC22C27622A4734FC /* car-27.png in Resources */ = {isa = PBXBuildFile; fileRef = 3C9A0B06CE8B44998C12CA28 /* car-27.png */; };
 		3A78D603402B1028D0B1C489 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 83A82A919E5118DE638B2E8A /* LaunchScreen.storyboard */; };
+		3E760807C8EF99CCB061422B /* car-06.png in Resources */ = {isa = PBXBuildFile; fileRef = A088C87D2F2280ADC2326B53 /* car-06.png */; };
+		3F975CA75EE80506F2CB4A24 /* CatalogTrackGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C2D1CD18B50BDDBD7578FC0 /* CatalogTrackGenerator.swift */; };
 		42C3D862F8398CEFBF0D6525 /* ProceduralCityDecor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71002AB31F7FB7C5421A9C12 /* ProceduralCityDecor.swift */; };
 		443B9CE48EF1CA0CD12B9DC5 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 87206BCADB78574908DAC4CD /* PrivacyInfo.xcprivacy */; };
+		457412E1580FECF210341756 /* car-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 944918CC21DB6332CEE0930B /* car-01.png */; };
+		49479BD6F58F428E901F1A38 /* EnvironmentLightingSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3628D49DF14C4838AB9B1CDF /* EnvironmentLightingSystem.swift */; };
 		4A95E1E22624A058119D6B49 /* SceneKitMobileTuning.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F16D11F9C7F6375523AF1F /* SceneKitMobileTuning.swift */; };
+		4DC9B3BD51AD3A36D4C50B61 /* car-18.png in Resources */ = {isa = PBXBuildFile; fileRef = 010A77FF3872C9348B861920 /* car-18.png */; };
+		51135E14F5460B30C5C4AC23 /* car-11.png in Resources */ = {isa = PBXBuildFile; fileRef = A91601AAAB793AAC39DE015D /* car-11.png */; };
+		56E6F0D1FF2F406682068919 /* WorldPropsPlacer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7D3D5F6165145598E2B807D /* WorldPropsPlacer.swift */; };
+		56EB06025231F6A787712CF7 /* car-12.png in Resources */ = {isa = PBXBuildFile; fileRef = F3A7868A83F769C1D4D75940 /* car-12.png */; };
 		5A04A8D5AB620C0251479C04 /* CityStreamingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B0907D07083EF5241F49B0B /* CityStreamingCoordinator.swift */; };
+		5BCB22EA867AE4F038DEB9B6 /* car-09.png in Resources */ = {isa = PBXBuildFile; fileRef = E85F1613A5FB3DF7F1A3E858 /* car-09.png */; };
 		5C2850FEAA7FF641EC7A4FE5 /* RaceCarGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B1E3EDE1AE06CDBB91B3AE7 /* RaceCarGeometry.swift */; };
 		639B1CD2E6F0C8E23F743A6E /* CarStatsRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D44DCB93358ECB8F7BA2F7 /* CarStatsRegistry.swift */; };
+		64D3017C6C38C544C9E75E3B /* car-15.png in Resources */ = {isa = PBXBuildFile; fileRef = 38D7B5986391F09D7354F897 /* car-15.png */; };
+		67826D34234023BE2C411061 /* car-03.png in Resources */ = {isa = PBXBuildFile; fileRef = 7F45A775274FCAA9BCA9D476 /* car-03.png */; };
+		68A213B64BD84E83B8B94D44 /* EnvironmentTrackProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDD76F671C342AEB10B0267 /* EnvironmentTrackProfile.swift */; };
 		68EE93CEA45EC15A61E6DDEE /* RaceParticles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C0F5ABDF927B71860775984 /* RaceParticles.swift */; };
+		6959386AAF373FD6FBE73D00 /* car-20.png in Resources */ = {isa = PBXBuildFile; fileRef = 5D5A8062B63D762677133852 /* car-20.png */; };
+		6A019A615F3F4843BACB7DD1 /* EnvironmentMaterialLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953E11D29E0E475EBA5A012F /* EnvironmentMaterialLibrary.swift */; };
 		70451007795EF8ABF4741B4C /* car_engine_racing.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = D77918A96F3C3C980974A300 /* car_engine_racing.mp3 */; };
+		RACEINTENSITYMP30001 /* race_intensity.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = RACEINTENSITYMP30002 /* race_intensity.mp3 */; };
+		MENUTHEMEMP3FILE0001 /* menu_theme.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = MENUTHEMEMP3FILE0002 /* menu_theme.mp3 */; };
+		GARAGETHEMEMP3FIL001 /* garage_theme.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = GARAGETHEMEMP3FIL002 /* garage_theme.mp3 */; };
+		VICTORYMP3FILE000001 /* victory.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = VICTORYMP3FILE000002 /* victory.mp3 */; };
+		70B9116815E04B0E96F5344F /* VehicleEnvironmentEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9CD60C6CB36434DA66C4910 /* VehicleEnvironmentEffects.swift */; };
+		75DB7BB6095B48AABE96353E /* EnvironmentGraphicsSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34C485985EA54159AE1F75E9 /* EnvironmentGraphicsSettings.swift */; };
+		761D7D6A9F451EF115CD7FD5 /* car-17.png in Resources */ = {isa = PBXBuildFile; fileRef = 8280633549CC7E88167D10E8 /* car-17.png */; };
+		76E42D7F966B30822B5038D2 /* car-25.png in Resources */ = {isa = PBXBuildFile; fileRef = 1EB4BFECE1AF9AA498BB6BF7 /* car-25.png */; };
+		770CA9ABFED04A33BF6F1C1A /* EnvironmentPostProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 122B062A2B5B45E3B1E5CA7E /* EnvironmentPostProcessing.swift */; };
+		7A60B7320735A67D57AC426A /* car-07.png in Resources */ = {isa = PBXBuildFile; fileRef = 7A4FE975FCD5CC8DC8A44FD7 /* car-07.png */; };
 		7D5437FFA5CB03B6531D2302 /* GameFlowState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9154ED1C5303CCF3B9A1131 /* GameFlowState.swift */; };
 		7DA60ED4CC6526242AFAF61D /* CityRuntimeConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD896D199288A2360B0870FE /* CityRuntimeConfig.swift */; };
+		7F924AB9B3D659A2389B0598 /* muscle_v8_loop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 2F613CE8E05EA23A64EA9C4D /* muscle_v8_loop.mp3 */; };
+		805F963046A377B4997030D7 /* car-28.png in Resources */ = {isa = PBXBuildFile; fileRef = 964689A4F420D59BBCC04298 /* car-28.png */; };
+		8A18DA0E40CBCA733B9C1891 /* TrackPreviewArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9F8D74352F0BA08A8C44BE7 /* TrackPreviewArt.swift */; };
+		C1TYPR3V1EWART0000000002 /* CityPreviewArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1TYPR3V1EWART0000000001 /* CityPreviewArt.swift */; };
+		C1TYSKYB0000000000000002 /* CitySkyBackdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1TYSKYB0000000000000001 /* CitySkyBackdrop.swift */; };
+		8B21A0E792E83929C4B8A3FE /* car-05.png in Resources */ = {isa = PBXBuildFile; fileRef = 71BA5B71CB5FC6D4BE7E2972 /* car-05.png */; };
+		8C3FE2D42FCBB28376B27456 /* KRCOnlineService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F841D3FEAC93F3114E87173 /* KRCOnlineService.swift */; };
 		8EFC694517A5CB95FBB29959 /* RaceAudioController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A823AB14D16C2D30DA1BF5A /* RaceAudioController.swift */; };
+		8F3F4BD4BCAA2456D4DC1121 /* CarLivery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B2F43D12A96EE2DB470901 /* CarLivery.swift */; };
+		922F401C52BB39761CD9D40A /* KRCDesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4AA96FE44F78A5F128F6A11 /* KRCDesignSystem.swift */; };
+		9413B0790508017862B5E1DD /* car-police.png in Resources */ = {isa = PBXBuildFile; fileRef = 64D206B1E0B88C965BB0A532 /* car-police.png */; };
+		947CD2539BDDE63738511C99 /* car-10.png in Resources */ = {isa = PBXBuildFile; fileRef = 6C1BA698F89F03C6ABA2E2D0 /* car-10.png */; };
+		94F1A98D2C5FB4B8779262F6 /* CarDecals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40266B7E7F36B17AAFE9BF23 /* CarDecals.swift */; };
 		98AF983F82020C5F103EE02B /* SceneKitRaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F381FC8965008D1513A83A9 /* SceneKitRaceView.swift */; };
+		9CEB83632EB99F52969C849C /* NativeLegalScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA44E62EAA0E234A8AA6341E /* NativeLegalScreens.swift */; };
+		A123B6833D99605C43F782AF /* MenuIntroAudioController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8088AB159A892B7A4FD0B2C4 /* MenuIntroAudioController.swift */; };
+		A1B2C3D4E5F60101A0C10001 /* AppOrientationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60102A0C10002 /* AppOrientationController.swift */; };
+		A9878628725258A069A44477 /* GLBCarLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6930954CBD5322F884EB7A6 /* GLBCarLoader.swift */; };
+		AA42DBDCD27420B90A9D5C14 /* muscle_v8_high.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 560BF4E78D3F105A79CA18CF /* muscle_v8_high.mp3 */; };
+		ABBD25381F716154C0AA437A /* car-26.png in Resources */ = {isa = PBXBuildFile; fileRef = 04C4C7E12A4D72FAD22011C9 /* car-26.png */; };
+		ACA4F92E4C5A87813BB82789 /* WheelAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C75329AF2F6D5273227369BB /* WheelAssembly.swift */; };
+		B257550378B717E529B29475 /* KRCSceneKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93913E799468034604BE90CE /* KRCSceneKitHelpers.swift */; };
 		B50B9C6D3CE4E858B05E293C /* SeededRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9567874A992497E8DA890D2 /* SeededRandom.swift */; };
+		B5A3735865A795CDEF884BEB /* KRCProceduralTextures.swift in Sources */ = {isa = PBXBuildFile; fileRef = C826B576A63F58AF8C21A171 /* KRCProceduralTextures.swift */; };
+		BC8F8E1062579D6F407DBC05 /* GLBDriverLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C3070BF46A9B3004FA410E /* GLBDriverLoader.swift */; };
 		BDA645D4BAC54543F4E85DA6 /* TiltSteeringController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8251B9768530759509971D /* TiltSteeringController.swift */; };
 		BF95F4EA12CD9CF88E39A3A5 /* AUDIO_ATTRIBUTION.txt in Resources */ = {isa = PBXBuildFile; fileRef = 80CB87CBCA7ED81C4A77D5A9 /* AUDIO_ATTRIBUTION.txt */; };
+		C0DB69CB493D911F7C3622A9 /* car-00.png in Resources */ = {isa = PBXBuildFile; fileRef = F2EFE06106C5C83C4D507FA0 /* car-00.png */; };
+		C31C7BB74FEE430DB02CB93D /* OceanEnvironmentBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 302AB9F866C14CBAB18EFF38 /* OceanEnvironmentBuilder.swift */; };
+		C466F7200E042281C3DDD5DB /* car-21.png in Resources */ = {isa = PBXBuildFile; fileRef = A2891601780C84E4FC79F7B7 /* car-21.png */; };
+		C469FED9BA887696FE3A3818 /* car-24.png in Resources */ = {isa = PBXBuildFile; fileRef = 0D692B4D1D5D6941EEB0775A /* car-24.png */; };
+		C70972977489D8CBFC9BCF09 /* KRCPlayerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3599B28337C8F5DCF237C687 /* KRCPlayerProfile.swift */; };
+		C87F80052036996B4E219DB8 /* car-13.png in Resources */ = {isa = PBXBuildFile; fileRef = AD4578EFD89588D64D74A075 /* car-13.png */; };
+		CD4F3AEC2DD83AB3096707B0 /* car-23.png in Resources */ = {isa = PBXBuildFile; fileRef = A061CA4B50C7BA38F0E9B2FE /* car-23.png */; };
 		CDCA15C79EDA4F1CF9AAB843 /* CityThemeTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 574C4CD35FA3A4CCB2680CDF /* CityThemeTypes.swift */; };
+		CEAENVART00000000000002 /* CityEnvironmentArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAENVART00000000000001 /* CityEnvironmentArt.swift */; };
+		CEVISTONE00000000000002 /* VisualTone.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEVISTONE00000000000001 /* VisualTone.swift */; };
 		D1332B11CE1FCE6992DB96E8 /* CityThemeCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCE94DF841BB6822F9D82CBF /* CityThemeCatalog.swift */; };
+		D2732043A2163A35C8694269 /* GameCenterViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 963D33A8F99177FAF18F61C0 /* GameCenterViews.swift */; };
+		D6019E0179024973A271298B /* RacingEnvironmentPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4C528631F5442D3BA244E52 /* RacingEnvironmentPipeline.swift */; };
+		DA4F6E67143141CDB9D4FA81 /* NatureEnvironmentBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9A514B8F4C848CE84AC6DA6 /* NatureEnvironmentBuilder.swift */; };
 		DAD81D02C9996751ABD7552E /* ControlPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = B69682A864136F51C277E3DA /* ControlPreferences.swift */; };
+		DB593499876F490680FD4916 /* CoastalCityCircuitTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECD98D6E44BC4569ADC39ECA /* CoastalCityCircuitTrack.swift */; };
 		DC293C83DE48A2CDEC237AAC /* RacePedalCluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 306347128B70B4CEDD494B35 /* RacePedalCluster.swift */; };
 		DFFE549133A19A824655F5D5 /* TrackSpline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 708F75DACBECCF2D63C71A7B /* TrackSpline.swift */; };
+		DPADRACE0000000000000001 /* DPadRaceControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = DPADRACE0000000000000002 /* DPadRaceControls.swift */; };
 		E0E9DA03786944611E6CA813 /* CityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBC2D37AF5D02A470F9A7279 /* CityManager.swift */; };
+		E1D2C3B4A5968778695A4B3C /* VehicleDrivingSimulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B3D /* VehicleDrivingSimulation.swift */; };
+		E1D2C3B4A5968778695A4B3E /* VehicleDrivingPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B3F /* VehicleDrivingPreferences.swift */; };
+		E1D2C3B4A5968778695A4B40 /* VehicleGameControllerInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B41 /* VehicleGameControllerInput.swift */; };
+		E1D2C3B4A5968778695A4B50 /* VehicleMaterialLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B51 /* VehicleMaterialLibrary.swift */; };
+		AUTOPNTBRDF00000000000002 /* AutomotiveBRDFLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = AUTOPNTBRDF00000000000001 /* AutomotiveBRDFLibrary.swift */; };
+		AUTOPNTSHDR00000000000002 /* AutomotivePaintShader.swift in Sources */ = {isa = PBXBuildFile; fileRef = AUTOPNTSHDR00000000000001 /* AutomotivePaintShader.swift */; };
+		AUTOPNTREFL00000000000002 /* AutomotiveReflectionSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AUTOPNTREFL00000000000001 /* AutomotiveReflectionSystem.swift */; };
+		AUTOPNTJSON00000000000002 /* AutomotiveBRDFPresets.json in Resources */ = {isa = PBXBuildFile; fileRef = AUTOPNTJSON00000000000001 /* AutomotiveBRDFPresets.json */; };
+		E1D2C3B4A5968778695A4B52 /* VehicleVisualProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B53 /* VehicleVisualProfile.swift */; };
+		E1D2C3B4A5968778695A4B54 /* VehicleBodyFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B55 /* VehicleBodyFactory.swift */; };
+		E1D2C3B4A5968778695A4B56 /* VehicleRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B57 /* VehicleRenderer.swift */; };
+		E1D2C3B4A5968778695A4B58 /* VehicleSpawnPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B59 /* VehicleSpawnPlanner.swift */; };
+		E1D2C3B4A5968778695A4B60 /* KRCMusicDirector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B61 /* KRCMusicDirector.swift */; };
+		E1D2C3B4A5968778695A4B62 /* KRCProceduralMusic.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B63 /* KRCProceduralMusic.swift */; };
+		E1D2C3B4A5968778695A4B64 /* KRCUISounds.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B65 /* KRCUISounds.swift */; };
+		E1D2C3B4A5968778695A4B66 /* KRCAudioPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B67 /* KRCAudioPreferences.swift */; };
+		E1D2C3B4A5968778695A4B68 /* ModernRaceHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B69 /* ModernRaceHUD.swift */; };
+		E1D2C3B4A5968778695A4B6A /* SteeringWheelControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B6B /* SteeringWheelControl.swift */; };
+		E1D2C3B4A5968778695A4B70 /* VehicleClassKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2C3B4A5968778695A4B71 /* VehicleClassKit.swift */; };
 		E57E9867CDB054AEB69E313D /* KadenRacingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EC125BCEDDDC4AE5C4A039 /* KadenRacingApp.swift */; };
+		E5BAC8B316731CE81B734CC1 /* car-08.png in Resources */ = {isa = PBXBuildFile; fileRef = F5DC4E3C35B368FDE9F33421 /* car-08.png */; };
+		E71265CE992A1DC1DDCD811F /* car-14.png in Resources */ = {isa = PBXBuildFile; fileRef = 1762F247B9149F5A99D9B731 /* car-14.png */; };
+		E87A11B371A557BCF77D3C62 /* SplashFlameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6008EA4D3F9FF2DFBB4B7F44 /* SplashFlameView.swift */; };
+		F01B7FCE06E2CC33B278E1E1 /* GarageCarAssets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCAC6B8931D6E523C4D2161 /* GarageCarAssets.swift */; };
 		F137939F2ABF95AE46212D2C /* GameDefinitions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7E2286C4B690B250121BFF9 /* GameDefinitions.swift */; };
+		F22802D966434C32B0CA2E3F /* RoadEnvironmentBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B837B5B8E6B44C6B2C7FAF0 /* RoadEnvironmentBuilder.swift */; };
+		F44BEB3E1733DE1868D2C83A /* car-29.png in Resources */ = {isa = PBXBuildFile; fileRef = DFC5CDC798D4A49948E50FFD /* car-29.png */; };
 		FBDE069B0ABF3899E2F0E1A7 /* RaceOrientationModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FC676CF587F4C026FA7839E /* RaceOrientationModifier.swift */; };
+		K3NN3Y3NV1R0NMENT01 /* KenneyEnvironmentLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = K3NN3Y3NV1R0NMENT02 /* KenneyEnvironmentLoader.swift */; };
+		KRCDEBUGUI00000000000002 /* KRCDebugUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCDEBUGUI00000000000001 /* KRCDebugUI.swift */; };
+		M1N1MALENV00000000000001 /* MinimalRaceEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = M1N1MALENV00000000000002 /* MinimalRaceEnvironment.swift */; };
+		OWDR1V3PHYS000000000001 /* OpenWorldDrivingSimulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = OWDR1V3PHYS000000000002 /* OpenWorldDrivingSimulation.swift */; };
+		VHCLTRNS0000000000000001 /* VehicleTransmission.swift in Sources */ = {isa = PBXBuildFile; fileRef = VHCLTRNS0000000000000002 /* VehicleTransmission.swift */; };
+		TRNSSHFT0000000000000001 /* TransmissionShiftControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = TRNSSHFT0000000000000002 /* TransmissionShiftControls.swift */; };
+		PALMC1TYENV000000000001 /* PalmCityEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = PALMC1TYENV000000000002 /* PalmCityEnvironment.swift */; };
+		PALMC1TYRACE000000000001 /* PalmCityRacewayBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = PALMC1TYRACE000000000002 /* PalmCityRacewayBuilder.swift */; };
+		PALMC1TYTRCK000000000001 /* PalmCityRacewayTracks.swift in Sources */ = {isa = PBXBuildFile; fileRef = PALMC1TYTRCK000000000002 /* PalmCityRacewayTracks.swift */; };
+		RACEQA000000000000000001 /* RaceQAAutopilot.swift in Sources */ = {isa = PBXBuildFile; fileRef = RACEQA000000000000000002 /* RaceQAAutopilot.swift */; };
+		RACEARCAD3FUN000000000001 /* RaceArcadeFunSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = RACEARCAD3FUN000000000002 /* RaceArcadeFunSystem.swift */; };
+		COUR1ERDEL1V000000000001 /* CourierDeliverySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = COUR1ERDEL1V000000000002 /* CourierDeliverySystem.swift */; };
+		RCEPRELD0000000000000001 /* RaceEnvironmentPreloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = RCEPRELD0000000000000002 /* RaceEnvironmentPreloader.swift */; };
+		SPLASHSCR0000000000000001 /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SPLASHSCR0000000000000002 /* SplashScreenView.swift */; };
+		TRCKSCNRY00000000000001 /* TrackSceneryEnhancer.swift in Sources */ = {isa = PBXBuildFile; fileRef = TRCKSCNRY00000000000002 /* TrackSceneryEnhancer.swift */; };
+		TRCKWRLDQRY000000000001 /* TrackWorldQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = TRCKWRLDQRY000000000002 /* TrackWorldQuery.swift */; };
+		VHCLAXES00000000000000001 /* VehicleAxes.swift in Sources */ = {isa = PBXBuildFile; fileRef = VHCLAXES00000000000000002 /* VehicleAxes.swift */; };
+		VHCLLGHT0000000000000001 /* VehicleLighting.swift in Sources */ = {isa = PBXBuildFile; fileRef = VHCLLGHT0000000000000002 /* VehicleLighting.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		KRCCAREER000000000001 /* CareerMissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerMissions.swift; sourceTree = "<group>"; };
+		COUR1ERCARR000000000002 /* CourierCareer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourierCareer.swift; sourceTree = "<group>"; };
+		KRCTUTORIAL0000000001 /* KRCTutorial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCTutorial.swift; sourceTree = "<group>"; };
+		KRCGHOSTTAPE0000000001 /* RaceGhostTape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceGhostTape.swift; sourceTree = "<group>"; };
+		KRCPURSUITCMP000000001 /* PursuitCampaign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PursuitCampaign.swift; sourceTree = "<group>"; };
+		KRCGARAGESTY0000000001 /* GarageCustomization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GarageCustomization.swift; sourceTree = "<group>"; };
+		KRCWEEKLYEVT0000000001 /* WeeklyEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyEvents.swift; sourceTree = "<group>"; };
+		KRCSTOREPOLISH00000001 /* KRCAppStorePolish.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCAppStorePolish.swift; sourceTree = "<group>"; };
+		010A77FF3872C9348B861920 /* car-18.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-18.png"; sourceTree = "<group>"; };
+		02977B518358E792CE70F1E5 /* car-22.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-22.png"; sourceTree = "<group>"; };
+		04C4C7E12A4D72FAD22011C9 /* car-26.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-26.png"; sourceTree = "<group>"; };
 		05EC125BCEDDDC4AE5C4A039 /* KadenRacingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KadenRacingApp.swift; sourceTree = "<group>"; };
+		0D692B4D1D5D6941EEB0775A /* car-24.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-24.png"; sourceTree = "<group>"; };
+		10CDA9F30617FF6DB7D1229C /* car-19.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-19.png"; sourceTree = "<group>"; };
+		122B062A2B5B45E3B1E5CA7E /* EnvironmentPostProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentPostProcessing.swift; sourceTree = "<group>"; };
+		154EFDE64E80F8FC4BB29C62 /* car-04.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-04.png"; sourceTree = "<group>"; };
+		1762F247B9149F5A99D9B731 /* car-14.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-14.png"; sourceTree = "<group>"; };
 		1A823AB14D16C2D30DA1BF5A /* RaceAudioController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceAudioController.swift; sourceTree = "<group>"; };
 		1B1E3EDE1AE06CDBB91B3AE7 /* RaceCarGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceCarGeometry.swift; sourceTree = "<group>"; };
-		1BB4BEC8CDD796E10EF9F07A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		1EB4BFECE1AF9AA498BB6BF7 /* car-25.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-25.png"; sourceTree = "<group>"; };
+		20B7167EEF54E3913F281965 /* CarPreview3DView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPreview3DView.swift; sourceTree = "<group>"; };
+		29DEF5F037114B08B0742714 /* EnvironmentCameraRig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentCameraRig.swift; sourceTree = "<group>"; };
+		2B1A89B4E979C5DA741D524C /* GlobalLeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalLeaderboardView.swift; sourceTree = "<group>"; };
+		2F613CE8E05EA23A64EA9C4D /* muscle_v8_loop.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = muscle_v8_loop.mp3; sourceTree = "<group>"; };
+		302AB9F866C14CBAB18EFF38 /* OceanEnvironmentBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OceanEnvironmentBuilder.swift; sourceTree = "<group>"; };
 		306347128B70B4CEDD494B35 /* RacePedalCluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RacePedalCluster.swift; sourceTree = "<group>"; };
+		30B2F43D12A96EE2DB470901 /* CarLivery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarLivery.swift; sourceTree = "<group>"; };
+		34C485985EA54159AE1F75E9 /* EnvironmentGraphicsSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentGraphicsSettings.swift; sourceTree = "<group>"; };
+		3599B28337C8F5DCF237C687 /* KRCPlayerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCPlayerProfile.swift; sourceTree = "<group>"; };
+		3628D49DF14C4838AB9B1CDF /* EnvironmentLightingSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentLightingSystem.swift; sourceTree = "<group>"; };
+		362AB73213EF09C5AB13F8C1 /* TrackCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackCatalog.swift; sourceTree = "<group>"; };
+		38D7B5986391F09D7354F897 /* car-15.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-15.png"; sourceTree = "<group>"; };
+		39311201D35A0224B8995572 /* car-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-02.png"; sourceTree = "<group>"; };
+		3AA8D9D2F9A77C1FFD9E901E /* AppLegalLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLegalLinks.swift; sourceTree = "<group>"; };
+		3C9A0B06CE8B44998C12CA28 /* car-27.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-27.png"; sourceTree = "<group>"; };
 		3FC676CF587F4C026FA7839E /* RaceOrientationModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceOrientationModifier.swift; sourceTree = "<group>"; };
+		40266B7E7F36B17AAFE9BF23 /* CarDecals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarDecals.swift; sourceTree = "<group>"; };
 		47DCB73E68BDE7970EE2FFDE /* NativeRaceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeRaceEngine.swift; sourceTree = "<group>"; };
 		4B5537B58EA6FB79966744F7 /* PlayerProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerProgressStore.swift; sourceTree = "<group>"; };
+		560BF4E78D3F105A79CA18CF /* muscle_v8_high.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = muscle_v8_high.mp3; sourceTree = "<group>"; };
 		574C4CD35FA3A4CCB2680CDF /* CityThemeTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityThemeTypes.swift; sourceTree = "<group>"; };
+		5D5A8062B63D762677133852 /* car-20.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-20.png"; sourceTree = "<group>"; };
+		5FCAC6B8931D6E523C4D2161 /* GarageCarAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GarageCarAssets.swift; sourceTree = "<group>"; };
+		6008EA4D3F9FF2DFBB4B7F44 /* SplashFlameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashFlameView.swift; sourceTree = "<group>"; };
 		63A4B4C5B4792FD7570D0076 /* NativeScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeScreens.swift; sourceTree = "<group>"; };
+		64D206B1E0B88C965BB0A532 /* car-police.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-police.png"; sourceTree = "<group>"; };
 		6B47351373932D157F2D3869 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		6B837B5B8E6B44C6B2C7FAF0 /* RoadEnvironmentBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoadEnvironmentBuilder.swift; sourceTree = "<group>"; };
+		6C1BA698F89F03C6ABA2E2D0 /* car-10.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-10.png"; sourceTree = "<group>"; };
+		6CBDE756686EF3E278C6CD01 /* RaceOpponentController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceOpponentController.swift; sourceTree = "<group>"; };
 		708F75DACBECCF2D63C71A7B /* TrackSpline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackSpline.swift; sourceTree = "<group>"; };
 		71002AB31F7FB7C5421A9C12 /* ProceduralCityDecor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProceduralCityDecor.swift; sourceTree = "<group>"; };
+		71BA5B71CB5FC6D4BE7E2972 /* car-05.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-05.png"; sourceTree = "<group>"; };
 		785CDC2BC183E8F6F4E9EC8E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7A4FE975FCD5CC8DC8A44FD7 /* car-07.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-07.png"; sourceTree = "<group>"; };
 		7B0907D07083EF5241F49B0B /* CityStreamingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityStreamingCoordinator.swift; sourceTree = "<group>"; };
+		7C2D1CD18B50BDDBD7578FC0 /* CatalogTrackGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogTrackGenerator.swift; sourceTree = "<group>"; };
+		7F45A775274FCAA9BCA9D476 /* car-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-03.png"; sourceTree = "<group>"; };
+		7F841D3FEAC93F3114E87173 /* KRCOnlineService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCOnlineService.swift; sourceTree = "<group>"; };
+		8088AB159A892B7A4FD0B2C4 /* MenuIntroAudioController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuIntroAudioController.swift; sourceTree = "<group>"; };
 		80CB87CBCA7ED81C4A77D5A9 /* AUDIO_ATTRIBUTION.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = AUDIO_ATTRIBUTION.txt; sourceTree = "<group>"; };
 		80D44DCB93358ECB8F7BA2F7 /* CarStatsRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarStatsRegistry.swift; sourceTree = "<group>"; };
+		8280633549CC7E88167D10E8 /* car-17.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-17.png"; sourceTree = "<group>"; };
 		83A82A919E5118DE638B2E8A /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		87206BCADB78574908DAC4CD /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		89E2B441EBF5F830A0B52232 /* AssetManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetManager.swift; sourceTree = "<group>"; };
 		8C0F5ABDF927B71860775984 /* RaceParticles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceParticles.swift; sourceTree = "<group>"; };
 		8F381FC8965008D1513A83A9 /* SceneKitRaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKitRaceView.swift; sourceTree = "<group>"; };
+		93913E799468034604BE90CE /* KRCSceneKitHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCSceneKitHelpers.swift; sourceTree = "<group>"; };
+		944918CC21DB6332CEE0930B /* car-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-01.png"; sourceTree = "<group>"; };
+		953E11D29E0E475EBA5A012F /* EnvironmentMaterialLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentMaterialLibrary.swift; sourceTree = "<group>"; };
+		963D33A8F99177FAF18F61C0 /* GameCenterViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterViews.swift; sourceTree = "<group>"; };
+		964689A4F420D59BBCC04298 /* car-28.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-28.png"; sourceTree = "<group>"; };
+		9DB2A17844B11464A0B0A864 /* MenuCarDriveInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuCarDriveInView.swift; sourceTree = "<group>"; };
+		A061CA4B50C7BA38F0E9B2FE /* car-23.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-23.png"; sourceTree = "<group>"; };
+		A088C87D2F2280ADC2326B53 /* car-06.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-06.png"; sourceTree = "<group>"; };
+		A1B2C3D4E5F60102A0C10002 /* AppOrientationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppOrientationController.swift; sourceTree = "<group>"; };
+		A2891601780C84E4FC79F7B7 /* car-21.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-21.png"; sourceTree = "<group>"; };
+		A6930954CBD5322F884EB7A6 /* GLBCarLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GLBCarLoader.swift; sourceTree = "<group>"; };
+		A7D3D5F6165145598E2B807D /* WorldPropsPlacer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldPropsPlacer.swift; sourceTree = "<group>"; };
 		A7E2286C4B690B250121BFF9 /* GameDefinitions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDefinitions.swift; sourceTree = "<group>"; };
 		A9154ED1C5303CCF3B9A1131 /* GameFlowState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameFlowState.swift; sourceTree = "<group>"; };
+		A91601AAAB793AAC39DE015D /* car-11.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-11.png"; sourceTree = "<group>"; };
 		A9567874A992497E8DA890D2 /* SeededRandom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeededRandom.swift; sourceTree = "<group>"; };
+		AA44E62EAA0E234A8AA6341E /* NativeLegalScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeLegalScreens.swift; sourceTree = "<group>"; };
+		AD4578EFD89588D64D74A075 /* car-13.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-13.png"; sourceTree = "<group>"; };
+		B4C528631F5442D3BA244E52 /* RacingEnvironmentPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RacingEnvironmentPipeline.swift; sourceTree = "<group>"; };
 		B4F16D11F9C7F6375523AF1F /* SceneKitMobileTuning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKitMobileTuning.swift; sourceTree = "<group>"; };
 		B69682A864136F51C277E3DA /* ControlPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlPreferences.swift; sourceTree = "<group>"; };
 		B816EA46C6C95A7AA2A7CDCD /* TrafficObjectPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrafficObjectPool.swift; sourceTree = "<group>"; };
+		B9A514B8F4C848CE84AC6DA6 /* NatureEnvironmentBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NatureEnvironmentBuilder.swift; sourceTree = "<group>"; };
 		BBB50422B99F9B6159764217 /* ModularTrackGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModularTrackGenerator.swift; sourceTree = "<group>"; };
 		BBC2D37AF5D02A470F9A7279 /* CityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityManager.swift; sourceTree = "<group>"; };
+		C4AA96FE44F78A5F128F6A11 /* KRCDesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCDesignSystem.swift; sourceTree = "<group>"; };
+		C75329AF2F6D5273227369BB /* WheelAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WheelAssembly.swift; sourceTree = "<group>"; };
+		C826B576A63F58AF8C21A171 /* KRCProceduralTextures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCProceduralTextures.swift; sourceTree = "<group>"; };
 		CA31E56B0DB32C9099B31D9C /* GameServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameServices.swift; sourceTree = "<group>"; };
 		CC8251B9768530759509971D /* TiltSteeringController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiltSteeringController.swift; sourceTree = "<group>"; };
 		CD896D199288A2360B0870FE /* CityRuntimeConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityRuntimeConfig.swift; sourceTree = "<group>"; };
+		CEAENVART00000000000001 /* CityEnvironmentArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityEnvironmentArt.swift; sourceTree = "<group>"; };
+		CEDD76F671C342AEB10B0267 /* EnvironmentTrackProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentTrackProfile.swift; sourceTree = "<group>"; };
+		CEVISTONE00000000000001 /* VisualTone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualTone.swift; sourceTree = "<group>"; };
+		D1C3070BF46A9B3004FA410E /* GLBDriverLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GLBDriverLoader.swift; sourceTree = "<group>"; };
 		D6414E3206DF68149DE76094 /* ArcadeKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeKit.swift; sourceTree = "<group>"; };
 		D77918A96F3C3C980974A300 /* car_engine_racing.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = car_engine_racing.mp3; sourceTree = "<group>"; };
+		RACEINTENSITYMP30002 /* race_intensity.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = race_intensity.mp3; sourceTree = "<group>"; };
+		MENUTHEMEMP3FILE0002 /* menu_theme.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = menu_theme.mp3; sourceTree = "<group>"; };
+		GARAGETHEMEMP3FIL002 /* garage_theme.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = garage_theme.mp3; sourceTree = "<group>"; };
+		VICTORYMP3FILE000002 /* victory.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = victory.mp3; sourceTree = "<group>"; };
+		DFC5CDC798D4A49948E50FFD /* car-29.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-29.png"; sourceTree = "<group>"; };
+		DFEFD30B2F7626A7EABB8689 /* car-16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-16.png"; sourceTree = "<group>"; };
+		DPADRACE0000000000000002 /* DPadRaceControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DPadRaceControls.swift; sourceTree = "<group>"; };
+		E85F1613A5FB3DF7F1A3E858 /* car-09.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-09.png"; sourceTree = "<group>"; };
 		E894CC66A01BF4BEA7464CC2 /* KadenRacing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KadenRacing.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E9CD60C6CB36434DA66C4910 /* VehicleEnvironmentEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleEnvironmentEffects.swift; sourceTree = "<group>"; };
+		E9F8D74352F0BA08A8C44BE7 /* TrackPreviewArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackPreviewArt.swift; sourceTree = "<group>"; };
+		C1TYPR3V1EWART0000000001 /* CityPreviewArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityPreviewArt.swift; sourceTree = "<group>"; };
+		C1TYSKYB0000000000000001 /* CitySkyBackdrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitySkyBackdrop.swift; sourceTree = "<group>"; };
+		ECD98D6E44BC4569ADC39ECA /* CoastalCityCircuitTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoastalCityCircuitTrack.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B3D /* VehicleDrivingSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleDrivingSimulation.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B3F /* VehicleDrivingPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleDrivingPreferences.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B41 /* VehicleGameControllerInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleGameControllerInput.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B51 /* VehicleMaterialLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleMaterialLibrary.swift; sourceTree = "<group>"; };
+		AUTOPNTBRDF00000000000001 /* AutomotiveBRDFLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomotiveBRDFLibrary.swift; sourceTree = "<group>"; };
+		AUTOPNTSHDR00000000000001 /* AutomotivePaintShader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomotivePaintShader.swift; sourceTree = "<group>"; };
+		AUTOPNTREFL00000000000001 /* AutomotiveReflectionSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomotiveReflectionSystem.swift; sourceTree = "<group>"; };
+		AUTOPNTJSON00000000000001 /* AutomotiveBRDFPresets.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = AutomotiveBRDFPresets.json; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B53 /* VehicleVisualProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleVisualProfile.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B55 /* VehicleBodyFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleBodyFactory.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B57 /* VehicleRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleRenderer.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B59 /* VehicleSpawnPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleSpawnPlanner.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B61 /* KRCMusicDirector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCMusicDirector.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B63 /* KRCProceduralMusic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCProceduralMusic.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B65 /* KRCUISounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCUISounds.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B67 /* KRCAudioPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCAudioPreferences.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B69 /* ModernRaceHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModernRaceHUD.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B6B /* SteeringWheelControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteeringWheelControl.swift; sourceTree = "<group>"; };
+		F1D2C3B4A5968778695A4B71 /* VehicleClassKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleClassKit.swift; sourceTree = "<group>"; };
+		F2EFE06106C5C83C4D507FA0 /* car-00.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-00.png"; sourceTree = "<group>"; };
+		F3A7868A83F769C1D4D75940 /* car-12.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-12.png"; sourceTree = "<group>"; };
+		F5DC4E3C35B368FDE9F33421 /* car-08.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-08.png"; sourceTree = "<group>"; };
+		F70744E5AA4762F2D9F93F6D /* RaceTrackMesh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceTrackMesh.swift; sourceTree = "<group>"; };
 		FCA151EEE4DEBE7E36231A8E /* KadenRacing.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KadenRacing.entitlements; sourceTree = "<group>"; };
 		FCE94DF841BB6822F9D82CBF /* CityThemeCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityThemeCatalog.swift; sourceTree = "<group>"; };
+		K3NN3Y3NV1R0NMENT02 /* KenneyEnvironmentLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KenneyEnvironmentLoader.swift; sourceTree = "<group>"; };
+		KRCDEBUGUI00000000000001 /* KRCDebugUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCDebugUI.swift; sourceTree = "<group>"; };
+		M1N1MALENV00000000000002 /* MinimalRaceEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalRaceEnvironment.swift; sourceTree = "<group>"; };
+		OWDR1V3PHYS000000000002 /* OpenWorldDrivingSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenWorldDrivingSimulation.swift; sourceTree = "<group>"; };
+		VHCLTRNS0000000000000002 /* VehicleTransmission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleTransmission.swift; sourceTree = "<group>"; };
+		TRNSSHFT0000000000000002 /* TransmissionShiftControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransmissionShiftControls.swift; sourceTree = "<group>"; };
+		PALMC1TYENV000000000002 /* PalmCityEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PalmCityEnvironment.swift; sourceTree = "<group>"; };
+		PALMC1TYRACE000000000002 /* PalmCityRacewayBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PalmCityRacewayBuilder.swift; sourceTree = "<group>"; };
+		PALMC1TYTRCK000000000002 /* PalmCityRacewayTracks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PalmCityRacewayTracks.swift; sourceTree = "<group>"; };
+		RACEQA000000000000000002 /* RaceQAAutopilot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceQAAutopilot.swift; sourceTree = "<group>"; };
+		RACEARCAD3FUN000000000002 /* RaceArcadeFunSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceArcadeFunSystem.swift; sourceTree = "<group>"; };
+		COUR1ERDEL1V000000000002 /* CourierDeliverySystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourierDeliverySystem.swift; sourceTree = "<group>"; };
+		RCEPRELD0000000000000002 /* RaceEnvironmentPreloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceEnvironmentPreloader.swift; sourceTree = "<group>"; };
+		SPLASHSCR0000000000000002 /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
+		TRCKSCNRY00000000000002 /* TrackSceneryEnhancer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackSceneryEnhancer.swift; sourceTree = "<group>"; };
+		TRCKWRLDQRY000000000002 /* TrackWorldQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackWorldQuery.swift; sourceTree = "<group>"; };
+		VHCLAXES00000000000000002 /* VehicleAxes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleAxes.swift; sourceTree = "<group>"; };
+		VHCLLGHT0000000000000002 /* VehicleLighting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleLighting.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -90,6 +338,7 @@
 			isa = PBXGroup;
 			children = (
 				CA31E56B0DB32C9099B31D9C /* GameServices.swift */,
+				7F841D3FEAC93F3114E87173 /* KRCOnlineService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -100,6 +349,7 @@
 				FCA151EEE4DEBE7E36231A8E /* KadenRacing.entitlements */,
 				975F3DD5C4C750194BFB333B /* App */,
 				BCD8E81FC4D25EE99ECD1624 /* City */,
+				E4NV1R0NM3NTGRP01 /* Environment */,
 				94ADC27AAB74FEFB141BE80A /* Core */,
 				C2ACD84D6FB654076F75294D /* Game */,
 				BA57C90D0007B4D453091E12 /* Models */,
@@ -118,6 +368,44 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		5E949AF96B71AD0BEB0FA169 /* garage-cars */ = {
+			isa = PBXGroup;
+			children = (
+				F2EFE06106C5C83C4D507FA0 /* car-00.png */,
+				944918CC21DB6332CEE0930B /* car-01.png */,
+				39311201D35A0224B8995572 /* car-02.png */,
+				7F45A775274FCAA9BCA9D476 /* car-03.png */,
+				154EFDE64E80F8FC4BB29C62 /* car-04.png */,
+				71BA5B71CB5FC6D4BE7E2972 /* car-05.png */,
+				A088C87D2F2280ADC2326B53 /* car-06.png */,
+				7A4FE975FCD5CC8DC8A44FD7 /* car-07.png */,
+				F5DC4E3C35B368FDE9F33421 /* car-08.png */,
+				E85F1613A5FB3DF7F1A3E858 /* car-09.png */,
+				6C1BA698F89F03C6ABA2E2D0 /* car-10.png */,
+				A91601AAAB793AAC39DE015D /* car-11.png */,
+				F3A7868A83F769C1D4D75940 /* car-12.png */,
+				AD4578EFD89588D64D74A075 /* car-13.png */,
+				1762F247B9149F5A99D9B731 /* car-14.png */,
+				38D7B5986391F09D7354F897 /* car-15.png */,
+				DFEFD30B2F7626A7EABB8689 /* car-16.png */,
+				8280633549CC7E88167D10E8 /* car-17.png */,
+				010A77FF3872C9348B861920 /* car-18.png */,
+				10CDA9F30617FF6DB7D1229C /* car-19.png */,
+				5D5A8062B63D762677133852 /* car-20.png */,
+				A2891601780C84E4FC79F7B7 /* car-21.png */,
+				02977B518358E792CE70F1E5 /* car-22.png */,
+				A061CA4B50C7BA38F0E9B2FE /* car-23.png */,
+				0D692B4D1D5D6941EEB0775A /* car-24.png */,
+				1EB4BFECE1AF9AA498BB6BF7 /* car-25.png */,
+				04C4C7E12A4D72FAD22011C9 /* car-26.png */,
+				3C9A0B06CE8B44998C12CA28 /* car-27.png */,
+				964689A4F420D59BBCC04298 /* car-28.png */,
+				DFC5CDC798D4A49948E50FFD /* car-29.png */,
+				64D206B1E0B88C965BB0A532 /* car-police.png */,
+			);
+			path = "garage-cars";
+			sourceTree = "<group>";
+		};
 		765B3C25F9D01C4848CE0635 = {
 			isa = PBXGroup;
 			children = (
@@ -129,10 +417,23 @@
 		94ADC27AAB74FEFB141BE80A /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				3AA8D9D2F9A77C1FFD9E901E /* AppLegalLinks.swift */,
+				A1B2C3D4E5F60102A0C10002 /* AppOrientationController.swift */,
 				D6414E3206DF68149DE76094 /* ArcadeKit.swift */,
+				F1D2C3B4A5968778695A4B67 /* KRCAudioPreferences.swift */,
 				80D44DCB93358ECB8F7BA2F7 /* CarStatsRegistry.swift */,
 				B69682A864136F51C277E3DA /* ControlPreferences.swift */,
+				5FCAC6B8931D6E523C4D2161 /* GarageCarAssets.swift */,
+				3599B28337C8F5DCF237C687 /* KRCPlayerProfile.swift */,
+				KRCDEBUGUI00000000000001 /* KRCDebugUI.swift */,
 				4B5537B58EA6FB79966744F7 /* PlayerProgressStore.swift */,
+				KRCCAREER000000000001 /* CareerMissions.swift */,
+				COUR1ERCARR000000000002 /* CourierCareer.swift */,
+				KRCPURSUITCMP000000001 /* PursuitCampaign.swift */,
+				KRCGARAGESTY0000000001 /* GarageCustomization.swift */,
+				KRCWEEKLYEVT0000000001 /* WeeklyEvents.swift */,
+				KRCSTOREPOLISH00000001 /* KRCAppStorePolish.swift */,
+				KRCTUTORIAL0000000001 /* KRCTutorial.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -140,7 +441,6 @@
 		975F3DD5C4C750194BFB333B /* App */ = {
 			isa = PBXGroup;
 			children = (
-				1BB4BEC8CDD796E10EF9F07A /* ContentView.swift */,
 				05EC125BCEDDDC4AE5C4A039 /* KadenRacingApp.swift */,
 			);
 			path = App;
@@ -151,6 +451,12 @@
 			children = (
 				80CB87CBCA7ED81C4A77D5A9 /* AUDIO_ATTRIBUTION.txt */,
 				D77918A96F3C3C980974A300 /* car_engine_racing.mp3 */,
+				RACEINTENSITYMP30002 /* race_intensity.mp3 */,
+				MENUTHEMEMP3FILE0002 /* menu_theme.mp3 */,
+				GARAGETHEMEMP3FIL002 /* garage_theme.mp3 */,
+				VICTORYMP3FILE000002 /* victory.mp3 */,
+				560BF4E78D3F105A79CA18CF /* muscle_v8_high.mp3 */,
+				2F613CE8E05EA23A64EA9C4D /* muscle_v8_loop.mp3 */,
 			);
 			path = Audio;
 			sourceTree = "<group>";
@@ -159,6 +465,7 @@
 			isa = PBXGroup;
 			children = (
 				A7E2286C4B690B250121BFF9 /* GameDefinitions.swift */,
+				362AB73213EF09C5AB13F8C1 /* TrackCatalog.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -167,10 +474,13 @@
 			isa = PBXGroup;
 			children = (
 				89E2B441EBF5F830A0B52232 /* AssetManager.swift */,
+				7C2D1CD18B50BDDBD7578FC0 /* CatalogTrackGenerator.swift */,
 				BBC2D37AF5D02A470F9A7279 /* CityManager.swift */,
 				CD896D199288A2360B0870FE /* CityRuntimeConfig.swift */,
+				CEAENVART00000000000001 /* CityEnvironmentArt.swift */,
 				7B0907D07083EF5241F49B0B /* CityStreamingCoordinator.swift */,
 				FCE94DF841BB6822F9D82CBF /* CityThemeCatalog.swift */,
+				K3NN3Y3NV1R0NMENT02 /* KenneyEnvironmentLoader.swift */,
 				574C4CD35FA3A4CCB2680CDF /* CityThemeTypes.swift */,
 				BBB50422B99F9B6159764217 /* ModularTrackGenerator.swift */,
 				71002AB31F7FB7C5421A9C12 /* ProceduralCityDecor.swift */,
@@ -184,12 +494,46 @@
 		C2ACD84D6FB654076F75294D /* Game */ = {
 			isa = PBXGroup;
 			children = (
+				40266B7E7F36B17AAFE9BF23 /* CarDecals.swift */,
+				30B2F43D12A96EE2DB470901 /* CarLivery.swift */,
+				A6930954CBD5322F884EB7A6 /* GLBCarLoader.swift */,
+				D1C3070BF46A9B3004FA410E /* GLBDriverLoader.swift */,
+				C826B576A63F58AF8C21A171 /* KRCProceduralTextures.swift */,
+				93913E799468034604BE90CE /* KRCSceneKitHelpers.swift */,
+				8088AB159A892B7A4FD0B2C4 /* MenuIntroAudioController.swift */,
 				47DCB73E68BDE7970EE2FFDE /* NativeRaceEngine.swift */,
+				KRCGHOSTTAPE0000000001 /* RaceGhostTape.swift */,
+				OWDR1V3PHYS000000000002 /* OpenWorldDrivingSimulation.swift */,
+				VHCLTRNS0000000000000002 /* VehicleTransmission.swift */,
+				RACEQA000000000000000002 /* RaceQAAutopilot.swift */,
+				RACEARCAD3FUN000000000002 /* RaceArcadeFunSystem.swift */,
+				COUR1ERDEL1V000000000002 /* CourierDeliverySystem.swift */,
+				VHCLLGHT0000000000000002 /* VehicleLighting.swift */,
+				VHCLAXES00000000000000002 /* VehicleAxes.swift */,
+				TRCKWRLDQRY000000000002 /* TrackWorldQuery.swift */,
+				F1D2C3B4A5968778695A4B3D /* VehicleDrivingSimulation.swift */,
+				F1D2C3B4A5968778695A4B3F /* VehicleDrivingPreferences.swift */,
+				F1D2C3B4A5968778695A4B41 /* VehicleGameControllerInput.swift */,
+				F1D2C3B4A5968778695A4B51 /* VehicleMaterialLibrary.swift */,
+				AUTOPNTBRDF00000000000001 /* AutomotiveBRDFLibrary.swift */,
+				AUTOPNTSHDR00000000000001 /* AutomotivePaintShader.swift */,
+				AUTOPNTREFL00000000000001 /* AutomotiveReflectionSystem.swift */,
+				F1D2C3B4A5968778695A4B53 /* VehicleVisualProfile.swift */,
+				F1D2C3B4A5968778695A4B55 /* VehicleBodyFactory.swift */,
+				F1D2C3B4A5968778695A4B57 /* VehicleRenderer.swift */,
+				F1D2C3B4A5968778695A4B71 /* VehicleClassKit.swift */,
+				F1D2C3B4A5968778695A4B59 /* VehicleSpawnPlanner.swift */,
+				F1D2C3B4A5968778695A4B61 /* KRCMusicDirector.swift */,
+				F1D2C3B4A5968778695A4B63 /* KRCProceduralMusic.swift */,
+				F1D2C3B4A5968778695A4B65 /* KRCUISounds.swift */,
 				1A823AB14D16C2D30DA1BF5A /* RaceAudioController.swift */,
 				1B1E3EDE1AE06CDBB91B3AE7 /* RaceCarGeometry.swift */,
+				6CBDE756686EF3E278C6CD01 /* RaceOpponentController.swift */,
 				8C0F5ABDF927B71860775984 /* RaceParticles.swift */,
+				F70744E5AA4762F2D9F93F6D /* RaceTrackMesh.swift */,
 				8F381FC8965008D1513A83A9 /* SceneKitRaceView.swift */,
 				708F75DACBECCF2D63C71A7B /* TrackSpline.swift */,
+				C75329AF2F6D5273227369BB /* WheelAssembly.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -197,13 +541,55 @@
 		D53CFAD6C6F3479A62814464 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				20B7167EEF54E3913F281965 /* CarPreview3DView.swift */,
+				963D33A8F99177FAF18F61C0 /* GameCenterViews.swift */,
 				A9154ED1C5303CCF3B9A1131 /* GameFlowState.swift */,
+				2B1A89B4E979C5DA741D524C /* GlobalLeaderboardView.swift */,
+				C4AA96FE44F78A5F128F6A11 /* KRCDesignSystem.swift */,
+				9DB2A17844B11464A0B0A864 /* MenuCarDriveInView.swift */,
+				AA44E62EAA0E234A8AA6341E /* NativeLegalScreens.swift */,
 				63A4B4C5B4792FD7570D0076 /* NativeScreens.swift */,
 				3FC676CF587F4C026FA7839E /* RaceOrientationModifier.swift */,
 				306347128B70B4CEDD494B35 /* RacePedalCluster.swift */,
+				DPADRACE0000000000000002 /* DPadRaceControls.swift */,
+				TRNSSHFT0000000000000002 /* TransmissionShiftControls.swift */,
+				6008EA4D3F9FF2DFBB4B7F44 /* SplashFlameView.swift */,
+				SPLASHSCR0000000000000002 /* SplashScreenView.swift */,
 				CC8251B9768530759509971D /* TiltSteeringController.swift */,
+				F1D2C3B4A5968778695A4B69 /* ModernRaceHUD.swift */,
+				F1D2C3B4A5968778695A4B6B /* SteeringWheelControl.swift */,
+				E9F8D74352F0BA08A8C44BE7 /* TrackPreviewArt.swift */,
+				C1TYPR3V1EWART0000000001 /* CityPreviewArt.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		E4NV1R0NM3NTGRP01 /* Environment */ = {
+			isa = PBXGroup;
+			children = (
+				CEDD76F671C342AEB10B0267 /* EnvironmentTrackProfile.swift */,
+				34C485985EA54159AE1F75E9 /* EnvironmentGraphicsSettings.swift */,
+				953E11D29E0E475EBA5A012F /* EnvironmentMaterialLibrary.swift */,
+				3628D49DF14C4838AB9B1CDF /* EnvironmentLightingSystem.swift */,
+				122B062A2B5B45E3B1E5CA7E /* EnvironmentPostProcessing.swift */,
+				C1TYSKYB0000000000000001 /* CitySkyBackdrop.swift */,
+				CEVISTONE00000000000001 /* VisualTone.swift */,
+				29DEF5F037114B08B0742714 /* EnvironmentCameraRig.swift */,
+				ECD98D6E44BC4569ADC39ECA /* CoastalCityCircuitTrack.swift */,
+				302AB9F866C14CBAB18EFF38 /* OceanEnvironmentBuilder.swift */,
+				B9A514B8F4C848CE84AC6DA6 /* NatureEnvironmentBuilder.swift */,
+				6B837B5B8E6B44C6B2C7FAF0 /* RoadEnvironmentBuilder.swift */,
+				TRCKSCNRY00000000000002 /* TrackSceneryEnhancer.swift */,
+				A7D3D5F6165145598E2B807D /* WorldPropsPlacer.swift */,
+				B4C528631F5442D3BA244E52 /* RacingEnvironmentPipeline.swift */,
+				RCEPRELD0000000000000002 /* RaceEnvironmentPreloader.swift */,
+				E9CD60C6CB36434DA66C4910 /* VehicleEnvironmentEffects.swift */,
+				PALMC1TYENV000000000002 /* PalmCityEnvironment.swift */,
+				PALMC1TYRACE000000000002 /* PalmCityRacewayBuilder.swift */,
+				PALMC1TYTRCK000000000002 /* PalmCityRacewayTracks.swift */,
+				M1N1MALENV00000000000002 /* MinimalRaceEnvironment.swift */,
+			);
+			path = Environment;
 			sourceTree = "<group>";
 		};
 		F03C6A57D386DED28B44C084 /* Resources */ = {
@@ -213,7 +599,9 @@
 				785CDC2BC183E8F6F4E9EC8E /* Info.plist */,
 				83A82A919E5118DE638B2E8A /* LaunchScreen.storyboard */,
 				87206BCADB78574908DAC4CD /* PrivacyInfo.xcprivacy */,
+				AUTOPNTJSON00000000000001 /* AutomotiveBRDFPresets.json */,
 				AA4D15F3F9BCD9FA8E942240 /* Audio */,
+				5E949AF96B71AD0BEB0FA169 /* garage-cars */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -227,6 +615,7 @@
 			buildPhases = (
 				DE6CBF0C394CA07585E4B096 /* Sources */,
 				D4CAC03E6C4E913DD3EB51F5 /* Resources */,
+				2467A74AF8EEA5A3216E9586 /* Copy Game Assets To Bundle */,
 			);
 			buildRules = (
 			);
@@ -275,47 +664,193 @@
 				2F8192FF7EBD03DB3260C2B8 /* Assets.xcassets in Resources */,
 				3A78D603402B1028D0B1C489 /* LaunchScreen.storyboard in Resources */,
 				443B9CE48EF1CA0CD12B9DC5 /* PrivacyInfo.xcprivacy in Resources */,
+				AUTOPNTJSON00000000000002 /* AutomotiveBRDFPresets.json in Resources */,
+				C0DB69CB493D911F7C3622A9 /* car-00.png in Resources */,
+				457412E1580FECF210341756 /* car-01.png in Resources */,
+				1988B542EDF9E8327C74B48B /* car-02.png in Resources */,
+				67826D34234023BE2C411061 /* car-03.png in Resources */,
+				22E9988FB029C6347FB658ED /* car-04.png in Resources */,
+				8B21A0E792E83929C4B8A3FE /* car-05.png in Resources */,
+				3E760807C8EF99CCB061422B /* car-06.png in Resources */,
+				7A60B7320735A67D57AC426A /* car-07.png in Resources */,
+				E5BAC8B316731CE81B734CC1 /* car-08.png in Resources */,
+				5BCB22EA867AE4F038DEB9B6 /* car-09.png in Resources */,
+				947CD2539BDDE63738511C99 /* car-10.png in Resources */,
+				51135E14F5460B30C5C4AC23 /* car-11.png in Resources */,
+				56EB06025231F6A787712CF7 /* car-12.png in Resources */,
+				C87F80052036996B4E219DB8 /* car-13.png in Resources */,
+				E71265CE992A1DC1DDCD811F /* car-14.png in Resources */,
+				64D3017C6C38C544C9E75E3B /* car-15.png in Resources */,
+				3152897AFBFAF728CABBF46B /* car-16.png in Resources */,
+				761D7D6A9F451EF115CD7FD5 /* car-17.png in Resources */,
+				4DC9B3BD51AD3A36D4C50B61 /* car-18.png in Resources */,
+				1881C837B6263272ECE09BF6 /* car-19.png in Resources */,
+				6959386AAF373FD6FBE73D00 /* car-20.png in Resources */,
+				C466F7200E042281C3DDD5DB /* car-21.png in Resources */,
+				0435A2F202EB32DC586C81B6 /* car-22.png in Resources */,
+				CD4F3AEC2DD83AB3096707B0 /* car-23.png in Resources */,
+				C469FED9BA887696FE3A3818 /* car-24.png in Resources */,
+				76E42D7F966B30822B5038D2 /* car-25.png in Resources */,
+				ABBD25381F716154C0AA437A /* car-26.png in Resources */,
+				3A04144EC22C27622A4734FC /* car-27.png in Resources */,
+				805F963046A377B4997030D7 /* car-28.png in Resources */,
+				F44BEB3E1733DE1868D2C83A /* car-29.png in Resources */,
+				9413B0790508017862B5E1DD /* car-police.png in Resources */,
 				70451007795EF8ABF4741B4C /* car_engine_racing.mp3 in Resources */,
+				RACEINTENSITYMP30001 /* race_intensity.mp3 in Resources */,
+				MENUTHEMEMP3FILE0001 /* menu_theme.mp3 in Resources */,
+				GARAGETHEMEMP3FIL001 /* garage_theme.mp3 in Resources */,
+				VICTORYMP3FILE000001 /* victory.mp3 in Resources */,
+				AA42DBDCD27420B90A9D5C14 /* muscle_v8_high.mp3 in Resources */,
+				7F924AB9B3D659A2389B0598 /* muscle_v8_loop.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2467A74AF8EEA5A3216E9586 /* Copy Game Assets To Bundle */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Game Assets To Bundle";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "BUNDLE=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\nrm -rf \"$BUNDLE/garage-cars\" \"$BUNDLE/models\"\nmkdir -p \"$BUNDLE/garage-cars\" \"$BUNDLE/models\"\ncp -R \"${SRCROOT}/../garage-cars/.\" \"$BUNDLE/garage-cars/\"\nif [ -d \"${SRCROOT}/../public/models\" ]; then\n  cp -R \"${SRCROOT}/../public/models/.\" \"$BUNDLE/models/\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		DE6CBF0C394CA07585E4B096 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2DA9BEFB5AAAAFA8EC16FEDE /* AppLegalLinks.swift in Sources */,
+				A1B2C3D4E5F60101A0C10001 /* AppOrientationController.swift in Sources */,
 				33F5C8FD5139F941F1A864B2 /* ArcadeKit.swift in Sources */,
+				KRCCAREER000000000002 /* CareerMissions.swift in Sources */,
+				COUR1ERCARR000000000001 /* CourierCareer.swift in Sources */,
+				KRCPURSUITCMP000000002 /* PursuitCampaign.swift in Sources */,
+				KRCGARAGESTY0000000002 /* GarageCustomization.swift in Sources */,
+				KRCWEEKLYEVT0000000002 /* WeeklyEvents.swift in Sources */,
+				KRCSTOREPOLISH00000002 /* KRCAppStorePolish.swift in Sources */,
+				KRCTUTORIAL0000000002 /* KRCTutorial.swift in Sources */,
+				KRCGHOSTTAPE0000000002 /* RaceGhostTape.swift in Sources */,
 				03811865CE19936A4375A23B /* AssetManager.swift in Sources */,
+				94F1A98D2C5FB4B8779262F6 /* CarDecals.swift in Sources */,
+				8F3F4BD4BCAA2456D4DC1121 /* CarLivery.swift in Sources */,
+				24E77DE57E9443D33C1C849F /* CarPreview3DView.swift in Sources */,
 				639B1CD2E6F0C8E23F743A6E /* CarStatsRegistry.swift in Sources */,
+				3F975CA75EE80506F2CB4A24 /* CatalogTrackGenerator.swift in Sources */,
 				E0E9DA03786944611E6CA813 /* CityManager.swift in Sources */,
 				7DA60ED4CC6526242AFAF61D /* CityRuntimeConfig.swift in Sources */,
 				5A04A8D5AB620C0251479C04 /* CityStreamingCoordinator.swift in Sources */,
 				D1332B11CE1FCE6992DB96E8 /* CityThemeCatalog.swift in Sources */,
+				CEAENVART00000000000002 /* CityEnvironmentArt.swift in Sources */,
+				K3NN3Y3NV1R0NMENT01 /* KenneyEnvironmentLoader.swift in Sources */,
+				68A213B64BD84E83B8B94D44 /* EnvironmentTrackProfile.swift in Sources */,
+				75DB7BB6095B48AABE96353E /* EnvironmentGraphicsSettings.swift in Sources */,
+				6A019A615F3F4843BACB7DD1 /* EnvironmentMaterialLibrary.swift in Sources */,
+				49479BD6F58F428E901F1A38 /* EnvironmentLightingSystem.swift in Sources */,
+				770CA9ABFED04A33BF6F1C1A /* EnvironmentPostProcessing.swift in Sources */,
+				CEVISTONE00000000000002 /* VisualTone.swift in Sources */,
+				20833613E0154C5D869B5612 /* EnvironmentCameraRig.swift in Sources */,
+				DB593499876F490680FD4916 /* CoastalCityCircuitTrack.swift in Sources */,
+				C31C7BB74FEE430DB02CB93D /* OceanEnvironmentBuilder.swift in Sources */,
+				DA4F6E67143141CDB9D4FA81 /* NatureEnvironmentBuilder.swift in Sources */,
+				F22802D966434C32B0CA2E3F /* RoadEnvironmentBuilder.swift in Sources */,
+				TRCKSCNRY00000000000001 /* TrackSceneryEnhancer.swift in Sources */,
+				56E6F0D1FF2F406682068919 /* WorldPropsPlacer.swift in Sources */,
+				D6019E0179024973A271298B /* RacingEnvironmentPipeline.swift in Sources */,
+				RCEPRELD0000000000000001 /* RaceEnvironmentPreloader.swift in Sources */,
+				70B9116815E04B0E96F5344F /* VehicleEnvironmentEffects.swift in Sources */,
+				PALMC1TYENV000000000001 /* PalmCityEnvironment.swift in Sources */,
+				PALMC1TYRACE000000000001 /* PalmCityRacewayBuilder.swift in Sources */,
+				PALMC1TYTRCK000000000001 /* PalmCityRacewayTracks.swift in Sources */,
+				M1N1MALENV00000000000001 /* MinimalRaceEnvironment.swift in Sources */,
 				CDCA15C79EDA4F1CF9AAB843 /* CityThemeTypes.swift in Sources */,
-				182633BA42EDE23AD23DFFD0 /* ContentView.swift in Sources */,
 				DAD81D02C9996751ABD7552E /* ControlPreferences.swift in Sources */,
+				A9878628725258A069A44477 /* GLBCarLoader.swift in Sources */,
+				BC8F8E1062579D6F407DBC05 /* GLBDriverLoader.swift in Sources */,
+				D2732043A2163A35C8694269 /* GameCenterViews.swift in Sources */,
 				F137939F2ABF95AE46212D2C /* GameDefinitions.swift in Sources */,
 				7D5437FFA5CB03B6531D2302 /* GameFlowState.swift in Sources */,
 				31D52EEDFE361334D425446F /* GameServices.swift in Sources */,
+				F01B7FCE06E2CC33B278E1E1 /* GarageCarAssets.swift in Sources */,
+				21A26942CE8C556EF1204B4A /* GlobalLeaderboardView.swift in Sources */,
+				922F401C52BB39761CD9D40A /* KRCDesignSystem.swift in Sources */,
+				8C3FE2D42FCBB28376B27456 /* KRCOnlineService.swift in Sources */,
+				C70972977489D8CBFC9BCF09 /* KRCPlayerProfile.swift in Sources */,
+				KRCDEBUGUI00000000000002 /* KRCDebugUI.swift in Sources */,
+				B5A3735865A795CDEF884BEB /* KRCProceduralTextures.swift in Sources */,
+				B257550378B717E529B29475 /* KRCSceneKitHelpers.swift in Sources */,
 				E57E9867CDB054AEB69E313D /* KadenRacingApp.swift in Sources */,
+				25E28B22DAA4A641DDCF2836 /* MenuCarDriveInView.swift in Sources */,
+				A123B6833D99605C43F782AF /* MenuIntroAudioController.swift in Sources */,
 				30BFAE56CFC16BF12101D5CC /* ModularTrackGenerator.swift in Sources */,
+				9CEB83632EB99F52969C849C /* NativeLegalScreens.swift in Sources */,
 				011BE87B4584285C0D0D943E /* NativeRaceEngine.swift in Sources */,
+				OWDR1V3PHYS000000000001 /* OpenWorldDrivingSimulation.swift in Sources */,
+				VHCLTRNS0000000000000001 /* VehicleTransmission.swift in Sources */,
+				RACEQA000000000000000001 /* RaceQAAutopilot.swift in Sources */,
+				RACEARCAD3FUN000000000001 /* RaceArcadeFunSystem.swift in Sources */,
+				COUR1ERDEL1V000000000001 /* CourierDeliverySystem.swift in Sources */,
+				VHCLLGHT0000000000000001 /* VehicleLighting.swift in Sources */,
+				VHCLAXES00000000000000001 /* VehicleAxes.swift in Sources */,
+				TRCKWRLDQRY000000000001 /* TrackWorldQuery.swift in Sources */,
+				E1D2C3B4A5968778695A4B3C /* VehicleDrivingSimulation.swift in Sources */,
+				E1D2C3B4A5968778695A4B3E /* VehicleDrivingPreferences.swift in Sources */,
+				E1D2C3B4A5968778695A4B40 /* VehicleGameControllerInput.swift in Sources */,
+				E1D2C3B4A5968778695A4B50 /* VehicleMaterialLibrary.swift in Sources */,
+				AUTOPNTBRDF00000000000002 /* AutomotiveBRDFLibrary.swift in Sources */,
+				AUTOPNTSHDR00000000000002 /* AutomotivePaintShader.swift in Sources */,
+				AUTOPNTREFL00000000000002 /* AutomotiveReflectionSystem.swift in Sources */,
+				E1D2C3B4A5968778695A4B52 /* VehicleVisualProfile.swift in Sources */,
+				E1D2C3B4A5968778695A4B54 /* VehicleBodyFactory.swift in Sources */,
+				E1D2C3B4A5968778695A4B56 /* VehicleRenderer.swift in Sources */,
+				E1D2C3B4A5968778695A4B70 /* VehicleClassKit.swift in Sources */,
+				E1D2C3B4A5968778695A4B58 /* VehicleSpawnPlanner.swift in Sources */,
+				E1D2C3B4A5968778695A4B60 /* KRCMusicDirector.swift in Sources */,
+				E1D2C3B4A5968778695A4B62 /* KRCProceduralMusic.swift in Sources */,
+				E1D2C3B4A5968778695A4B64 /* KRCUISounds.swift in Sources */,
+				E1D2C3B4A5968778695A4B66 /* KRCAudioPreferences.swift in Sources */,
+				E1D2C3B4A5968778695A4B68 /* ModernRaceHUD.swift in Sources */,
+				E1D2C3B4A5968778695A4B6A /* SteeringWheelControl.swift in Sources */,
 				1DE5D865A147481EABE466E8 /* NativeScreens.swift in Sources */,
 				351683A3FC3708F6788D4295 /* PlayerProgressStore.swift in Sources */,
 				42C3D862F8398CEFBF0D6525 /* ProceduralCityDecor.swift in Sources */,
 				8EFC694517A5CB95FBB29959 /* RaceAudioController.swift in Sources */,
 				5C2850FEAA7FF641EC7A4FE5 /* RaceCarGeometry.swift in Sources */,
+				03F92D5C0AE22557A3D22396 /* RaceOpponentController.swift in Sources */,
 				FBDE069B0ABF3899E2F0E1A7 /* RaceOrientationModifier.swift in Sources */,
 				68EE93CEA45EC15A61E6DDEE /* RaceParticles.swift in Sources */,
 				DC293C83DE48A2CDEC237AAC /* RacePedalCluster.swift in Sources */,
+				DPADRACE0000000000000001 /* DPadRaceControls.swift in Sources */,
+				TRNSSHFT0000000000000001 /* TransmissionShiftControls.swift in Sources */,
+				1D3C8BEAC578EAC1692C02CA /* RaceTrackMesh.swift in Sources */,
 				4A95E1E22624A058119D6B49 /* SceneKitMobileTuning.swift in Sources */,
 				98AF983F82020C5F103EE02B /* SceneKitRaceView.swift in Sources */,
 				B50B9C6D3CE4E858B05E293C /* SeededRandom.swift in Sources */,
+				E87A11B371A557BCF77D3C62 /* SplashFlameView.swift in Sources */,
+				SPLASHSCR0000000000000001 /* SplashScreenView.swift in Sources */,
 				BDA645D4BAC54543F4E85DA6 /* TiltSteeringController.swift in Sources */,
+				1116421C92F7AE4E280289FD /* TrackCatalog.swift in Sources */,
+				8A18DA0E40CBCA733B9C1891 /* TrackPreviewArt.swift in Sources */,
+				C1TYPR3V1EWART0000000002 /* CityPreviewArt.swift in Sources */,
+				C1TYSKYB0000000000000002 /* CitySkyBackdrop.swift in Sources */,
 				DFFE549133A19A824655F5D5 /* TrackSpline.swift in Sources */,
 				27275E9438927B2ED62E4F87 /* TrafficObjectPool.swift in Sources */,
+				ACA4F92E4C5A87813BB82789 /* WheelAssembly.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -328,8 +863,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = KadenRacing/KadenRacing.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 4SQJ3AH62S;
+				CURRENT_PROJECT_VERSION = 3;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = KadenRacing/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Kaden's Racing Championships";
@@ -383,6 +917,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 4SQJ3AH62S;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -411,8 +946,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = KadenRacing/KadenRacing.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 4SQJ3AH62S;
+				CURRENT_PROJECT_VERSION = 3;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = KadenRacing/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Kaden's Racing Championships";
@@ -466,6 +1000,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 4SQJ3AH62S;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
