@@ -51,6 +51,21 @@ enum KRCPlayerProfile {
             .replacingOccurrences(of: "  ", with: " ")
             .trimmingCharacters(in: .whitespaces)
         let trimmed = String(collapsed.prefix(16))
-        return trimmed.isEmpty ? "KRC DRIVER" : trimmed
+        if trimmed.isEmpty { return "KRC DRIVER" }
+        let compact = trimmed.replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "_", with: "")
+            .replacingOccurrences(of: ".", with: "")
+            .replacingOccurrences(of: "-", with: "")
+        for bad in kidUnsafeNameTokens where compact.contains(bad) {
+            return "KRC DRIVER"
+        }
+        return trimmed
     }
+
+    /// Kid-safe nickname filter — no chat, so the name is the only text others see.
+    private static let kidUnsafeNameTokens: [String] = [
+        "FUCK", "SHIT", "BITCH", "BASTARD", "DAMNIT", "DICK", "PISS", "PORN",
+        "SLUT", "WHORE", "RAPE", "NIGGER", "FAGGOT", "RETARD", "NAZI", "HITLER",
+        "KILLER", "SUICIDE", "BOMB", "TERROR"
+    ]
 }

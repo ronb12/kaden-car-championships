@@ -64,6 +64,14 @@ struct NativeRootView: View {
             flow.applyDebugLaunchRouteIfNeeded(progress: progress)
             #endif
         }
+        .onChange(of: gameCenter.pendingInviteRace) { go in
+            guard go else { return }
+            gameCenter.pendingInviteRace = false
+            guard flow.screen != .racing else { return }
+            KRCPlayerProfile.onlinePlayEnabled = true
+            flow.beginQuickRace()
+            flow.screen = .racing
+        }
     }
 
     private func raceSessionId(_ f: GameFlowState) -> String {
@@ -184,7 +192,13 @@ struct MainMenuScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.white.opacity(0.12)))
                     .padding(.horizontal, 40)
                     .padding(.top, landscape ? 2 : 6)
-                    .padding(.bottom, landscape ? 4 : 8)
+                    .padding(.bottom, landscape ? 2 : 4)
+                    if KRCPlayerProfile.onlinePlayEnabled {
+                        Text("Race friends & nearby · no voice chat")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(KRCDesign.neonCyan.opacity(0.9))
+                            .padding(.bottom, landscape ? 4 : 6)
+                    }
 
                     // ── Race modes — must be height-bounded to scroll ──────
                     ScrollView(.vertical, showsIndicators: landscape) {
@@ -1488,6 +1502,7 @@ struct ActiveRaceScreen: View {
     @State private var scenePrepared = false
     @State private var matchGateReady = false
     @State private var matchmakingTask: Task<Void, Never>?
+    @State private var lastKidEmoteAt: TimeInterval = 0
     #if DEBUG
     @State private var showTutorial = !KRCTutorial.hasShownControlsTip && !KRCDebugUI.isQALaunch
     #else
@@ -1557,15 +1572,32 @@ struct ActiveRaceScreen: View {
         let trackKey = "\(flow.selectedCityTheme.rawValue)-\(flow.trackIndexForCurrentRace())"
         matchmakingTask = Task { @MainActor in
             session.engine.setPaused(true)
-            _ = await online.runMatchmaking(
-                trackKey: trackKey,
-                mode: flow.activeGameMode.rawValue,
-                carId: car.id,
-                carName: car.name,
-                colorInt: car.colorUInt32
-            )
-            // Brief GO flash then release.
-            try? await Task.sleep(nanoseconds: 280_000_000)
+            var racedHumans = false
+            #if DEBUG
+            let skipGameCenter = KRCDebugUI.isQALaunch
+            #else
+            let skipGameCenter = false
+            #endif
+            if !skipGameCenter, GameCenterService.shared.isAuthenticated {
+                let gc = await GameCenterService.shared.presentRaceMatchmaker()
+                if gc == .matched {
+                    online.bindGameCenterMatch()
+                    racedHumans = true
+                }
+            }
+            if !racedHumans {
+                let live = await online.runMatchmaking(
+                    trackKey: trackKey,
+                    mode: flow.activeGameMode.rawValue,
+                    carId: car.id,
+                    carName: car.name,
+                    colorInt: car.colorUInt32
+                )
+                if !live {
+                    online.markSoloFallback()
+                    try? await Task.sleep(nanoseconds: 700_000_000)
+                }
+            }
             matchGateReady = true
             beginRaceIfReady()
         }
@@ -1624,7 +1656,7 @@ struct ActiveRaceScreen: View {
                 startMatchmakingIfNeeded()
                 beginRaceIfReady()
             }
-            KRCMusicDirector.shared.play(.race)
+            KRCMusicDirector.shared.play(.countdown)
             #if DEBUG
             let qaDrive = RaceQAAutopilot.enabled
             #else
@@ -1679,31 +1711,38 @@ struct ActiveRaceScreen: View {
         ZStack {
             Color.black.opacity(0.7).ignoresSafeArea()
             VStack(spacing: 14) {
-                Text("LIVE MULTIPLAYER")
+                Text("RACE FRIENDS")
                     .font(.system(size: 12, weight: .black, design: .rounded))
                     .tracking(2)
                     .foregroundStyle(KRCDesign.gold)
+                Text("No voice chat · WAVE and NICE only")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(KRCDesign.mutedText)
                 Group {
                     switch online.matchmakingPhase {
                     case .searching:
-                        Text("FINDING RACE…")
+                        Text("FINDING RACERS…")
+                        Text("Invite friends, nearby, or a public lobby")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(KRCDesign.mutedText)
                     case .waiting(let seconds, let racers):
                         if seconds > 3 {
-                            Text("MATCH FOUND")
-                            Text("\(racers) RACER\(racers == 1 ? "" : "S")")
+                            Text(racers <= 1 ? "LOBBY OPEN" : "HUMANS FOUND")
+                            Text(racers <= 1
+                                 ? "Starts with you + CPU if nobody joins"
+                                 : "\(racers) HUMANS · CPU fills the rest")
                                 .foregroundStyle(KRCDesign.neonCyan)
                         } else {
-                            Text("\(seconds)")
-                                .font(.system(size: 96, weight: .black, design: .rounded))
-                                .foregroundStyle(KRCDesign.gold)
+                            Text("GET READY")
+                            Text("Your 3-2-1 is next")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(KRCDesign.mutedText)
                         }
                     case .go:
-                        Text("GO!")
-                            .font(.system(size: 72, weight: .black, design: .rounded))
-                            .foregroundStyle(KRCDesign.gold)
+                        Text("GET READY")
                     case .offlineFallback:
                         Text("SERVER UNAVAILABLE")
-                        Text("Continuing in Solo — no lobby required")
+                        Text("Continuing in Solo — CPU grid, no lobby")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(KRCDesign.mutedText)
                     default:
@@ -1779,6 +1818,30 @@ struct ActiveRaceScreen: View {
         .allowsHitTesting(true)
     }
 
+    private func startLightsOverlay(_ light: Int) -> some View {
+        let label = light == 0 ? "GO!" : "\(light)"
+        let color = light == 0 ? KRCDesign.gold : Color.white
+        return VStack(spacing: 6) {
+            Text(label)
+                .font(.system(size: light == 0 ? 72 : 88, weight: .black, design: .rounded))
+                .foregroundStyle(color)
+                .shadow(color: .black.opacity(0.85), radius: 10)
+                .shadow(color: color.opacity(0.45), radius: 16)
+                .scaleEffect(light == 0 ? 1.08 : 1)
+            if light > 0 {
+                Text("GRID")
+                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                    .tracking(4)
+                    .foregroundStyle(.white.opacity(0.72))
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 56)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .allowsHitTesting(false)
+        .animation(.spring(response: 0.28, dampingFraction: 0.72), value: light)
+    }
+
     private var raceOverlay: some View {
         GeometryReader { geo in
             let portrait = geo.size.height > geo.size.width
@@ -1787,7 +1850,9 @@ struct ActiveRaceScreen: View {
                 VStack(spacing: 0) {
                     HStack {
                         Spacer(minLength: 0)
-                        RearViewMirrorView(engine: session.engine, portrait: portrait)
+                        if session.engine.startLight < 0 {
+                            RearViewMirrorView(engine: session.engine, portrait: portrait)
+                        }
                         Spacer(minLength: 0)
                     }
                     .padding(.top, max(topInset - 4, 0))
@@ -1830,6 +1895,11 @@ struct ActiveRaceScreen: View {
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
+            if session.engine.startLight >= 0 {
+                startLightsOverlay(session.engine.startLight)
+                    .zIndex(50)
+                    .allowsHitTesting(false)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay {
@@ -2030,7 +2100,15 @@ struct ActiveRaceScreen: View {
                 decluttered: KRCTutorial.shouldDeclutterHUD
             ) {
                 AnyView(Group {
-                    if !paused { pauseButton }
+                    if !paused {
+                        HStack(spacing: 8) {
+                            if GameCenterService.shared.hasActiveRaceMatch {
+                                kidEmoteChip("👋", "WAVE", .wave)
+                                kidEmoteChip("👍", "NICE", .nice)
+                            }
+                            pauseButton
+                        }
+                    }
                 })
             }
         }
@@ -2039,6 +2117,33 @@ struct ActiveRaceScreen: View {
         // Keep HUD as overlay chips — don't stretch a glass panel across the road.
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .allowsHitTesting(true)
+    }
+
+    private func kidEmoteChip(_ glyph: String, _ title: String, _ emote: KidRaceEmote) -> some View {
+        Button {
+            let now = Date().timeIntervalSinceReferenceDate
+            guard now - lastKidEmoteAt > 1.15 else { return }
+            lastKidEmoteAt = now
+            GameCenterService.shared.broadcastKidEmote(emote)
+            KRCUISounds.playClick()
+        } label: {
+            VStack(spacing: 1) {
+                Text(glyph)
+                    .font(.system(size: 16))
+                Text(title)
+                    .font(.system(size: 8, weight: .black, design: .rounded))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .overlay(Capsule().strokeBorder(KRCDesign.gold.opacity(0.45), lineWidth: 1))
+            }
+            .foregroundStyle(.white)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
 
     private var pauseButton: some View {
@@ -2291,6 +2396,12 @@ struct RaceFinishedScreen: View {
                         GlobalLeaderboardView()
                             .padding(.horizontal, 20)
                     }
+                    if GameCenterService.shared.canRematchFriends {
+                        KRCDesign.PrimaryButton(title: "RACE FRIENDS AGAIN") {
+                            flow.beginQuickRace()
+                        }
+                        .padding(.horizontal, 32)
+                    }
                     if flow.activeGameMode == .championshipSerie,
                        flow.champRoundsCompleted < GameCatalog.activeChampionshipRounds.count {
                         let next = GameCatalog.activeChampionshipRounds[flow.champRoundsCompleted]
@@ -2321,11 +2432,16 @@ struct RaceFinishedScreen: View {
                             flow.openMainMenu()
                         }
                         .padding(.top, 4)
-                    } else {
+                    } else if !GameCenterService.shared.canRematchFriends {
                         KRCDesign.PrimaryButton(title: "RACE AGAIN") {
                             flow.beginQuickRace()
                         }
                         .padding(.horizontal, 32)
+                        KRCDesign.SecondaryButton(title: "MAIN MENU") {
+                            flow.openMainMenu()
+                        }
+                        .padding(.top, 4)
+                    } else {
                         KRCDesign.SecondaryButton(title: "MAIN MENU") {
                             flow.openMainMenu()
                         }

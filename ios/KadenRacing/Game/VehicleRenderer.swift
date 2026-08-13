@@ -178,14 +178,7 @@ enum VehicleRenderer {
         if isPolice {
             paint = UIColor(red: 0.07, green: 0.08, blue: 0.10, alpha: 1)
         } else {
-            var tuned = VehicleMaterialLibrary.calibratePaintColor(bodyColor)
-            var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-            if tuned.getHue(&h, saturation: &s, brightness: &b, alpha: &a), b >= 0.24 {
-                s = max(0.52, min(0.95, s))
-                b = max(0.58, min(0.96, b))
-                tuned = UIColor(hue: h, saturation: s, brightness: b, alpha: 1)
-            }
-            paint = tuned
+            paint = VehicleMaterialLibrary.calibratePaintColor(bodyColor)
         }
         let tire = UIColor(red: 0.08, green: 0.08, blue: 0.09, alpha: 1)
         let rimMat = VehicleMaterialLibrary.wheelRim(for: GarageCustomization.style(for: carId).rim)
@@ -272,7 +265,7 @@ enum VehicleRenderer {
                 color = UIColor(red: 1, green: 0.1, blue: 0.06, alpha: 1); emit = 0.8; matName = "krcRaceTail"
             } else {
                 color = paint
-                emit = isPolice ? (isPlayer ? 0.16 : 0.11) : (isPlayer ? 0.18 : 0.12)
+                emit = isPolice ? 0.04 : 0.03
                 matName = "krcRaceVisible"
             }
 
@@ -295,17 +288,22 @@ enum VehicleRenderer {
             var er: CGFloat = 0, eg: CGFloat = 0, eb: CGFloat = 0, ea: CGFloat = 0
             color.getRed(&er, green: &eg, blue: &eb, alpha: &ea)
             if matName == "krcRaceVisible" {
-                mat.lightingModel = .physicallyBased
-                mat.metalness.contents = isPolice ? 0.08 : 0.16
-                mat.roughness.contents = isPolice ? 0.52 : 0.28
+                // Lambert + tiny emission — PBR clear-coat + race sun clipped every body to chalk.
+                mat.lightingModel = .lambert
+                mat.metalness.contents = 0.04
+                mat.roughness.contents = 0.62
+                mat.specular.contents = UIColor(white: 0.08, alpha: 1)
                 if #available(iOS 13.0, *) {
-                    mat.clearCoat.contents = isPolice ? 0.22 : 0.78
-                    mat.clearCoatRoughness.contents = 0.14
+                    mat.clearCoat.contents = 0
+                    mat.clearCoatRoughness.contents = 0.5
                 }
                 mat.emission.contents = UIColor(red: er * emit, green: eg * emit, blue: eb * emit, alpha: 1)
+            } else if matName == "krcRaceRim" || matName == "krcWindshield" {
+                mat.lightingModel = .lambert
+                mat.emission.contents = UIColor(red: er * emit, green: eg * emit, blue: eb * emit, alpha: 1)
             } else {
-                mat.lightingModel = .constant
-                mat.emission.contents = color
+                mat.lightingModel = .lambert
+                mat.emission.contents = UIColor(red: er * emit, green: eg * emit, blue: eb * emit, alpha: 1)
             }
             geometry.materials = [mat]
             geometry.firstMaterial = mat

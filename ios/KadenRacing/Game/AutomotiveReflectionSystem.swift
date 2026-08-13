@@ -22,7 +22,7 @@ enum AutomotiveReflectionSystem {
     var lightingEnvironmentIntensity: CGFloat {
       switch self {
       // Keep race IBL near the environment pipeline (~0.55) so paint/asphalt aren't blown out.
-      case .race: return 0.92
+      case .race: return 0.55
       case .showroom, .garage: return 1.35
       case .photo: return 1.65
       }

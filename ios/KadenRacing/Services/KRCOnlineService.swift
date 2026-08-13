@@ -26,7 +26,26 @@ struct LiveMatchResult: Equatable {
     let players: [LiveLobbyPlayer]
 }
 
-/// Global scores + live multiplayer presence + head-to-head matchmaking (Neon via Vercel).
+/// Thread-safe human-racer positions for arcade bumper collision on the render thread.
+final class HumanRacerPoseCache: @unchecked Sendable {
+    static let shared = HumanRacerPoseCache()
+    private let lock = NSLock()
+    private var poses: [SIMD3<Float>] = []
+
+    func replace(_ next: [SIMD3<Float>]) {
+        lock.lock()
+        poses = next
+        lock.unlock()
+    }
+
+    func snapshot() -> [SIMD3<Float>] {
+        lock.lock()
+        defer { lock.unlock() }
+        return poses
+    }
+}
+
+/// Global scores + live human racers (Game Center match and/or Neon lobby) + CPU grid fill.
 @MainActor
 final class KRCOnlineService: ObservableObject {
     static let shared = KRCOnlineService()
@@ -46,6 +65,8 @@ final class KRCOnlineService: ObservableObject {
     @Published private(set) var matchmakingPhase: MatchPhase = .idle
     @Published private(set) var nearbyRacerCount = 0
     @Published private(set) var lastLiveResult: LiveMatchResult?
+    /// True after a live lobby or Game Center match. False for solo / server-down fallback.
+    @Published private(set) var liveHumansEnabled = false
 
     enum MatchPhase: Equatable {
         case idle
@@ -69,6 +90,7 @@ final class KRCOnlineService: ObservableObject {
         var target: SIMD3<Float>
         var angle: Float
         var lastSeen: TimeInterval
+        var emoteUntil: TimeInterval = 0
     }
 
     private var remotes: [String: RemoteEntry] = [:]
@@ -174,7 +196,8 @@ final class KRCOnlineService: ObservableObject {
 
     // MARK: - Matchmaking
 
-    /// Join / create a lobby for this track. Returns when GO should fire (or falls back offline).
+    /// Join / create a lobby for this track. Starts with 1 player if nobody else joins.
+    /// Returns true when the local 3-2-1 should begin (or false to race solo).
     @discardableResult
     func runMatchmaking(
         trackKey: String,
@@ -204,13 +227,11 @@ final class KRCOnlineService: ObservableObject {
                 "colorInt": Int(colorInt),
             ])
             if data["enabled"] as? Bool == false {
-                matchmakingPhase = .offlineFallback
-                statusLine = "LIVE MATCHMAKING OFFLINE"
-                clearLobbyLocal()
+                markSoloFallback(reason: "LIVE MATCHMAKING OFFLINE")
                 return false
             }
             guard applyLobbyPayload(data) else {
-                matchmakingPhase = .offlineFallback
+                markSoloFallback(reason: "LIVE MATCHMAKING OFFLINE")
                 return false
             }
             await waitForLobbyStart(
@@ -220,13 +241,16 @@ final class KRCOnlineService: ObservableObject {
                 carName: carName,
                 colorInt: colorInt
             )
-            matchmakingPhase = .go
-            statusLine = "LIVE RACE · \(max(1, lobbyPlayers.count)) RACERS"
-            return lobbyId != nil
+            // Lobby timer is the only shared clock. Each phone then runs its own 3-2-1.
+            liveHumansEnabled = true
+            matchmakingPhase = .racing
+            let racers = max(1, lobbyPlayers.count)
+            statusLine = racers == 1
+                ? "LIVE · YOU + CPU GRID"
+                : "LIVE · \(racers) HUMANS + CPU GRID"
+            return true
         } catch {
-            matchmakingPhase = .offlineFallback
-            statusLine = "MATCHMAKING RECONNECTING…"
-            clearLobbyLocal()
+            markSoloFallback(reason: "SOLO · SERVER OFFLINE")
             return false
         }
     }
@@ -247,8 +271,10 @@ final class KRCOnlineService: ObservableObject {
             if left > 0 {
                 matchmakingPhase = .waiting(secondsLeft: max(1, Int(ceil(left))), racers: racers)
                 statusLine = left > 3.5
-                    ? "MATCH FOUND · \(racers) RACER\(racers == 1 ? "" : "S")"
-                    : "LIVE START \(max(1, Int(ceil(left))))…"
+                    ? (racers == 1
+                        ? "LOBBY OPEN · STARTS WITH YOU IF NOBODY JOINS"
+                        : "MATCH FOUND · \(racers) RACERS")
+                    : "YOUR 3-2-1 NEXT · \(max(1, Int(ceil(left))))"
             }
             if left <= 0 { break }
             if Date().timeIntervalSince(lastPoll) >= 0.85, let lobbyId {
@@ -273,7 +299,7 @@ final class KRCOnlineService: ObservableObject {
 
     /// Submit live finish + return human standing in the lobby.
     func submitLiveFinish(finishMs: Int64, fallbackPosition: Int) async -> LiveMatchResult? {
-        guard KRCPlayerProfile.onlinePlayEnabled, let lobbyId, !finishSent else { return lastLiveResult }
+        guard liveHumansEnabled, KRCPlayerProfile.onlinePlayEnabled, let lobbyId, !finishSent else { return lastLiveResult }
         finishSent = true
         do {
             let data = try await postMatchmaking(body: [
@@ -325,22 +351,46 @@ final class KRCOnlineService: ObservableObject {
 
     func beginRaceSession(scene: SCNScene, root: SCNNode) {
         lastSubmittedRank = nil
-        if matchmakingPhase != .go && matchmakingPhase != .racing {
-            scoreboardMessage = ""
-        }
         sceneRoot = root
-        sessionActive = KRCPlayerProfile.onlinePlayEnabled
         lastSync = 0
-        if sessionActive {
-            matchmakingPhase = lobbyId == nil ? .racing : .racing
-        } else {
+        // Don't stomp matchmaking UI. Human cars stay off until a live match connects.
+        if !KRCPlayerProfile.onlinePlayEnabled || matchmakingPhase == .offlineFallback {
+            sessionActive = false
+            liveHumansEnabled = false
             clearRemotes()
-            statusLine = "SOLO MODE"
+            if !KRCPlayerProfile.onlinePlayEnabled {
+                statusLine = "SOLO MODE"
+            }
+            return
         }
+        sessionActive = true
+    }
+
+    /// Server / DATABASE_URL down — this race is local CPU only.
+    func markSoloFallback(reason: String = "SOLO · SERVER OFFLINE") {
+        liveHumansEnabled = false
+        sessionActive = false
+        HumanRacerPoseCache.shared.replace([])
+        clearRemotes()
+        clearLobbyLocal()
+        matchmakingPhase = .offlineFallback
+        statusLine = reason
+        scoreboardMessage = "Server unavailable — racing solo with the CPU grid."
+    }
+
+    func bindGameCenterMatch() {
+        liveHumansEnabled = true
+        sessionActive = true
+        matchmakingPhase = .racing
+        let humans = max(2, GameCenterService.shared.matchHumanCount)
+        statusLine = "FRIENDS · \(humans) RACERS · NO VOICE"
     }
 
     func endRaceSession() {
         sessionActive = false
+        liveHumansEnabled = false
+        // Keep the Game Center match so kids can tap Race Friends Again.
+        HumanRacerPoseCache.shared.replace([])
         clearRemotes()
         let leavingLobby = lobbyId
         clearLobbyLocal()
@@ -364,9 +414,24 @@ final class KRCOnlineService: ObservableObject {
         dt: Float,
         snapshot: RaceOnlineSnapshot
     ) {
-        guard sessionActive else { return }
+        guard sessionActive, liveHumansEnabled else { return }
+        GameCenterService.shared.broadcastRacePacket(
+            GCRacePacket(
+                carId: snapshot.carId,
+                colorInt: Int(snapshot.colorInt),
+                name: KRCPlayerProfile.gamerName,
+                x: snapshot.x,
+                y: snapshot.y,
+                z: snapshot.z,
+                angle: snapshot.angle,
+                speedKmh: snapshot.speedKmh,
+                lap: snapshot.lap,
+                progress: snapshot.progress
+            )
+        )
+        applyGameCenterPackets()
         let now = Date().timeIntervalSinceReferenceDate
-        if now - lastSync >= syncInterval, !inFlight {
+        if !GameCenterService.shared.hasActiveRaceMatch, now - lastSync >= syncInterval, !inFlight {
             lastSync = now
             inFlight = true
             Task {
@@ -375,7 +440,8 @@ final class KRCOnlineService: ObservableObject {
             }
         }
         let lerp = min(1, dt * 10)
-        for (id, entry) in remotes {
+        var poses: [SIMD3<Float>] = []
+        for (id, var entry) in remotes {
             let p = entry.node.position
             entry.node.position = SCNVector3(
                 p.x + (entry.target.x - p.x) * lerp,
@@ -383,8 +449,15 @@ final class KRCOnlineService: ObservableObject {
                 p.z + (entry.target.z - p.z) * lerp
             )
             entry.node.eulerAngles.y += (entry.angle - entry.node.eulerAngles.y) * lerp
+            if entry.emoteUntil > 0, now > entry.emoteUntil {
+                hideKidEmote(on: entry.node)
+                entry.emoteUntil = 0
+            }
             remotes[id] = entry
+            poses.append(SIMD3(entry.node.position.x, entry.node.position.y, entry.node.position.z))
         }
+        HumanRacerPoseCache.shared.replace(poses)
+        nearbyRacerCount = remotes.count
         _ = scene
     }
 
@@ -398,23 +471,51 @@ final class KRCOnlineService: ObservableObject {
                 return
             }
             let players = data["players"] as? [[String: Any]] ?? []
-            applyRemotePlayers(players)
-            nearbyRacerCount = players.count
-            onlinePlayerCount = max(onlinePlayerCount, players.count + 1)
-            statusLine = players.isEmpty
-                ? (lobbyId == nil ? "ONLINE MULTIPLAYER READY" : "LIVE LOBBY · WAITING FOR RACERS")
-                : "LIVE NEARBY: \(players.count)"
+            applyRemotePlayers(players, prefix: "neon:")
+            nearbyRacerCount = remotes.count
+            onlinePlayerCount = max(onlinePlayerCount, remotes.count + 1)
+            statusLine = remotes.isEmpty
+                ? "LIVE · YOU + CPU GRID"
+                : "LIVE · \(remotes.count) HUMAN\(remotes.count == 1 ? "" : "S") + CPU"
         } catch {
             statusLine = "ONLINE RECONNECTING…"
         }
     }
 
-    private func applyRemotePlayers(_ players: [[String: Any]]) {
+    private func applyGameCenterPackets() {
+        let batch = GameCenterService.shared.drainIncomingPackets()
+        guard !batch.isEmpty else { return }
+        var rows: [[String: Any]] = []
+        for packet in batch {
+            guard let decoded = try? JSONDecoder().decode(GCRacePacket.self, from: packet.data) else { continue }
+            var row: [String: Any] = [
+                "player_id": packet.id,
+                "player_name": KRCPlayerProfile.cleanGamerName(packet.name),
+                "car_id": decoded.carId,
+                "color_int": decoded.colorInt,
+                "x": Double(decoded.x),
+                "y": Double(decoded.y),
+                "z": Double(decoded.z),
+                "angle": Double(decoded.angle),
+            ]
+            if let emote = decoded.emote, emote > 0 {
+                row["emote"] = Int(emote)
+            }
+            rows.append(row)
+        }
+        guard !rows.isEmpty else { return }
+        applyRemotePlayers(rows, prefix: "gc:")
+        let humans = max(2, GameCenterService.shared.matchHumanCount)
+        statusLine = "FRIENDS · \(humans) RACERS · NO VOICE"
+    }
+
+    private func applyRemotePlayers(_ players: [[String: Any]], prefix: String) {
         guard let root = sceneRoot else { return }
         let now = Date().timeIntervalSinceReferenceDate
         var active = Set<String>()
         for p in players {
-            guard let id = p["player_id"] as? String, id != KRCPlayerProfile.playerId else { continue }
+            guard let rawId = p["player_id"] as? String, rawId != KRCPlayerProfile.playerId else { continue }
+            let id = prefix + rawId
             active.insert(id)
             let x = (p["x"] as? Double).map(Float.init) ?? 0
             let yRaw = (p["y"] as? Double).map(Float.init)
@@ -424,11 +525,17 @@ final class KRCOnlineService: ObservableObject {
             let carId = p["car_id"] as? String ?? "gtr"
             let colorInt = (p["color_int"] as? Int) ?? 0x00d4ff
             let uiColor = UIColor(rgb: UInt32(max(0, min(0xffffff, colorInt))))
+            let driverName = KRCPlayerProfile.cleanGamerName(p["player_name"] as? String ?? "KRC DRIVER")
+            let emote = p["emote"] as? Int
 
             if var entry = remotes[id] {
                 entry.target = SIMD3(x, y, z)
                 entry.angle = angle
                 entry.lastSeen = now
+                if let emote, emote > 0 {
+                    entry.emoteUntil = now + 1.8
+                    showKidEmote(UInt8(emote), on: entry.node)
+                }
                 remotes[id] = entry
             } else {
                 let carRoot = SCNNode()
@@ -441,33 +548,90 @@ final class KRCOnlineService: ObservableObject {
                     applyLivery: true
                 )
                 carRoot.scale = SCNVector3(0.96, 0.96, 0.96)
-                tintGhost(carRoot)
+                configureAsHumanRacer(carRoot, driverName: driverName)
                 root.addChildNode(carRoot)
-                remotes[id] = RemoteEntry(
+                var spawned = RemoteEntry(
                     node: carRoot,
                     target: SIMD3(x, y, z),
                     angle: angle,
                     lastSeen: now
                 )
+                if let emote, emote > 0 {
+                    spawned.emoteUntil = now + 1.8
+                    showKidEmote(UInt8(emote), on: carRoot)
+                }
+                remotes[id] = spawned
             }
             remotes[id]?.node.isHidden = false
         }
-        for (id, entry) in remotes where !active.contains(id) || now - entry.lastSeen > 14 {
-            entry.node.removeFromParentNode()
-            remotes.removeValue(forKey: id)
+        let stale: TimeInterval = prefix == "gc:" ? 4 : 14
+        for (id, entry) in remotes where id.hasPrefix(prefix) {
+            let dropped = prefix != "gc:" && !active.contains(id)
+            if dropped || now - entry.lastSeen > stale {
+                entry.node.removeFromParentNode()
+                remotes.removeValue(forKey: id)
+            }
         }
     }
 
-    private func tintGhost(_ root: SCNNode) {
-        root.enumerateChildNodes { node, _ in
-            guard let geometry = node.geometry else { return }
-            geometry.materials = geometry.materials.map { m in
-                let copy = m.copy() as? SCNMaterial ?? m
-                copy.transparency = 0.28
-                copy.isDoubleSided = true
-                return copy
-            }
+    /// Solid human racer — bumper collision is handled in the race sim, not SceneKit physics.
+    private func configureAsHumanRacer(_ root: SCNNode, driverName: String) {
+        root.name = "krcHumanRacer"
+        root.enumerateHierarchy { node, _ in
+            node.physicsBody = nil
         }
+        addDriverTag(on: root, name: KRCPlayerProfile.cleanGamerName(driverName))
+    }
+
+    private func showKidEmote(_ raw: UInt8, on root: SCNNode) {
+        guard let emote = KidRaceEmote(rawValue: raw), emote != .none else { return }
+        hideKidEmote(on: root)
+        let plane = SCNPlane(width: 0.85, height: 0.85)
+        let mat = SCNMaterial()
+        mat.lightingModel = .constant
+        mat.diffuse.contents = emojiImage(emote.glyph)
+        mat.isDoubleSided = true
+        plane.materials = [mat]
+        let bubble = SCNNode(geometry: plane)
+        bubble.name = "krcKidEmote"
+        bubble.position = SCNVector3(0, 2.15, 0)
+        bubble.constraints = [SCNBillboardConstraint()]
+        root.addChildNode(bubble)
+    }
+
+    private func hideKidEmote(on root: SCNNode) {
+        root.childNode(withName: "krcKidEmote", recursively: false)?.removeFromParentNode()
+    }
+
+    private func emojiImage(_ glyph: String) -> UIImage {
+        let size = CGSize(width: 128, height: 128)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in
+            (glyph as NSString).draw(
+                in: CGRect(origin: .zero, size: size),
+                withAttributes: [.font: UIFont.systemFont(ofSize: 96)]
+            )
+        }
+    }
+
+    private func addDriverTag(on root: SCNNode, name: String) {
+        root.childNode(withName: "krcDriverTag", recursively: false)?.removeFromParentNode()
+        let label = SCNText(string: String(name.prefix(12)), extrusionDepth: 0.4)
+        label.font = UIFont.systemFont(ofSize: 12, weight: .black)
+        label.flatness = 0.2
+        let mat = SCNMaterial()
+        mat.lightingModel = .constant
+        mat.diffuse.contents = UIColor.white
+        mat.emission.contents = UIColor(red: 1, green: 0.85, blue: 0.2, alpha: 1)
+        label.materials = [mat]
+        let tag = SCNNode(geometry: label)
+        tag.name = "krcDriverTag"
+        let (minB, maxB) = label.boundingBox
+        tag.pivot = SCNMatrix4MakeTranslation((minB.x + maxB.x) * 0.5, minB.y, (minB.z + maxB.z) * 0.5)
+        tag.scale = SCNVector3(0.018, 0.018, 0.018)
+        tag.position = SCNVector3(0, 1.55, 0)
+        tag.constraints = [SCNBillboardConstraint()]
+        root.addChildNode(tag)
     }
 
     private func clearRemotes() {

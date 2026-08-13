@@ -301,6 +301,9 @@ final class GameFlowState: ObservableObject {
     }
 
     func openMainMenu() {
+        Task { @MainActor in
+            GameCenterService.shared.disconnectRaceMatch()
+        }
         screen = .mainMenu
         champRoundsCompleted = 0
         champAccumulatedTime = 0

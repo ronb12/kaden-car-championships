@@ -62,6 +62,8 @@ final class RaceOpponentController {
     private static let cornerSlow: [Float] = [0.38, 0.32, 0.26]
     /// Fraction of lap between grid slots at spawn (spread so cars aren't stacked).
     private static let gridSpacing: Float = 0.028
+    /// Tight 2-wide starting grid behind the line (circuit / career / championship).
+    private static let startGridSpacing: Float = 0.010
     /// Soft leash — keep a pack fight without teleporting off-camera.
     private static let maxPackLead: Float = 0.07
     private static let maxPackTrail: Float = 0.06
@@ -128,9 +130,12 @@ final class RaceOpponentController {
                 gridT = Self.gridSpacing * Float(i + 2) + Float(i) * 0.018
                 lateral = laneW * (0.45 - Float(i) * 0.14) * (i % 2 == 0 ? -1 : 1)
             } else {
-                // Spread grid ahead of player so chase cam sees distinct cars on asphalt, not a stack.
-                gridT = Self.gridSpacing * Float(i + 1)
-                lateral = laneW * (0.55 - Float(i) * 0.18) * (i % 2 == 0 ? 1 : -1)
+                // 2-wide starting grid at the line. Player is pole (slot 0, left lane).
+                let slot = i + 1
+                let row = slot / 2
+                let col = slot % 2
+                gridT = -Self.startGridSpacing * Float(row)
+                lateral = laneW * 0.38 * (col == 0 ? -1 : 1)
             }
             opponents.append(Opponent(
                 name: slot.name,

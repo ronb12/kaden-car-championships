@@ -121,15 +121,15 @@ enum AutomotivePaintShader {
     #if targetEnvironment(simulator)
     // Slightly stronger emission only — keeps body color readable under Simulator Metal.
     let emissionStrength: CGFloat = switch tier {
-    case .race: 0.42
-    case .showroom: 0.22
-    case .photo: 0.16
+    case .race: 0.08
+    case .showroom: 0.12
+    case .photo: 0.10
     }
     #else
     let emissionStrength: CGFloat = switch tier {
-    case .race: 0.32
-    case .showroom: 0.16
-    case .photo: 0.12
+    case .race: 0.06
+    case .showroom: 0.10
+    case .photo: 0.08
     }
     #endif
     mat.emission.contents = brdf.baseColor.withAlphaComponent(emissionStrength)
@@ -139,7 +139,7 @@ enum AutomotivePaintShader {
     mat.roughness.contents = CGFloat(min(brdf.baseRoughness, 0.42))
 
     if #available(iOS 13.0, *) {
-      let coatScale: Float = tier == .race ? 0.5 : 0.85
+      let coatScale: Float = tier == .race ? 0.12 : 0.55
       let coat = min(1, brdf.clearCoat * tier.coatBoost * coatScale)
       mat.clearCoat.contents = CGFloat(coat)
       mat.clearCoatRoughness.contents = CGFloat(brdf.clearCoatRoughness)

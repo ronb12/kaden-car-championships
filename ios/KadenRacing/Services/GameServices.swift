@@ -4,6 +4,7 @@ import StoreKit
 import UIKit
 
 // MARK: - Game Center (configure IDs in App Store Connect → Services → Game Center)
+// Leaderboards + achievements, and real-time race matches (automatch, invites, nearby).
 
 enum GameCenterConfig {
     static let lapTimeLeaderboardID = "com.kaden.racing.championships.leaderboard.laptime"
@@ -53,11 +54,29 @@ final class GameCenterService: NSObject, ObservableObject, GKGameCenterControlle
     @Published var sheetRequest: GameCenterSheetRequest?
     /// Shown when leaderboards are requested but Game Center is not signed in.
     @Published var signInAlertMessage: String?
+    /// Incoming Game Center invite was accepted — start an online race.
+    @Published var pendingInviteRace = false
+    /// Live peer match (other humans). Nil when racing CPU / Neon lobby only.
+    private(set) var raceMatch: GKMatch?
+
+    enum RaceMatchOutcome: Equatable {
+        case matched
+        case cancelled
+        case failed
+    }
 
     private var didConfigureAuth = false
+    private var didRegisterListener = false
     private let firstFinishKey = "krc_gc_reported_first_finish"
+    private var matchContinuation: CheckedContinuation<RaceMatchOutcome, Never>?
+    private var lastMatchSend: TimeInterval = 0
+    private var lastPosePacket: GCRacePacket?
+    private var incomingPackets: [(id: String, name: String, data: Data)] = []
 
     private var localPlayer: GKLocalPlayer { GKLocalPlayer.local }
+
+    var hasActiveRaceMatch: Bool { raceMatch != nil }
+    var matchHumanCount: Int { 1 + (raceMatch?.players.count ?? 0) }
 
     /// Call once at launch. Requires Game Center capability in `KadenRacing.entitlements`.
     func authenticateIfNeeded() {
@@ -82,9 +101,91 @@ final class GameCenterService: NSObject, ObservableObject, GKGameCenterControlle
                     self.lastError = error.localizedDescription
                 }
                 self.refreshPlayerState()
+                if self.isAuthenticated {
+                    self.registerInviteListenerIfNeeded()
+                }
             }
         }
         refreshPlayerState()
+    }
+
+    /// Automatch, friend invites, nearby — Apple's Game Center matchmaker.
+    func presentRaceMatchmaker() async -> RaceMatchOutcome {
+        if canRematchFriends { return .matched }
+        if raceMatch != nil { disconnectRaceMatch() }
+        refreshPlayerState()
+        guard isAuthenticated else { return .cancelled }
+        #if DEBUG
+        if KRCDebugUI.isQALaunch { return .cancelled }
+        #endif
+        return await withCheckedContinuation { continuation in
+            if matchContinuation != nil {
+                continuation.resume(returning: .cancelled)
+                return
+            }
+            matchContinuation = continuation
+            let request = GKMatchRequest()
+            request.minPlayers = 2
+            request.maxPlayers = 8
+            request.inviteMessage = "Come race in Kaden Racing! No voice chat — just cars."
+            guard let controller = GKMatchmakerViewController(matchRequest: request) else {
+                matchContinuation = nil
+                continuation.resume(returning: .failed)
+                return
+            }
+            controller.matchmakerDelegate = self
+            // Nearby + friends + automatch. Never start a voice channel.
+            controller.isHosted = false
+            guard let host = UIApplication.shared.topViewController else {
+                matchContinuation = nil
+                continuation.resume(returning: .failed)
+                return
+            }
+            host.present(controller, animated: true)
+        }
+    }
+
+    func disconnectRaceMatch() {
+        raceMatch?.disconnect()
+        raceMatch?.delegate = nil
+        raceMatch = nil
+        incomingPackets.removeAll()
+        lastPosePacket = nil
+    }
+
+    /// Friends still in the match after a finish — kids can tap Race Again.
+    var canRematchFriends: Bool {
+        (raceMatch?.players.count ?? 0) >= 1
+    }
+
+    func broadcastRacePacket(_ packet: GCRacePacket) {
+        var outgoing = packet
+        outgoing.emote = nil
+        lastPosePacket = outgoing
+        guard let match = raceMatch else { return }
+        let now = Date().timeIntervalSinceReferenceDate
+        guard now - lastMatchSend >= 0.08 else { return }
+        lastMatchSend = now
+        guard let data = try? JSONEncoder().encode(outgoing) else { return }
+        try? match.sendData(toAllPlayers: data, with: .unreliable)
+    }
+
+    /// WAVE / NICE only — never free text, never voice.
+    func broadcastKidEmote(_ emote: KidRaceEmote) {
+        guard emote != .none, let match = raceMatch else { return }
+        var packet = lastPosePacket ?? GCRacePacket(
+            carId: "", colorInt: 0, name: KRCPlayerProfile.gamerName,
+            x: 0, y: 0, z: 0, angle: 0, speedKmh: 0, lap: 1, progress: 0
+        )
+        packet.emote = emote.rawValue
+        guard let data = try? JSONEncoder().encode(packet) else { return }
+        try? match.sendData(toAllPlayers: data, with: .reliable)
+    }
+
+    func drainIncomingPackets() -> [(id: String, name: String, data: Data)] {
+        let batch = incomingPackets
+        incomingPackets.removeAll(keepingCapacity: true)
+        return batch
     }
 
     func presentDashboard() {
@@ -204,6 +305,25 @@ final class GameCenterService: NSObject, ObservableObject, GKGameCenterControlle
     private func refreshPlayerState() {
         isAuthenticated = localPlayer.isAuthenticated
         playerDisplayName = isAuthenticated ? (localPlayer.displayName) : ""
+        if isAuthenticated {
+            registerInviteListenerIfNeeded()
+        }
+    }
+
+    private func registerInviteListenerIfNeeded() {
+        guard isAuthenticated, !didRegisterListener else { return }
+        didRegisterListener = true
+        localPlayer.register(self)
+    }
+
+    private func finishMatchmaking(_ outcome: RaceMatchOutcome, controller: UIViewController?) {
+        controller?.dismiss(animated: true)
+        let cont = matchContinuation
+        matchContinuation = nil
+        cont?.resume(returning: outcome)
+        if outcome == .matched, cont == nil {
+            pendingInviteRace = true
+        }
     }
 
     @discardableResult
@@ -227,6 +347,104 @@ final class GameCenterService: NSObject, ObservableObject, GKGameCenterControlle
         guard let top = UIApplication.shared.topViewController else { return }
         if top.presentedViewController is GKGameCenterViewController { return }
         top.present(viewController, animated: true)
+    }
+}
+
+/// Real-time pose sent over a Game Center match (~12 Hz, unreliable).
+struct GCRacePacket: Codable {
+    var carId: String
+    var colorInt: Int
+    var name: String
+    var x: Float
+    var y: Float
+    var z: Float
+    var angle: Float
+    var speedKmh: Int
+    var lap: Int
+    var progress: Float
+    var emote: UInt8? = nil
+}
+
+/// Kid-safe canned signals. No voice, no typing.
+enum KidRaceEmote: UInt8 {
+    case none = 0
+    case horn = 1
+    case wave = 2
+    case nice = 3
+
+    var glyph: String {
+        switch self {
+        case .none: return ""
+        case .horn: return "📣"
+        case .wave: return "👋"
+        case .nice: return "👍"
+        }
+    }
+}
+
+extension GameCenterService: GKMatchmakerViewControllerDelegate {
+    nonisolated func matchmakerViewController(_ viewController: GKMatchmakerViewController, didFind match: GKMatch) {
+        Task { @MainActor in
+            match.delegate = self
+            self.raceMatch = match
+            self.finishMatchmaking(.matched, controller: viewController)
+        }
+    }
+
+    nonisolated func matchmakerViewControllerWasCancelled(_ viewController: GKMatchmakerViewController) {
+        Task { @MainActor in
+            self.finishMatchmaking(.cancelled, controller: viewController)
+        }
+    }
+
+    nonisolated func matchmakerViewController(_ viewController: GKMatchmakerViewController, didFailWithError error: Error) {
+        Task { @MainActor in
+            self.lastError = error.localizedDescription
+            self.finishMatchmaking(.failed, controller: viewController)
+        }
+    }
+}
+
+extension GameCenterService: GKMatchDelegate {
+    nonisolated func match(_ match: GKMatch, didReceive data: Data, fromRemotePlayer player: GKPlayer) {
+        let pid = player.gamePlayerID.isEmpty ? player.displayName : player.gamePlayerID
+        let name = player.displayName
+        Task { @MainActor in
+            self.incomingPackets.append((id: pid, name: name, data: data))
+        }
+    }
+
+    nonisolated func match(_ match: GKMatch, player: GKPlayer, didChange state: GKPlayerConnectionState) {
+        Task { @MainActor in
+            if state == .disconnected, match.players.isEmpty {
+                self.statusLineSafeDisconnect()
+            }
+        }
+    }
+
+    nonisolated func match(_ match: GKMatch, didFailWithError error: Error?) {
+        Task { @MainActor in
+            if let error {
+                self.lastError = error.localizedDescription
+            }
+        }
+    }
+
+    private func statusLineSafeDisconnect() {
+        if raceMatch != nil {
+            disconnectRaceMatch()
+        }
+    }
+}
+
+extension GameCenterService: GKLocalPlayerListener {
+    nonisolated func player(_ player: GKPlayer, didAccept invite: GKInvite) {
+        Task { @MainActor in
+            guard let controller = GKMatchmakerViewController(invite: invite) else { return }
+            controller.matchmakerDelegate = self
+            controller.isHosted = false
+            UIApplication.shared.topViewController?.present(controller, animated: true)
+        }
     }
 }
 

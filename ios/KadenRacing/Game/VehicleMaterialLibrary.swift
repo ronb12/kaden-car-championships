@@ -142,13 +142,13 @@ enum VehicleMaterialLibrary {
                 alpha: a
             )
         }
-        // Keep near-white pearls bright without forcing chroma.
+        // Keep near-white pearls from blooming into chalk under race sun.
         if b > 0.88 && s < 0.12 {
-            return UIColor(hue: h, saturation: s, brightness: min(0.96, b), alpha: a)
+            return UIColor(hue: h, saturation: s, brightness: min(0.72, b), alpha: a)
         }
         if s < 0.08 { s = 0.06 }
-        else { s = min(0.82, max(0.28, s)) }
-        b = min(0.96, max(0.58, b))
+        else { s = min(0.88, max(0.22, s)) }
+        b = min(0.70, max(0.22, b))
         return UIColor(hue: h, saturation: s, brightness: b, alpha: a)
     }
 

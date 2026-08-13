@@ -890,6 +890,12 @@ enum KRCDesign {
                         .font(.system(size: 30, weight: .black, design: .rounded))
                         .foregroundStyle(neonCyan)
                         .shadow(color: neonCyan.opacity(0.35), radius: 10)
+                    if KRCPlayerProfile.onlinePlayEnabled {
+                        Text("No voice chat · WAVE or NICE to say hi")
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(mutedText)
+                            .multilineTextAlignment(.center)
+                    }
                     VStack(spacing: 10) {
                         PrimaryButton(title: "RESUME", action: onResume)
                             .accessibilityIdentifier("race.pause.resume")

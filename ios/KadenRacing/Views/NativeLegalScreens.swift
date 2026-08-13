@@ -60,6 +60,9 @@ struct NativeSettingsView: View {
                                     Text("Play online globally")
                                         .font(.subheadline.weight(.medium))
                                         .foregroundStyle(.white)
+                                    Text("Race friends, nearby players, and a public lobby. WAVE and NICE to say hi — no voice or typing. CPU fills empty grid slots. Falls back to solo if you're offline.")
+                                        .font(.caption)
+                                        .foregroundStyle(KRCDesign.mutedText)
                                     Text(online.statusLine)
                                         .font(.system(.caption, design: .monospaced).weight(.medium))
                                         .foregroundStyle(KRCDesign.mutedText)
@@ -472,7 +475,7 @@ struct PrivacyPolicyView: View {
                 )
                 legalBlock(
                     "Game Center",
-                    "If you are signed in to Game Center, Apple may process leaderboard scores according to Apple's privacy policy. Leaderboard participation is optional."
+                    "If you are signed in to Game Center, Apple may process leaderboard scores, achievements, and optional race matchmaking (including friend invites) according to Apple's privacy policy. Leaderboard and match participation are optional."
                 )
                 legalBlock(
                     "Children and Safety",
@@ -514,7 +517,7 @@ struct TermsOfServiceView: View {
                 )
                 legalBlock(
                     "Online Play",
-                    "Online features may show player names, online presence, scores, lap times, and race results. Do not cheat, disrupt other players, or use offensive names."
+                    "Online races let you race other humans. Game Center can match or invite friends. A public lobby also finds players on the same track. CPU cars fill empty grid slots. A lobby can start with one player. If Game Center or the online server is unavailable, the race continues in solo. Do not cheat, disrupt other players, or use offensive names."
                 )
                 legalBlock(
                     "Solo Play",

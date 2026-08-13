@@ -169,6 +169,9 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
     private var lastHapticImpact: Float = 0
     private var lastTime: TimeInterval = 0
     private var startTime = Date()
+    private var countdownElapsed: Float = 0
+    private var didReleaseStartGrid = false
+    private var lightsRemaining = 3
     private var paused = false
     private var finished = false
     private var nitro: Float = 1
@@ -205,6 +208,8 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
     private static let hotPursuitTimeLimit: TimeInterval = 180
 
     @Published var elapsedTime: TimeInterval = 0
+    /// 3…2…1…0 (GO)…-1 (green flag). Cars stay frozen on the grid until -1.
+    @Published private(set) var startLight: Int = 3
     @Published var displayLapIndex = 1
     @Published var driftScore: Int64 = 0
     @Published var racePosition: Int = 1
@@ -305,6 +310,13 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         audio.prepare()
         audio.beginRaceIntro()
         startTime = Date()
+        #if DEBUG
+        if RaceQAAutopilot.enabled {
+            startLight = -1
+            lightsRemaining = -1
+            didReleaseStartGrid = true
+        }
+        #endif
     }
 
     func raceScene() -> SCNScene { scene }
@@ -392,7 +404,42 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         lastTime = time
         guard !paused, !finished else { return }
         AutomotiveReflectionSystem.update(renderer: renderer, atTime: time)
-        updatePhysics(dt: Float(dt))
+        let step = Float(dt)
+        if holdStartGrid(dt: step) {
+            placeCar(dt: step)
+            syncOnlinePresence(dt: step)
+            return
+        }
+        updatePhysics(dt: step)
+    }
+
+    /// Freeze every car on the start grid through 3-2-1-GO.
+    private func holdStartGrid(dt: Float) -> Bool {
+        guard lightsRemaining >= 0, !didReleaseStartGrid else { return false }
+        openWorld.speed = 0
+        resetRaceInput()
+        countdownElapsed += dt
+        let beat: Float = lightsRemaining == 0 ? 0.70 : 1.20
+        if countdownElapsed >= beat {
+            countdownElapsed = 0
+            lightsRemaining -= 1
+            let next = lightsRemaining
+            let released = next < 0
+            if released {
+                didReleaseStartGrid = true
+                startTime = Date()
+            }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.startLight = next
+                self.elapsedTime = 0
+                if next >= 0 { KRCUISounds.playClick() }
+                if released {
+                    KRCMusicDirector.shared.play(.race, crossfade: 0.35)
+                }
+            }
+        }
+        return true
     }
 
     func speedKmh() -> Int {
@@ -664,8 +711,10 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         let startT: Float = 0
         let startP = city.track.sample(startT)
         let startTan = city.track.tangent(startT)
-        openWorld.worldX = startP.x
-        openWorld.worldZ = startP.z
+        let startRight = city.track.right(at: startT)
+        let poleLane = -(RaceTrackMesh.halfWidth * 0.22)
+        openWorld.worldX = startP.x + startRight.x * poleLane
+        openWorld.worldZ = startP.z + startRight.z * poleLane
         openWorld.heading = atan2(startTan.x, startTan.z)
         openWorld.speed = 0
         openWorld.trackT = 0
@@ -718,6 +767,7 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
     }
 
     /// Multi-car grid for standard race modes (not endless solo).
+    /// Online ghosts are extra visuals — CPU still fills these slots.
     private var shouldSpawnOpponents: Bool {
         switch mode {
         case .endless:
@@ -854,6 +904,7 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         } else if openWorld.speed < -cappedTop * 0.32 {
             openWorld.speed = -cappedTop * 0.32
         }
+        collideWithHumanRacers()
         // Impact damage — durability softens the hit.
         if openWorld.impactImpulse > 0.35 {
             let hit = openWorld.impactImpulse * 0.08 / max(0.55, stats.durabilityMul)
@@ -1086,7 +1137,7 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
             self.displayLapIndex = capturedLap
             self.driftScore = capturedDrift
             self.racePosition = newPosition
-            self.racerCount = newRacerCount
+            self.racerCount = newRacerCount + HumanRacerPoseCache.shared.snapshot().count
             self.wrongWayActive = wrongWayNow
             if self.mode != .courier {
                 self.arcadeCrystals = arcadeSnap.crystalsCollected
@@ -1195,6 +1246,8 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         let camShake: Float = 1
         #endif
         let camLateral = openWorld.driftYaw * openWorld.speed
+        let showGrid = lightsRemaining >= 0 && !didReleaseStartGrid
+        let pack = startingPackFrame(playerCenter: carCenter)
         cameraRig.update(
             cameraNode: cameraNode,
             carPosition: carCenter,
@@ -1206,8 +1259,30 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
             driftTilt: smoothedBodyRoll * 0.55,
             impactImpulse: openWorld.impactImpulse,
             lateralVelocity: camLateral,
-            shakeScale: camShake
+            shakeScale: camShake,
+            gridIntro: showGrid,
+            packCenter: pack.center,
+            packRadius: pack.radius
         )
+    }
+
+    /// AABB-ish pack used to frame every grid car during 3-2-1.
+    private func startingPackFrame(playerCenter: SIMD3<Float>) -> (center: SIMD3<Float>, radius: Float) {
+        var points: [SIMD3<Float>] = [playerCenter]
+        if let ops = opponents?.opponents {
+            for opp in ops where !opp.node.isHidden && opp.node.name != "krcHumanRacer" {
+                let p = opp.node.position
+                points.append(SIMD3<Float>(p.x, p.y + 0.55, p.z))
+            }
+        }
+        var sum = SIMD3<Float>.zero
+        for p in points { sum += p }
+        let center = sum / Float(max(1, points.count))
+        var radius: Float = 5.5
+        for p in points {
+            radius = max(radius, simd_distance(p, center))
+        }
+        return (center, radius + 2.2)
     }
 
     private func logCarSpeedQA() {
@@ -1258,11 +1333,13 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
             var position = aiPosition
             var racerCount = aiRacerCount
             if KRCPlayerProfile.onlinePlayEnabled, let ctx = onlineContext {
-                if let live = await KRCOnlineService.shared.submitLiveFinish(
+                if KRCOnlineService.shared.liveHumansEnabled,
+                   let live = await KRCOnlineService.shared.submitLiveFinish(
                     finishMs: Int64(elapsed * 1000),
                     fallbackPosition: aiPosition
                 ) {
                     // Prefer live lobby standing when other humans are present.
+                    // CPU still fills the grid — mix human count into the field size.
                     if live.humanCount > 1 {
                         position = live.humanPosition
                         racerCount = max(aiRacerCount, live.humanCount)
@@ -1362,6 +1439,25 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         courier.detach()
         Task { @MainActor in
             KRCOnlineService.shared.endRaceSession()
+        }
+    }
+
+    /// Arcade bumper vs live humans — they race you, not SceneKit ghosts.
+    private func collideWithHumanRacers() {
+        let poses = HumanRacerPoseCache.shared.snapshot()
+        guard !poses.isEmpty else { return }
+        let minDist: Float = 2.35
+        for pose in poses {
+            let dx = openWorld.worldX - pose.x
+            let dz = openWorld.worldZ - pose.z
+            let dist = sqrt(dx * dx + dz * dz)
+            guard dist > 0.05, dist < minDist else { continue }
+            let inv = 1 / dist
+            let push = (minDist - dist) * 0.9
+            openWorld.worldX += dx * inv * push
+            openWorld.worldZ += dz * inv * push
+            openWorld.speed *= 0.78
+            openWorld.impactImpulse = max(openWorld.impactImpulse, 0.5)
         }
     }
 

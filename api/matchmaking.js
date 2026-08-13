@@ -34,6 +34,9 @@ export default async function handler(req, res) {
       return json(res, 200, { ok: true, enabled: true, lobby: null, players: [] });
     }
 
+    // Lobbies start on a timer even with 1 player. Cap a room at 8 humans;
+    // overflow opens a new lobby. Starts are not frame-synced across phones.
+    const maxHumans = 8;
     if (type === 'join' || !lobbyId) {
       const open = await sql`
         SELECT lobby_id, track_key, mode, starts_at
@@ -43,7 +46,17 @@ export default async function handler(req, res) {
         ORDER BY created_at DESC
         LIMIT 1
       `;
+      let joinExisting = false;
       if (open.length) {
+        const counted = await sql`
+          SELECT COUNT(*)::int AS n
+          FROM krc_presence
+          WHERE lobby_id = ${open[0].lobby_id}
+            AND updated_at > NOW() - INTERVAL '2 minutes'
+        `;
+        joinExisting = (counted[0]?.n ?? 0) < maxHumans;
+      }
+      if (joinExisting) {
         lobbyId = open[0].lobby_id;
       } else {
         lobbyId = 'krc-' + Math.random().toString(36).slice(2, 10);

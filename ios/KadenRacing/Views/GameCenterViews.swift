@@ -52,7 +52,7 @@ struct GameCenterSettingsSection: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white)
                     Text(gameCenter.isAuthenticated
-                        ? "Race times sync to Game Center leaderboards"
+                        ? "Race friends, nearby, and invites. No voice chat. Scores and achievements too."
                         : "Tap Sign In, or use Settings → Game Center on your device")
                         .font(.caption)
                         .foregroundStyle(KRCDesign.mutedText)

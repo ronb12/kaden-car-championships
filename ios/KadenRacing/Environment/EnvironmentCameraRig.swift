@@ -16,6 +16,9 @@ struct EnvironmentCameraRig {
     private var smoothedFocus = SCNVector3Zero
     private var shakePhase: Float = 0
     var initialized = false
+    /// 1 = starting-grid wide shot, 0 = chase. Blends out after lights out.
+    private var introBlend: Float = 1
+    private var introOrbit: Float = 0
 
     mutating func update(
         cameraNode: SCNNode,
@@ -28,7 +31,10 @@ struct EnvironmentCameraRig {
         driftTilt: Float = 0,
         impactImpulse: Float = 0,
         lateralVelocity: Float = 0,
-        shakeScale: Float = 1
+        shakeScale: Float = 1,
+        gridIntro: Bool = false,
+        packCenter: SIMD3<Float>? = nil,
+        packRadius: Float = 8
     ) {
         let flatForward = simd_normalize(SIMD3<Float>(forward.x, 0, forward.z))
         let right = SIMD3<Float>(flatForward.z, 0, -flatForward.x)
@@ -38,6 +44,26 @@ struct EnvironmentCameraRig {
             speedRatio: speedRatio,
             portrait: portrait
         )
+        if gridIntro {
+            introBlend = 1
+            introOrbit += dt * 0.28
+        } else {
+            introBlend = max(0, introBlend - dt * 0.95)
+        }
+        if introBlend > 0.01 {
+            let pack = packCenter ?? carPosition
+            let (gEye, gFocus, gFOV) = gridTargets(
+                packCenter: pack,
+                forward: flatForward,
+                packRadius: packRadius,
+                portrait: portrait,
+                orbit: introOrbit
+            )
+            let u = introBlend
+            eye = gEye * u + eye * (1 - u)
+            focus = gFocus * u + focus * (1 - u)
+            baseFOV = gFOV * CGFloat(u) + baseFOV * CGFloat(1 - u)
+        }
 
         let driftRoll = driftTilt * 0.36
         eye += right * lateralVelocity * 0.05
@@ -49,11 +75,11 @@ struct EnvironmentCameraRig {
             initialized = true
         }
 
-        // Snap when parked so the chase cam does not crawl and moire the road texture.
+        // Snap when parked — except while blending out of the grid intro shot.
         #if targetEnvironment(simulator)
-        let smoothAlpha = speedRatio < 0.03 ? 1 : min(1, dt * (mode == .cockpit ? 14 : 11))
+        let smoothAlpha = (speedRatio < 0.03 && introBlend < 0.02) ? 1 : min(1, dt * (mode == .cockpit ? 14 : 11))
         #else
-        let smoothAlpha = speedRatio < 0.03 ? 1 : min(1, dt * (mode == .cockpit ? 10 : 6.5))
+        let smoothAlpha = (speedRatio < 0.03 && introBlend < 0.02) ? 1 : min(1, dt * (mode == .cockpit ? 10 : 6.5))
         #endif
         smoothedEye = smoothedEye.lerped(to: SCNVector3(eye.x, eye.y, eye.z), alpha: smoothAlpha)
         smoothedFocus = smoothedFocus.lerped(to: SCNVector3(focus.x, focus.y, focus.z), alpha: smoothAlpha)
@@ -123,6 +149,28 @@ struct EnvironmentCameraRig {
             let focus = carPosition + forward * 26 + SIMD3<Float>(0, -0.04, 0)
             return (eye, focus, portrait ? 86 : 80)
         }
+    }
+
+    /// High 3/4 of the whole starting pack — not the chase bumper cam.
+    private func gridTargets(
+        packCenter: SIMD3<Float>,
+        forward: SIMD3<Float>,
+        packRadius: Float,
+        portrait: Bool,
+        orbit: Float
+    ) -> (SIMD3<Float>, SIMD3<Float>, CGFloat) {
+        let radius = max(6, packRadius)
+        let dist: Float = max(14, radius * 1.85 + (portrait ? 9 : 8))
+        let height: Float = max(8.5, radius * 1.15 + (portrait ? 8.2 : 7.0))
+        let side: Float = max(14, radius * 1.35 + (portrait ? 11 : 12))
+        let swing = sin(orbit) * 0.18
+        let right = SIMD3<Float>(forward.z, 0, -forward.x)
+        let sideNow = side * (0.92 + swing)
+        var eye = packCenter - forward * dist + right * sideNow + SIMD3<Float>(0, height, 0)
+        eye.y = max(eye.y, packCenter.y + 6.5)
+        let focus = packCenter - forward * (radius * 0.08) + SIMD3<Float>(0, 0.25, 0)
+        let fov: CGFloat = portrait ? 62 : 58
+        return (eye, focus, fov)
     }
 
     private func aim(cameraNode: SCNNode, eye: SCNVector3, focus: SCNVector3, roll: Float) {

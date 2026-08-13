@@ -40,12 +40,13 @@ enum VehicleLighting {
         root.childNode(withName: "krcVehicleFillDir", recursively: true)?.removeFromParentNode()
 
         let showroom = lod == .garage
+        // Race already has a 2600 sun — extra per-car fills were bleaching every body white.
         let omni = SCNNode()
         omni.name = "krcVehicleFill"
         omni.light = SCNLight()
         omni.light?.type = .omni
-        omni.light?.intensity = showroom ? 2400 : 3200
-        omni.light?.color = UIColor(red: 0.96, green: 0.97, blue: 1.0, alpha: 1)
+        omni.light?.intensity = showroom ? 900 : 160
+        omni.light?.color = UIColor(red: 1.0, green: 0.96, blue: 0.90, alpha: 1)
         omni.position = SCNVector3(0.8, 1.0, 2.2)
         root.addChildNode(omni)
 
@@ -53,8 +54,8 @@ enum VehicleLighting {
         dir.name = "krcVehicleFillDir"
         dir.light = SCNLight()
         dir.light?.type = .directional
-        dir.light?.intensity = showroom ? 1100 : 1400
-        dir.light?.color = UIColor(white: 0.98, alpha: 1)
+        dir.light?.intensity = showroom ? 420 : 70
+        dir.light?.color = UIColor(red: 1.0, green: 0.97, blue: 0.92, alpha: 1)
         dir.eulerAngles = SCNVector3(-0.65, 0.35, 0)
         root.addChildNode(dir)
     }
@@ -275,7 +276,7 @@ enum VehicleLighting {
         switch weather {
         case .night: return 1
         case .sunset: return 0.55
-        case .day: return 0.58
+        case .day: return 0.12
         }
     }
 
