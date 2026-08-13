@@ -154,11 +154,11 @@ struct VehicleDrivingSimulation {
 
         // —— Lateral: grip, drift, steering assist, downforce stability ——
         let gripBase = config.stats.gripMul * config.difficultyGripMul * config.surfaceGrip
-        let downforceGrip = 1 + state.downforce * 0.35
-        var grip = gripBase * downforceGrip * (1 - config.cornerSeverity * 0.22)
+        let downforceGrip = 1 + state.downforce * 0.48
+        var grip = gripBase * downforceGrip * (1 - config.cornerSeverity * 0.16)
 
-        let speedSteerScale = max(manual ? 0.52 : 0.28, 1 - speedRatio * (manual ? 0.42 : 0.72))
-        var steerAuthority = smoothedSteer * (manual ? 8.4 : 6.8) * speedSteerScale * grip
+        let speedSteerScale = max(manual ? 0.56 : 0.32, 1 - speedRatio * (manual ? 0.38 : 0.66))
+        var steerAuthority = smoothedSteer * (manual ? 8.8 : 7.2) * speedSteerScale * grip
 
         if prefs.steeringAssist > 0.01 {
             let centering = -state.lateral * prefs.steeringAssist * (0.9 + speedRatio * 0.4)
@@ -166,7 +166,7 @@ struct VehicleDrivingSimulation {
         }
 
         state.lateralVelocity += steerAuthority * dtClamped
-        state.lateralVelocity -= state.lateralVelocity * min(1, dtClamped * (2.2 + grip * 1.4))
+        state.lateralVelocity -= state.lateralVelocity * min(1, dtClamped * (2.7 + grip * 1.75))
 
         let slip = min(1, abs(state.lateralVelocity) / max(0.02, state.speed + 0.04))
         state.slipAmount = slip
@@ -213,14 +213,14 @@ struct VehicleDrivingSimulation {
 
         // —— Body / suspension visuals ——
         let latNorm = state.lateral / max(1, config.maxLateral)
-        let targetRoll = -latNorm * 0.11 - smoothedSteer * 0.04 * speedRatio
-        let targetPitch = smoothedBrake * 0.06 - smoothedThrottle * 0.035 + config.cornerSeverity * 0.03
-        state.bodyRoll += (targetRoll - state.bodyRoll) * min(1, dtClamped * 9)
-        state.bodyPitch += (targetPitch - state.bodyPitch) * min(1, dtClamped * 8)
+        let targetRoll = -latNorm * 0.16 - smoothedSteer * 0.055 * speedRatio
+        let targetPitch = smoothedBrake * 0.09 - smoothedThrottle * 0.048 + config.cornerSeverity * 0.035
+        state.bodyRoll += (targetRoll - state.bodyRoll) * min(1, dtClamped * 10)
+        state.bodyPitch += (targetPitch - state.bodyPitch) * min(1, dtClamped * 9)
 
         let time = Float(Date().timeIntervalSinceReferenceDate)
-        let bump = sin(time * 11) * 0.0012 * (0.35 + speedRatio * 0.25)
-        let compress = smoothedBrake * 0.022 + smoothedThrottle * 0.014 + slip * 0.012
+        let bump = sin(time * 13) * 0.0022 * (0.4 + speedRatio * 0.35)
+        let compress = smoothedBrake * 0.03 + smoothedThrottle * 0.018 + slip * 0.016
         state.suspension.x = compress + bump
         state.suspension.y = compress * 0.9 - bump * 0.5
         state.suspension.z = compress + bump * 0.8

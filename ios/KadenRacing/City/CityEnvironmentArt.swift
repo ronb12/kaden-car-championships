@@ -186,8 +186,8 @@ enum CityEnvironmentArt {
             skyHorizonDay: nil,
             skyHorizonSunset: nil,
             groundDay: nil,
-            windowDay: UIColor(red: 0.48, green: 0.58, blue: 0.68, alpha: 0.75),
-            windowNight: UIColor(red: 0.88, green: 0.78, blue: 0.52, alpha: 0.9),
+            windowDay: UIColor(red: 0.16, green: 0.22, blue: 0.28, alpha: 1),
+            windowNight: UIColor(red: 0.88, green: 0.78, blue: 0.52, alpha: 1),
             billboardColors: defaultBillboards(for: visual)
         )
 
@@ -244,7 +244,7 @@ enum CityEnvironmentArt {
         case .neonNight, .coastalNeon:
             [rgb(0x508898), rgb(0x986878), rgb(0x689068), rgb(0xA07050)]
         case .urbanDense, .industrialPort:
-            [rgb(0xC8C8C8), rgb(0x989898), rgb(0xA85858), rgb(0x5870A0)]
+            [rgb(0xA85838), rgb(0x585850), rgb(0xA85858), rgb(0x5870A0)]
         default:
             [rgb(0x5088A0), rgb(0xA87048), rgb(0x588858), rgb(0x886888)]
         }
@@ -265,7 +265,7 @@ enum CityEnvironmentArt {
             profile.skylineHighRiseBias = 0.82
             profile.decorDensityMul = 1.08
             profile.windowNight = rgb(0x88DDFF)
-            profile.billboardColors = [rgb(0xFF2244), rgb(0x00CCFF), rgb(0xFFEE00), rgb(0xFFFFFF)]
+            profile.billboardColors = [rgb(0xFF2244), rgb(0x00CCFF), rgb(0xFFEE00), rgb(0xC45A28)]
         case .gulfSpires:
             profile.skylineHighRiseBias = 0.88
             profile.skylineCount = 44
@@ -286,7 +286,7 @@ enum CityEnvironmentArt {
             profile.fogSunset = rgb(0xFFCCAA)
             profile.foliage = rgb(0x2D7A20)
             profile.trunk = rgb(0x6B403F)
-            profile.windowDay = rgb(0x55B8E8)
+            profile.windowDay = rgb(0x243848)
             profile.windowNight = rgb(0xFFE090)
         case .coralNeonShores:
             profile.prefersOcean = true

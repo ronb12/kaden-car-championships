@@ -172,8 +172,9 @@ final class CourierDeliverySystem {
 
     private(set) var snapshot = Snapshot()
 
-    static let defaultTimeLimit: TimeInterval = 210
-    static let defaultGoal = 6
+    static let defaultTimeLimit: TimeInterval = 120
+    static let defaultGoal = 3
+    private var autoPickFirst = false
 
     func attach(
         to parent: SCNNode,
@@ -184,11 +185,13 @@ final class CourierDeliverySystem {
         careerMul: Float = 1,
         cargoCapacity: Int = 1,
         nightPremium: Bool = false,
-        timeBonus: TimeInterval = 0
+        timeBonus: TimeInterval = 0,
+        autoPickFirst: Bool = true
     ) {
         detach()
         self.track = track
-        self.goal = max(4, min(8, goal))
+        self.autoPickFirst = autoPickFirst
+        self.goal = max(2, min(8, goal))
         self.timeLimit = timeLimit + timeBonus
         self.careerMul = max(1, careerMul)
         self.cargoCapacity = max(1, min(3, cargoCapacity))
@@ -306,8 +309,13 @@ final class CourierDeliverySystem {
         rivalNode = rival
 
         let nightTag = nightPremium ? " · NIGHT RATES" : ""
-        showToast("COURIER DISPATCH\(nightTag) — PICK A JOB", duration: 2.4)
-        presentJobOffers(count: 3, first: true)
+        presentJobOffers(count: autoPickFirst ? 1 : 3, first: true)
+        if autoPickFirst, let first = offers.first {
+            showToast("COURIER\(nightTag) — FOLLOW THE ARROW", duration: 2.0)
+            selectOffer(id: first.id)
+        } else {
+            showToast("COURIER DISPATCH\(nightTag) — PICK A JOB", duration: 2.4)
+        }
         refreshSnapshot(worldX: 0, worldZ: 0, heading: 0)
     }
 

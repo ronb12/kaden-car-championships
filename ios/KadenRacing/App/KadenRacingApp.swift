@@ -18,9 +18,7 @@ struct KadenRacingApp: App {
                     GameCenterService.shared.authenticateIfNeeded()
                     #endif
                     MenuIntroAudioController.shared.warmUpAudio()
-                    if !MinimalRaceEnvironment.isEnabled {
-                        KenneyEnvironmentLoader.prewarm()
-                    }
+                    KenneyEnvironmentLoader.prewarm()
                 }
         }
     }

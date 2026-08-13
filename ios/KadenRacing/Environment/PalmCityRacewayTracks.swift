@@ -37,11 +37,11 @@ enum PalmCityRacewayTracks {
         var defaultLaps: Int {
             // Short races by default — track select stepper lets players go higher (up to 30).
             switch self {
-            case .bayviewSprint: return 3
-            case .harborRun: return 3
-            case .downtownLoop, .industrialCircuit: return 3
-            case .coastalDash: return 3
-            case .fullThrottle: return 3
+            case .bayviewSprint: return 4
+            case .harborRun: return 4
+            case .downtownLoop, .industrialCircuit: return 4
+            case .coastalDash: return 4
+            case .fullThrottle: return 5
             }
         }
 
@@ -53,7 +53,7 @@ enum PalmCityRacewayTracks {
         }
     }
 
-    private static let scale: Float = 1.45
+    private static let scale: Float = 2.5
 
     static func makeTrack(index: Int) -> ClosedTrackSpline {
         let layout = Layout(rawValue: ((index % Layout.allCases.count) + Layout.allCases.count) % Layout.allCases.count) ?? .harborRun
@@ -136,8 +136,7 @@ enum PalmCityRacewayTracks {
             let c = cos(t)
             let x = 112 * s + 26 * sin(2 * t) + 10 * cos(5 * t)
             let z = 82 * c + 22 * cos(3 * t) + 14 * sin(4 * t)
-            let sector = max(0, sin(t - 0.5))
-            let y = sector * sector * 10
+            let y = 6.5 * sin(t - 0.5) + 2.4 * sin(2.2 * t)
             return SIMD3<Float>(x, y, z)
         }
     }

@@ -129,6 +129,7 @@ struct MenuCarDriveInView: UIViewRepresentable {
             root.position = SCNVector3(MenuCarDriveInView.startX, 0, 0)
             scene.rootNode.addChildNode(root)
             carRoot = root
+            RaceParticles.prepareMenuCar(root)
             if let scene = view.scene {
                 AutomotiveReflectionSystem.bindScene(scene, to: root)
             }
@@ -225,6 +226,9 @@ struct MenuCarDriveInView: UIViewRepresentable {
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.72) { [weak self] in
                 self?.isRevving = false
+                if let root = self?.carRoot {
+                    RaceParticles.updateMenuExhaust(on: root, active: false)
+                }
             }
         }
 
@@ -252,6 +256,7 @@ struct MenuCarDriveInView: UIViewRepresentable {
             // Same +X roll as race (procedural wheelGroup + USDZ tire meshes).
             let spinSpeed = isDriving ? Self.driveSpinSpeed : Self.revSpinSpeed
             WheelAssembly.spinWheels(in: root, speed: spinSpeed, dt: dt)
+            RaceParticles.updateMenuExhaust(on: root, active: isDriving || isRevving)
 
             if isRevving {
                 settleBob += 0.14

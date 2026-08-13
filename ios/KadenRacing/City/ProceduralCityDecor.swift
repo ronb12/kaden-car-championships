@@ -74,6 +74,141 @@ enum ProceduralCityDecor {
         }
     }
 
+    /// Circuit roadside: Kenney + opaque shells, never on the racing line.
+    /// Courier storefronts / shopfronts stay Courier-only.
+    static func buildRaceSafeLayer(
+        into parent: SCNNode,
+        city: CityRuntimeConfig,
+        night: Bool,
+        quality: GraphicsQuality = EnvironmentGraphicsSettings.quality
+    ) {
+        let track = city.track
+        let pts = track.points
+        guard pts.count >= 8 else { return }
+
+        let art = CityEnvironmentArt.profile(for: city)
+        var rng = SeededRandom(seed: city.seed ^ 0x9A5E_51DE)
+
+        buildRoadsideTrees(
+            into: parent, track: track, night: night,
+            coastal: art.prefersPalms, art: art, rng: &rng
+        )
+        buildRoadBarriers(into: parent, track: track, rng: &rng)
+
+        let step = raceBuildingStep(
+            pointCount: pts.count,
+            densityMul: art.decorDensityMul,
+            quality: quality,
+            profile: city.trackProfile
+        )
+        let secondRowChance: Float = quality == .low ? 0.28 : 0.52
+        let minLat = TrackRoadsideClearance.buildingMinLateral
+
+        for i in stride(from: 0, to: pts.count, by: step) {
+            let t = Float(i) / Float(pts.count)
+            let base = track.position(at: t)
+            let right = track.right(at: t)
+            let yaw = atan2(right.x, right.z)
+
+            for side: Float in [-1, 1] {
+                placeRaceBuilding(
+                    into: parent, city: city, track: track, night: night, rng: &rng,
+                    base: base, right: right, side: side, yaw: yaw,
+                    setback: minLat + rng.float(in: 2...12)
+                )
+                if rng.unitFloat() < secondRowChance {
+                    placeRaceBuilding(
+                        into: parent, city: city, track: track, night: night, rng: &rng,
+                        base: base, right: right, side: side, yaw: yaw + rng.float(in: -0.06...0.06),
+                        setback: minLat + 22 + rng.float(in: 6...18)
+                    )
+                }
+            }
+
+            if rng.unitFloat() < 0.38 {
+                let side: Float = rng.unitFloat() > 0.5 ? 1 : -1
+                let roadside = art.prefersPalms
+                    ? TrackRoadsideClearance.palmMinLateral
+                    : TrackRoadsideClearance.treeMinLateral
+                let p = base + right * ((roadside + rng.float(in: 2...8)) * side)
+                attachProp(
+                    to: parent, city: city, art: art, near: p, right: right,
+                    track: track, night: night, rng: &rng
+                )
+            }
+        }
+    }
+
+    private static func placeRaceBuilding(
+        into parent: SCNNode,
+        city: CityRuntimeConfig,
+        track: ClosedTrackSpline,
+        night: Bool,
+        rng: inout SeededRandom,
+        base: SIMD3<Float>,
+        right: SIMD3<Float>,
+        side: Float,
+        yaw: Float,
+        setback: Float
+    ) {
+        let pos = base + right * (setback * side)
+        let blockKind: BuildingBlockKind = {
+            switch city.trackProfile {
+            case .desertHighway: return .desertCompound
+            case .alpineRidge: return rng.unitFloat() < 0.62 ? .residential : .lowRise
+            case .coastalOpen, .coastalCityCircuit, .stormHarbor:
+                return rng.unitFloat() < 0.58 ? .coastalResort : pickWeighted(city.definition.buildingWeights, roll: rng.unitFloat())
+            default:
+                return pickWeighted(city.definition.buildingWeights, roll: rng.unitFloat())
+            }
+        }()
+        let h = height(for: blockKind, rng: &rng)
+        let w = 7 + rng.float(in: 0...8)
+        let d = 7 + rng.float(in: 0...8)
+        _ = yaw
+
+        // Solid boxes only — Kenney city kits are hollow (window holes) and read as see-through.
+        let buildingNode = buildingWithWindows(
+            kind: blockKind, width: w, height: h, depth: d,
+            night: night, art: CityEnvironmentArt.profile(for: city), rng: &rng,
+            includeShopfront: false
+        )
+        buildingNode.position = SCNVector3(pos.x, base.y + Float(h) * 0.5, pos.z)
+        let faceTrack = atan2(-right.x * side, -right.z * side)
+        buildingNode.eulerAngles.y = faceTrack + rng.float(in: -0.06...0.06)
+        KenneyEnvironmentLoader.forceOpaque(buildingNode)
+        TrackRoadsideClearance.secure(
+            buildingNode, track: track,
+            minLateral: TrackRoadsideClearance.buildingMinLateral,
+            extraFootprint: max(w, d) * 0.5
+        )
+        buildingNode.castsShadow = h > 12
+        parent.addChildNode(buildingNode)
+    }
+
+    private static func raceBuildingStep(
+        pointCount: Int,
+        densityMul: Float,
+        quality: GraphicsQuality,
+        profile: EnvironmentTrackProfile
+    ) -> Int {
+        let target: Float = switch quality {
+        case .low: 26
+        case .medium: 38
+        case .high: 52
+        case .ultra: 68
+        }
+        let biome: Float = switch profile {
+        case .urbanNight: 1.3
+        case .coastalCityCircuit, .coastalOpen, .stormHarbor: 0.95
+        case .desertHighway, .alpineRidge: 0.28
+        case .speedwayOval: 0.38
+        default: 0.85
+        }
+        let count = target * max(0.7, densityMul) * biome
+        return max(4, Int(Float(pointCount) / max(10, count)))
+    }
+
     private static func placeBuilding(
         into parent: SCNNode,
         city: CityRuntimeConfig,
@@ -263,6 +398,7 @@ enum ProceduralCityDecor {
                 KenneyEnvironmentLoader.alignBuildingToGround(tree, groundY: base.y)
                 tree.eulerAngles.y = yaw + rng.float(in: -0.4...0.4)
                 TrackRoadsideClearance.pushOutsideRoad(tree, track: track, minLateral: minLateral)
+                KenneyEnvironmentLoader.forceOpaque(tree)
                 tree.castsShadow = true
                 parent.addChildNode(tree)
             }
@@ -297,18 +433,21 @@ enum ProceduralCityDecor {
 
     private static func buildingWithWindows(
         kind: BuildingBlockKind, width: Float, height: Float, depth: Float,
-        night: Bool, art: CityEnvironmentArt.Profile, rng: inout SeededRandom
+        night: Bool, art: CityEnvironmentArt.Profile, rng: inout SeededRandom,
+        includeShopfront: Bool = true
     ) -> SCNNode {
         let root = SCNNode()
         let baseColor = tint(for: kind, night: night, art: art, rng: &rng)
 
-        // Main building body
+        // Lambert + multiply: PBR + race sun (2600) was clipping even mid-tone stucco to white.
         let bodyMat = SCNMaterial()
-        bodyMat.lightingModel = .physicallyBased
-        bodyMat.diffuse.contents = baseColor
-        bodyMat.metalness.contents = night ? 0.08 : 0.02
-        bodyMat.roughness.contents = night ? 0.72 : 0.82
-        bodyMat.specular.contents = UIColor(white: 0.2, alpha: 1)
+        bodyMat.lightingModel = .lambert
+        bodyMat.diffuse.contents = baseColor.withAlphaComponent(1)
+        bodyMat.metalness.contents = 0
+        bodyMat.roughness.contents = 0.94
+        bodyMat.specular.contents = UIColor.black
+        VehicleMaterialLibrary.configureFullyOpaque(bodyMat)
+        bodyMat.multiply.contents = UIColor(white: night ? 0.58 : 0.38, alpha: 1)
         let box = SCNBox(width: CGFloat(width), height: CGFloat(height), length: CGFloat(depth), chamferRadius: 0.08)
         box.materials = Array(repeating: bodyMat, count: 6)
         root.geometry = box
@@ -317,11 +456,16 @@ enum ProceduralCityDecor {
         let windowColor: UIColor = night ? art.windowNight : art.windowDay
 
         let windowMat = SCNMaterial()
-        windowMat.lightingModel = .physicallyBased
-        windowMat.diffuse.contents = windowColor
-        if night { windowMat.emission.contents = UIColor(red: 0.92, green: 0.78, blue: 0.48, alpha: 0.22) }
-        windowMat.roughness.contents = night ? 0.5 : 0.1
-        windowMat.metalness.contents = night ? 0.0 : 0.7
+        windowMat.lightingModel = .lambert
+        windowMat.diffuse.contents = windowColor.withAlphaComponent(1)
+        if night {
+            windowMat.emission.contents = UIColor(red: 0.72, green: 0.58, blue: 0.32, alpha: 1)
+        }
+        windowMat.roughness.contents = 0.55
+        windowMat.metalness.contents = 0.04
+        windowMat.specular.contents = UIColor.black
+        VehicleMaterialLibrary.configureFullyOpaque(windowMat)
+        windowMat.multiply.contents = UIColor(white: night ? 0.85 : 0.55, alpha: 1)
 
         let floors = max(2, Int(height / 3.5))
         let cols = max(2, Int(width / 2.8))
@@ -331,7 +475,7 @@ enum ProceduralCityDecor {
         for floor in 0..<floors {
             let fy = CGFloat(floor) * (CGFloat(height) / CGFloat(floors)) - CGFloat(height) * 0.5 + CGFloat(height) / CGFloat(floors) * 0.5
             for col in 0..<cols {
-                guard night || rng.unitFloat() > 0.15 else { continue }
+                guard night || rng.unitFloat() > 0.38 else { continue }
                 let fx = CGFloat(col) * (CGFloat(width) / CGFloat(cols)) - CGFloat(width) * 0.5 + CGFloat(width) / CGFloat(cols) * 0.5
                 let wGeo = SCNBox(width: wW, height: wH, length: 0.05, chamferRadius: 0.02)
                 wGeo.materials = [windowMat]
@@ -341,39 +485,42 @@ enum ProceduralCityDecor {
             }
         }
 
-        // Courier-style loading bay / shopfront facing the track (+Z after yaw).
-        let doorW = min(CGFloat(width) * 0.48, 5.8)
-        let doorH = min(CGFloat(height) * 0.38, 4.2)
-        let door = SCNBox(width: doorW, height: doorH, length: 0.32, chamferRadius: 0.04)
-        let doorMat = SCNMaterial()
-        doorMat.lightingModel = .constant
-        doorMat.diffuse.contents = UIColor(white: night ? 0.05 : 0.08, alpha: 1)
-        doorMat.emission.contents = UIColor(white: night ? 0.06 : 0.03, alpha: 1)
-        door.materials = [doorMat]
-        let doorNode = SCNNode(geometry: door)
-        doorNode.position = SCNVector3(0, -CGFloat(height) * 0.5 + doorH * 0.5 + 0.2, CGFloat(depth) * 0.5 + 0.04)
-        root.addChildNode(doorNode)
+        if includeShopfront {
+            // Courier-style loading bay / shopfront facing the track (+Z after yaw).
+            let doorW = min(CGFloat(width) * 0.48, 5.8)
+            let doorH = min(CGFloat(height) * 0.38, 4.2)
+            let door = SCNBox(width: doorW, height: doorH, length: 0.32, chamferRadius: 0.04)
+            let doorMat = SCNMaterial()
+            doorMat.lightingModel = .constant
+            doorMat.diffuse.contents = UIColor(white: night ? 0.05 : 0.08, alpha: 1)
+            doorMat.emission.contents = UIColor(white: night ? 0.06 : 0.03, alpha: 1)
+            door.materials = [doorMat]
+            let doorNode = SCNNode(geometry: door)
+            doorNode.position = SCNVector3(0, -CGFloat(height) * 0.5 + doorH * 0.5 + 0.2, CGFloat(depth) * 0.5 + 0.04)
+            root.addChildNode(doorNode)
 
-        let awningColor = art.billboardColors.isEmpty
-            ? (night ? art.windowNight : UIColor(red: 0.85, green: 0.35, blue: 0.2, alpha: 1))
-            : art.billboardColors[Int(rng.unitFloat() * Float(art.billboardColors.count)) % art.billboardColors.count]
-        let awning = SCNBox(width: doorW + 1.1, height: 0.16, length: 2.4, chamferRadius: 0.03)
-        let awnMat = SCNMaterial()
-        awnMat.lightingModel = .physicallyBased
-        awnMat.diffuse.contents = awningColor
-        awnMat.emission.contents = awningColor.withAlphaComponent(night ? 0.35 : 0.18)
-        awnMat.roughness.contents = 0.5
-        awning.materials = [awnMat]
-        let awnNode = SCNNode(geometry: awning)
-        awnNode.position = SCNVector3(0, -CGFloat(height) * 0.5 + doorH + 0.45, CGFloat(depth) * 0.5 + 1.05)
-        root.addChildNode(awnNode)
+            let awningColor = art.billboardColors.isEmpty
+                ? (night ? art.windowNight : UIColor(red: 0.85, green: 0.35, blue: 0.2, alpha: 1))
+                : art.billboardColors[Int(rng.unitFloat() * Float(art.billboardColors.count)) % art.billboardColors.count]
+            let awning = SCNBox(width: doorW + 1.1, height: 0.16, length: 2.4, chamferRadius: 0.03)
+            let awnMat = SCNMaterial()
+            awnMat.lightingModel = .physicallyBased
+            awnMat.diffuse.contents = awningColor
+            awnMat.emission.contents = awningColor.withAlphaComponent(night ? 0.35 : 0.18)
+            awnMat.roughness.contents = 0.5
+            awning.materials = [awnMat]
+            let awnNode = SCNNode(geometry: awning)
+            awnNode.position = SCNVector3(0, -CGFloat(height) * 0.5 + doorH + 0.45, CGFloat(depth) * 0.5 + 1.05)
+            root.addChildNode(awnNode)
+        }
 
-        // Horizontal concrete spandrel bands between every 3–4 floors
+        // Horizontal spandrel bands — same hue as the facade, not chalk-gray.
         let bandMat = SCNMaterial()
-        bandMat.lightingModel = .physicallyBased
-        bandMat.diffuse.contents = UIColor(white: night ? 0.18 : 0.28, alpha: 1)
-        bandMat.roughness.contents = 0.90
-        bandMat.metalness.contents = 0.0
+        bandMat.lightingModel = .lambert
+        bandMat.diffuse.contents = baseColor.withAlphaComponent(1)
+        bandMat.roughness.contents = 0.94
+        bandMat.metalness.contents = 0
+        bandMat.multiply.contents = UIColor(white: night ? 0.42 : 0.28, alpha: 1)
         let bandFloors = max(1, floors / 3)
         for bf in stride(from: bandFloors, to: floors, by: bandFloors) {
             let by = CGFloat(bf) * (CGFloat(height) / CGFloat(floors)) - CGFloat(height) * 0.5
@@ -387,9 +534,10 @@ enum ProceduralCityDecor {
         // Rooftop parapet and antenna for tall buildings
         if height > 20 {
             let parapetMat = SCNMaterial()
-            parapetMat.lightingModel = .physicallyBased
-            parapetMat.diffuse.contents = UIColor(white: night ? 0.20 : 0.32, alpha: 1)
-            parapetMat.roughness.contents = 0.85
+            parapetMat.lightingModel = .lambert
+            parapetMat.diffuse.contents = baseColor.withAlphaComponent(1)
+            parapetMat.roughness.contents = 0.92
+            parapetMat.multiply.contents = UIColor(white: night ? 0.48 : 0.32, alpha: 1)
             let parapet = SCNBox(width: CGFloat(width) + 0.3, height: 0.55, length: CGFloat(depth) + 0.3, chamferRadius: 0.05)
             parapet.materials = [parapetMat]
             let parapetNode = SCNNode(geometry: parapet)
@@ -441,36 +589,48 @@ enum ProceduralCityDecor {
         art: CityEnvironmentArt.Profile,
         rng: inout SeededRandom
     ) -> UIColor {
-        // All palettes muted and desaturated for photorealistic city look.
-        let dim: CGFloat = night ? 0.50 : 1.0
+        // Day stays well below chalk-white — PBR sun used to blow light stucco.
+        let dim: CGFloat = night ? 0.36 : 0.58
+        _ = art
         switch kind {
         case .neonTower:
-            // Dark glass cladding with subtle blue-gray tint — no cartoon brightness
-            let v = CGFloat(0.18 + rng.float(in: 0...0.08))
-            return UIColor(red: v * 0.75 * dim, green: v * 0.85 * dim, blue: v * dim, alpha: 1)
+            let v = CGFloat(0.12 + rng.float(in: 0...0.07))
+            return UIColor(red: v * 0.52 * dim, green: v * 0.64 * dim, blue: v * 0.88 * dim, alpha: 1)
         case .industrial:
-            // Weathered concrete / corrugated metal
-            let v = CGFloat(0.24 + rng.float(in: 0...0.10))
-            return UIColor(red: v * dim, green: v * 0.96 * dim, blue: v * 0.92 * dim, alpha: 1)
+            let v = CGFloat(0.16 + rng.float(in: 0...0.08))
+            return UIColor(red: v * 1.08 * dim, green: v * 0.90 * dim, blue: v * 0.72 * dim, alpha: 1)
         case .desertCompound:
-            // Sandstone / stucco — warm but muted
-            let r = CGFloat(0.56 + rng.float(in: 0...0.10))
-            let g = CGFloat(0.48 + rng.float(in: 0...0.08))
-            let b = CGFloat(0.36 + rng.float(in: 0...0.06))
+            let r = CGFloat(0.40 + rng.float(in: 0...0.08))
+            let g = CGFloat(0.26 + rng.float(in: 0...0.06))
+            let b = CGFloat(0.14 + rng.float(in: 0...0.04))
             return UIColor(red: r * dim, green: g * dim, blue: b * dim, alpha: 1)
         case .coastalResort:
-            // Whitewashed / light sea-gray concrete
-            let v = CGFloat(0.60 + rng.float(in: 0...0.12))
-            return UIColor(red: v * 0.95 * dim, green: v * dim, blue: v * dim, alpha: 1)
+            switch rng.int(in: 0...3) {
+            case 0:
+                return UIColor(red: 0.48 * dim, green: 0.30 * dim, blue: 0.20 * dim, alpha: 1)
+            case 1:
+                return UIColor(red: 0.28 * dim, green: 0.38 * dim, blue: 0.32 * dim, alpha: 1)
+            case 2:
+                return UIColor(red: 0.44 * dim, green: 0.34 * dim, blue: 0.22 * dim, alpha: 1)
+            default:
+                return UIColor(red: 0.38 * dim, green: 0.28 * dim, blue: 0.30 * dim, alpha: 1)
+            }
         case .highRise:
-            // Dark steel-frame glass tower
-            let v = CGFloat(0.20 + rng.float(in: 0...0.08))
-            return UIColor(red: v * 0.88 * dim, green: v * 0.92 * dim, blue: v * dim, alpha: 1)
+            let v = CGFloat(0.10 + rng.float(in: 0...0.07))
+            return UIColor(red: v * 0.70 * dim, green: v * 0.76 * dim, blue: v * 0.88 * dim, alpha: 1)
+        case .residential:
+            switch rng.int(in: 0...2) {
+            case 0:
+                return UIColor(red: 0.40 * dim, green: 0.22 * dim, blue: 0.18 * dim, alpha: 1)
+            case 1:
+                return UIColor(red: 0.24 * dim, green: 0.32 * dim, blue: 0.28 * dim, alpha: 1)
+            default:
+                return UIColor(red: 0.26 * dim, green: 0.24 * dim, blue: 0.22 * dim, alpha: 1)
+            }
         default:
-            // Concrete / brick — neutral warm gray
-            let base = CGFloat(0.30 + rng.float(in: 0...0.14))
-            let warm = CGFloat(rng.float(in: 0...0.04))
-            return UIColor(red: (base + warm) * dim, green: base * dim, blue: (base - warm * 0.5) * dim, alpha: 1)
+            let base = CGFloat(0.18 + rng.float(in: 0...0.10))
+            let warm = CGFloat(0.05 + rng.float(in: 0...0.05))
+            return UIColor(red: (base + warm) * dim, green: base * dim, blue: (base - 0.03) * dim, alpha: 1)
         }
     }
 
@@ -485,45 +645,50 @@ enum ProceduralCityDecor {
         rng: inout SeededRandom
     ) {
         let k = pickWeighted(city.definition.propWeights, roll: rng.unitFloat())
+        let (_, center, trackRight) = TrackRoadsideClearance.closestFrame(to: base, track: track)
         let outward = outwardSide(from: base, track: track, right: right)
-        let p = k == .palm ? base : base + right * (8 * outward)
+        let minLat: Float = k == .palm
+            ? TrackRoadsideClearance.palmMinLateral
+            : TrackRoadsideClearance.poleMinLateral
+        let p = center + trackRight * (minLat * outward)
         switch k {
         case .streetLight:
-            if let light = KenneyEnvironmentLoader.loadStreetLight(night: night) {
-                light.position = SCNVector3(p.x, base.y, p.z)
-                KenneyEnvironmentLoader.alignBuildingToGround(light, groundY: base.y)
-                parent.addChildNode(light)
-            } else {
-                let pole = SCNCylinder(radius: 0.12, height: 7)
-                pole.firstMaterial?.diffuse.contents = UIColor(white: 0.25, alpha: 1)
-                let bulb = SCNSphere(radius: 0.28)
-                bulb.firstMaterial?.diffuse.contents = UIColor(white: night ? 0.95 : 0.85, alpha: 1)
-                bulb.firstMaterial?.emission.contents = night
-                    ? UIColor(red: 0.92, green: 0.82, blue: 0.55, alpha: 0.35)
-                    : UIColor.black
-                let n = SCNNode(geometry: pole)
-                n.position = SCNVector3(p.x, 3.5, p.z)
-                let top = SCNNode(geometry: bulb)
-                top.position = SCNVector3(0, 3.6, 0)
-                n.addChildNode(top)
-                parent.addChildNode(n)
-            }
+            let light = KenneyEnvironmentLoader.makeSolidLampPole(night: night)
+            light.position = SCNVector3(p.x, base.y, p.z)
+            TrackRoadsideClearance.secure(
+                light, track: track,
+                minLateral: TrackRoadsideClearance.poleMinLateral,
+                extraFootprint: 1.2
+            )
+            parent.addChildNode(light)
         case .barrier, .trafficCone:
             if let prop = KenneyEnvironmentLoader.loadRoadBarrier() {
                 prop.position = SCNVector3(p.x, base.y, p.z)
                 KenneyEnvironmentLoader.alignBuildingToGround(prop, groundY: base.y)
+                TrackRoadsideClearance.secure(
+                    prop, track: track,
+                    minLateral: TrackRoadsideClearance.treeMinLateral
+                )
                 parent.addChildNode(prop)
             } else {
                 let box = SCNBox(width: 0.8, height: 1.2, length: 0.35, chamferRadius: 0.02)
                 box.firstMaterial?.diffuse.contents = UIColor(red: 0.95, green: 0.52, blue: 0.1, alpha: 1)
                 let n = SCNNode(geometry: box)
                 n.position = SCNVector3(p.x, 0.6, p.z)
+                TrackRoadsideClearance.secure(
+                    n, track: track,
+                    minLateral: TrackRoadsideClearance.treeMinLateral
+                )
                 parent.addChildNode(n)
             }
         case .signage:
             if let sign = KenneyEnvironmentLoader.loadHighwaySign(night: night) {
                 sign.position = SCNVector3(p.x, base.y, p.z)
                 KenneyEnvironmentLoader.alignBuildingToGround(sign, groundY: base.y)
+                TrackRoadsideClearance.secure(
+                    sign, track: track,
+                    minLateral: TrackRoadsideClearance.poleMinLateral
+                )
                 parent.addChildNode(sign)
             }
         case .palm:
@@ -544,6 +709,10 @@ enum ProceduralCityDecor {
                 sign.position = SCNVector3(p.x, base.y, p.z)
                 sign.eulerAngles.y = atan2(right.x, right.z)
                 KenneyEnvironmentLoader.alignBuildingToGround(sign, groundY: base.y)
+                TrackRoadsideClearance.secure(
+                    sign, track: track,
+                    minLateral: TrackRoadsideClearance.poleMinLateral
+                )
                 parent.addChildNode(sign)
             }
         }

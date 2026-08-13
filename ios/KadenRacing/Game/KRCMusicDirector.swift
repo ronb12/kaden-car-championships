@@ -20,8 +20,17 @@ final class KRCMusicDirector {
     /// Last requested bed — kept across mute so volume unmute can resume.
     private var desired: Track?
     private var procedural: KRCProceduralMusic?
+    private var raceQueue: [URL] = []
+    private var raceIndex: Int = 0
+    private let playerSink = AudioFinishSink()
 
-    private init() {}
+    private init() {
+        playerSink.onFinish = { [weak self] in
+            Task { @MainActor in
+                self?.advanceRacePlaylist()
+            }
+        }
+    }
 
     func play(_ track: Track, crossfade: TimeInterval = 1.2) {
         desired = track
@@ -43,8 +52,13 @@ final class KRCMusicDirector {
             return
         }
         activateSession()
+        if track == .race {
+            startRacePlaylist(volume: vol, crossfade: crossfade)
+            return
+        }
+        raceQueue = []
         if let url = bundleURL(for: track) {
-            playFile(url: url, volume: vol, crossfade: crossfade)
+            playFile(url: url, volume: vol, crossfade: crossfade, loop: true)
         } else {
             // Prefer silence over whistling procedural beds when files are missing.
             stopImmediate()
@@ -85,6 +99,8 @@ final class KRCMusicDirector {
         procedural?.stop()
         procedural = nil
         desired = nil
+        raceQueue = []
+        raceIndex = 0
         guard let p = player else {
             current = nil
             return
@@ -113,6 +129,8 @@ final class KRCMusicDirector {
         player = nil
         current = nil
         desired = nil
+        raceQueue = []
+        raceIndex = 0
     }
 
     private func activateSession() {
@@ -143,11 +161,57 @@ final class KRCMusicDirector {
         return nil
     }
 
-    private func playFile(url: URL, volume: Float, crossfade: TimeInterval) {
+    private static let raceFileNames = [
+        "race_intensity",
+        "race_fever",
+        "race_highway",
+        "race_neon",
+        "race_hot",
+    ]
+
+    private func startRacePlaylist(volume: Float, crossfade: TimeInterval) {
+        var urls = Self.raceFileNames.compactMap { bundleURL(named: $0, subdirectory: "Audio/Music/Race") }
+        if urls.isEmpty {
+            urls = Self.raceFileNames.compactMap { bundleURL(named: $0, subdirectory: "Audio") }
+        }
+        if urls.isEmpty, let fallback = bundleURL(for: .race) {
+            urls = [fallback]
+        }
+        urls.shuffle()
+        raceQueue = urls
+        raceIndex = 0
+        guard let first = urls.first else {
+            stopImmediate()
+            NSLog("[KRCMusicDirector] missing bundled track race")
+            return
+        }
+        playFile(url: first, volume: volume, crossfade: crossfade, loop: false)
+    }
+
+    private func advanceRacePlaylist() {
+        guard desired == .race, !raceQueue.isEmpty else { return }
+        raceIndex = (raceIndex + 1) % raceQueue.count
+        let vol = KRCAudioPreferences.effectiveMusic
+        guard vol > 0.01 else { return }
+        playFile(url: raceQueue[raceIndex], volume: vol, crossfade: 0.7, loop: false)
+        current = .race
+    }
+
+    private func bundleURL(named name: String, subdirectory: String) -> URL? {
+        for ext in ["m4a", "mp3", "wav"] {
+            if let u = Bundle.main.url(forResource: name, withExtension: ext, subdirectory: subdirectory) { return u }
+            if let u = Bundle.main.url(forResource: name, withExtension: ext, subdirectory: "Audio") { return u }
+            if let u = Bundle.main.url(forResource: name, withExtension: ext) { return u }
+        }
+        return nil
+    }
+
+    private func playFile(url: URL, volume: Float, crossfade: TimeInterval, loop: Bool) {
         procedural?.stop()
         procedural = nil
         guard let next = try? AVAudioPlayer(contentsOf: url) else { return }
-        next.numberOfLoops = -1
+        next.numberOfLoops = loop ? -1 : 0
+        next.delegate = playerSink
         next.volume = 0
         next.prepareToPlay()
         let prev = player
@@ -183,5 +247,13 @@ final class KRCMusicDirector {
                 done()
             }
         }
+    }
+}
+
+private final class AudioFinishSink: NSObject, AVAudioPlayerDelegate {
+    var onFinish: (() -> Void)?
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        guard flag else { return }
+        onFinish?()
     }
 }

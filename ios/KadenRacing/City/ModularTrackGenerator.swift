@@ -8,8 +8,8 @@ enum ModularTrackGenerator {
     static func makeTrack(definition: CityThemeDefinition, seed: UInt64) -> ClosedTrackSpline {
         var rng = SeededRandom(seed: seed)
         let n = max(64, min(192, definition.trackResolution))
-        let a = definition.semiMajor * rng.float(in: 0.9...1.1)
-        let b = definition.semiMinor * rng.float(in: 0.9...1.1)
+        let a = definition.semiMajor * 1.7 * rng.float(in: 0.9...1.1)
+        let b = definition.semiMinor * 1.7 * rng.float(in: 0.9...1.1)
 
         var phases: [Float] = []
         phases.reserveCapacity(definition.curvatureComplexity)

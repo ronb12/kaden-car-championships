@@ -81,17 +81,12 @@ enum VehicleRenderer {
         root.addChildNode(bodyContainer)
 
         if usedBundled {
-            // Skip silhouette stretch on device — non-uniform Y scale was burying tires in asphalt.
-            // Unique USDZ shells already differ; shared shells stay honest-sized.
-        }
-        if let carNode = findCarMeshNode(in: bodyContainer) {
-            CarDecals.apply(
-                to: carNode,
-                container: root,
-                carId: request.carId,
-                isPlayer: request.isPlayer,
-                scale: scale
-            )
+            // XZ only — Y stretch buried tires in asphalt on the shared Camber shell.
+            if !GLBCarLoader.hasUniqueMesh(forCarId: request.carId) {
+                applySilhouetteStretchXZ(to: bodyContainer, profile: profile)
+            }
+            // Kit after stretch so pieces measure the final shell.
+            VehicleClassKit.attach(to: bodyContainer, profile: profile, scale: scale)
         }
         if request.isPlayer {
             GLBDriverLoader.attach(to: root, scale: scale)
@@ -127,6 +122,16 @@ enum VehicleRenderer {
         // Full-body vinyl wrap must run after solid paint so it replaces body materials.
         if request.applyLivery, let carNode = findCarMeshNode(in: bodyContainer) {
             CarLivery.applyStripes(to: root, carId: request.carId, carNode: carNode, scale: scale)
+        }
+        // Plates last so paint/wrap never blank the KRC face.
+        if let carNode = findCarMeshNode(in: bodyContainer) {
+            CarDecals.apply(
+                to: carNode,
+                container: root,
+                carId: request.carId,
+                isPlayer: request.isPlayer,
+                scale: scale
+            )
         }
         VehicleLighting.refreshLampMaterials(on: root)
         AutomotiveReflectionSystem.register(vehicleRoot: root, context: paintContext)
@@ -197,6 +202,10 @@ enum VehicleRenderer {
             // Keep police light-bar, plates, and class kits — don't repaint them body-blue.
             if name.contains("krcpolicekit")
                 || name.contains("krclicenseplate")
+                || name.contains("krcsticker")
+                || name.contains("krckidtoy")
+                || name.contains("krcdriverhat")
+                || name.contains("krcflame")
                 || name.contains("krcclasskit")
                 || name.contains("krcstripe")
                 || name.contains("krclivery")
@@ -212,8 +221,12 @@ enum VehicleRenderer {
                 || name.contains("krcstripe")
                 || name.contains("krcrimaccent")
                 || name.contains("krcrimface")
+                || name.contains("krcplate")
+                || name.contains("krclicense")
+                || name.contains("krcexhaust")
                 || nodeHasAncestorNamed(node, names: [
-                    "krcPoliceKit", "krcLicensePlate", "krcClassKit", "krcPoliceMarkings",
+                    "krcPoliceKit", "krcLicensePlate", "krcClassKit", "krcPoliceMarkings", "krcExhaustKit",
+                    "krcKidToyKit", "krcStickerHood", "krcStickerDoor", "krcDriverHat",
                 ]) {
                 return
             }
@@ -259,20 +272,13 @@ enum VehicleRenderer {
                 color = UIColor(red: 1, green: 0.1, blue: 0.06, alpha: 1); emit = 0.8; matName = "krcRaceTail"
             } else {
                 color = paint
-                // Slight lift so black body isn't a void; white accents carry the silhouette.
-                emit = isPolice ? (isPlayer ? 0.28 : 0.20) : (isPlayer ? 0.48 : 0.36)
+                emit = isPolice ? (isPlayer ? 0.16 : 0.11) : (isPlayer ? 0.18 : 0.12)
                 matName = "krcRaceVisible"
             }
 
             let mat = SCNMaterial()
             mat.name = matName
-            mat.lightingModel = .constant
             mat.diffuse.contents = color
-            if isPolice, matName == "krcRaceVisible" {
-                mat.emission.contents = UIColor(red: 0.12, green: 0.13, blue: 0.16, alpha: 1)
-            } else {
-                mat.emission.contents = color
-            }
             mat.ambient.contents = color
             mat.multiply.contents = UIColor.white
             mat.transparent.contents = nil
@@ -286,11 +292,20 @@ enum VehicleRenderer {
             mat.fillMode = .fill
             mat.shaderModifiers = nil
             mat.program = nil
-            if !isPolice, emit > 0.25, isPlayer, matName == "krcRaceVisible" {
-                var rh: CGFloat = 0, rs: CGFloat = 0, rb: CGFloat = 0, ra: CGFloat = 0
-                if color.getHue(&rh, saturation: &rs, brightness: &rb, alpha: &ra) {
-                    mat.diffuse.contents = UIColor(hue: rh, saturation: rs, brightness: min(1, rb + 0.06), alpha: 1)
+            var er: CGFloat = 0, eg: CGFloat = 0, eb: CGFloat = 0, ea: CGFloat = 0
+            color.getRed(&er, green: &eg, blue: &eb, alpha: &ea)
+            if matName == "krcRaceVisible" {
+                mat.lightingModel = .physicallyBased
+                mat.metalness.contents = isPolice ? 0.08 : 0.16
+                mat.roughness.contents = isPolice ? 0.52 : 0.28
+                if #available(iOS 13.0, *) {
+                    mat.clearCoat.contents = isPolice ? 0.22 : 0.78
+                    mat.clearCoatRoughness.contents = 0.14
                 }
+                mat.emission.contents = UIColor(red: er * emit, green: eg * emit, blue: eb * emit, alpha: 1)
+            } else {
+                mat.lightingModel = .constant
+                mat.emission.contents = color
             }
             geometry.materials = [mat]
             geometry.firstMaterial = mat
@@ -330,19 +345,17 @@ enum VehicleRenderer {
         )
     }
 
-    private static func applySilhouetteStretch(to container: SCNNode, profile: VehicleVisualProfile) {
+    private static func applySilhouetteStretchXZ(to container: SCNNode, profile: VehicleVisualProfile) {
         guard let mesh = findCarMeshNode(in: container) else { return }
         let ref = SIMD3<Float>(1.94, 0.9, KRCVehicleScale.targetLength)
         let d = profile.dimensions
-        mesh.scale = SCNVector3(
-            mesh.scale.x * (d.x / ref.x),
-            mesh.scale.y * (d.y / ref.y),
-            mesh.scale.z * (d.z / ref.z)
-        )
-        // Re-seat tires on the ground plane after non-uniform scale.
-        // Without this, Y stretch leaves the prepared Y offset wrong and the car sinks into asphalt.
-        let (minB, _) = mesh.boundingBox
-        mesh.position.y = -minB.y * mesh.scale.y + KRCVehicleScale.rideHeightOffset
+        let sx = max(0.90, min(1.14, d.x / ref.x))
+        let sz = max(0.90, min(1.12, d.z / ref.z))
+        mesh.scale = SCNVector3(mesh.scale.x * sx, mesh.scale.y, mesh.scale.z * sz)
+    }
+
+    private static func applySilhouetteStretch(to container: SCNNode, profile: VehicleVisualProfile) {
+        applySilhouetteStretchXZ(to: container, profile: profile)
     }
 
     private static func findCarMeshNode(in container: SCNNode) -> SCNNode? {

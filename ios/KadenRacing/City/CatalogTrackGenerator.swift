@@ -5,7 +5,8 @@ import simd
 /// Each catalog index uses a **distinct** layout family (not the same radius-wobble oval).
 enum CatalogTrackGenerator {
 
-    private static let scale: Float = 1.45
+    /// World scale — larger = longer laps and wider turn radii.
+    private static let scale: Float = 2.5
 
     static func makeTrack(index: Int) -> ClosedTrackSpline {
         if PalmCityEnvironment.isActive, !MinimalRaceEnvironment.isEnabled {
@@ -22,19 +23,63 @@ enum CatalogTrackGenerator {
         for i in 0..<segments {
             let t = Float(i) / Float(segments) * 2 * Float.pi
             let p = sample(index: idx, t: t)
-            points.append(SIMD3<Float>(p.x * scale, 0, p.z * scale))
+            points.append(SIMD3<Float>(p.x * scale, elevationY(index: idx, angle: t), p.z * scale))
         }
+        points = soften(points, passes: 2)
         return ClosedTrackSpline(points: points)
+    }
+
+    /// Blend each point with neighbors so hairpins from high-frequency wobble open up.
+    private static func soften(_ points: [SIMD3<Float>], passes: Int) -> [SIMD3<Float>] {
+        guard points.count >= 8 else { return points }
+        var pts = points
+        for _ in 0..<passes {
+            var next = pts
+            let n = pts.count
+            for i in 0..<n {
+                let a = pts[(i + n - 1) % n]
+                let b = pts[i]
+                let c = pts[(i + 1) % n]
+                next[i] = (a + b * 2 + c) * 0.25
+            }
+            pts = next
+        }
+        return pts
     }
 
     private static func segmentCount(for index: Int) -> Int {
         switch index {
-        case 3, 18, 24, 39, 44: return 64
-        case 4, 9, 10, 15, 19, 25, 30, 31, 45, 47, 48: return 96
-        case 5, 6, 12, 21, 26, 27, 42: return 90
-        case 7, 11, 13, 16, 17, 28, 32, 33, 34, 35, 37, 41, 46, 49: return 88
-        default: return 80
+        case 3, 18, 24, 39, 44: return 96
+        case 4, 9, 10, 15, 19, 25, 30, 31, 45, 47, 48: return 128
+        case 5, 6, 12, 21, 26, 27, 42: return 120
+        case 7, 11, 13, 16, 17, 28, 32, 33, 34, 35, 37, 41, 46, 49: return 116
+        default: return 108
         }
+    }
+
+    /// Closed-loop hills. Speedways stay flat; alpine / canyon get the biggest rise.
+    private static func elevationY(index: Int, angle: Float) -> Float {
+        let profile = EnvironmentTrackProfile.from(catalogTrackIndex: index)
+        let y: Float
+        switch profile {
+        case .alpineRidge:
+            y = 12 * sin(angle) + 4.5 * sin(2.3 * angle + 0.35)
+        case .desertHighway:
+            y = 6.5 * sin(1.25 * angle) + 2.2 * sin(3.0 * angle + 0.4)
+        case .coastalOpen, .stormHarbor:
+            y = 4.2 * sin(1.15 * angle)
+        case .technicalCircuit:
+            y = 5.5 * sin(2 * angle) + 1.8 * sin(4 * angle + 0.5)
+        case .urbanNight:
+            y = 4.8 * sin(angle - 0.3)
+        case .speedwayOval:
+            y = 0
+        case .coastalCityCircuit:
+            y = 0 // CoastalCityCircuitTrack already authors Y.
+        case .standard:
+            y = 2.8 * sin(2 * angle + 0.15)
+        }
+        return y
     }
 
     private static func superellipse(t: Float, a: Float, b: Float, exp: Float) -> (x: Float, z: Float) {

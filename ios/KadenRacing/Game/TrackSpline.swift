@@ -5,12 +5,19 @@ struct ClosedTrackSpline {
     let points: [SIMD3<Float>]
 
     init(points: [SIMD3<Float>]) {
-        self.points = points.count >= 2 ? points : [
+        var pts = points.count >= 2 ? points : [
             SIMD3<Float>(-40, 0, -40),
             SIMD3<Float>(40, 0, -40),
             SIMD3<Float>(40, 0, 40),
             SIMD3<Float>(-40, 0, 40)
         ]
+        // Valleys stay above the ground disc so the ribbon can climb and drop without clipping.
+        let minY = pts.map(\.y).min() ?? 0
+        if minY < 0.4 {
+            let lift = 0.4 - minY
+            for i in pts.indices { pts[i].y += lift }
+        }
+        self.points = pts
     }
 
     func sample(_ t: Float) -> SIMD3<Float> {

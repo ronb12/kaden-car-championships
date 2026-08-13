@@ -7,7 +7,7 @@ import UIKit
 enum MinimalRaceEnvironment {
 
     /// When false, races use the full themed pipeline (sky, ocean, city decor, PBR road).
-    /// On: clean circuit only — roadside buildings are Courier-mode exclusive.
+    /// On: photo sky + occlusion-safe Kenney roadside. Courier storefronts stay Courier-only.
     static let isEnabled = true
 
     /// Per-city sky: card photo when available, else themed gradient.
@@ -32,7 +32,7 @@ enum MinimalRaceEnvironment {
             scene.background.contents = gradient
         }
 
-        let dome = SCNSphere(radius: 420)
+        let dome = SCNSphere(radius: 640)
         dome.segmentCount = 48
         let mat = SCNMaterial()
         mat.lightingModel = .constant
@@ -69,14 +69,14 @@ enum MinimalRaceEnvironment {
         scene.fogColor = fog
         switch city.definition.environment {
         case .heavyFog, .oceanMist:
-            scene.fogStartDistance = night ? 90 : 120
-            scene.fogEndDistance = night ? 380 : 480
-        case .lightRain, .dust, .heatHaze:
             scene.fogStartDistance = night ? 120 : 160
-            scene.fogEndDistance = night ? 420 : 560
-        case .none:
+            scene.fogEndDistance = night ? 520 : 640
+        case .lightRain, .dust, .heatHaze:
             scene.fogStartDistance = night ? 160 : 220
-            scene.fogEndDistance = night ? 520 : 680
+            scene.fogEndDistance = night ? 580 : 760
+        case .none:
+            scene.fogStartDistance = night ? 220 : 300
+            scene.fogEndDistance = night ? 720 : 980
         }
 
         let ground = art.groundDay ?? groundTint(for: city.definition.visualTheme, night: night)
@@ -161,7 +161,7 @@ enum MinimalRaceEnvironment {
             let node = SCNNode(geometry: box)
             node.position = SCNVector3(
                 center.x + cos(angle) * radius,
-                h * 0.5,
+                center.y + h * 0.5,
                 center.z + sin(angle) * radius
             )
             node.eulerAngles.y = angle + Float.pi
@@ -181,7 +181,7 @@ enum MinimalRaceEnvironment {
                 let ridgeNode = SCNNode(geometry: ridge)
                 ridgeNode.position = SCNVector3(
                     center.x + cos(angle + 0.08) * (radius + 18),
-                    ridgeH * 0.45,
+                    center.y + ridgeH * 0.45,
                     center.z + sin(angle + 0.08) * (radius + 18)
                 )
                 ridgeNode.castsShadow = false
@@ -213,17 +213,31 @@ enum MinimalRaceEnvironment {
             let lateral = TrackRoadsideClearance.palmMinLateral + rng.float(in: 2...10)
             let pos = p + right * (lateral * side)
             switch theme {
-            case .coastalNeon, .tropical, .desertHighway, .luxuryBoulevard:
+            case .coastalNeon, .tropical, .luxuryBoulevard:
                 root.addChildNode(makePalm(at: SCNVector3(pos.x, p.y, pos.z), rng: &rng))
+            case .desertHighway:
+                root.addChildNode(makeCactus(at: SCNVector3(pos.x, p.y, pos.z), rng: &rng))
             case .alpine:
                 root.addChildNode(makePine(at: SCNVector3(pos.x, p.y, pos.z), rng: &rng))
             case .urbanDense, .neonNight, .historicNarrow, .monsoonWet:
                 if idx % 2 == 0 {
-                    root.addChildNode(makeLampPole(at: SCNVector3(pos.x, p.y + 2.1, pos.z), night: night))
+                    let lamp = makeLampPole(at: SCNVector3(pos.x, p.y + 2.1, pos.z), night: night)
+                    TrackRoadsideClearance.secure(
+                        lamp, track: track,
+                        minLateral: TrackRoadsideClearance.poleMinLateral,
+                        extraFootprint: 1.2
+                    )
+                    root.addChildNode(lamp)
                 }
             case .industrialPort:
                 if idx % 2 == 0 {
-                    root.addChildNode(makeLampPole(at: SCNVector3(pos.x, p.y + 2.1, pos.z), night: night))
+                    let lamp = makeLampPole(at: SCNVector3(pos.x, p.y + 2.1, pos.z), night: night)
+                    TrackRoadsideClearance.secure(
+                        lamp, track: track,
+                        minLateral: TrackRoadsideClearance.poleMinLateral,
+                        extraFootprint: 1.2
+                    )
+                    root.addChildNode(lamp)
                 }
             }
             idx += 1
@@ -255,6 +269,28 @@ enum MinimalRaceEnvironment {
         frondNode.position = SCNVector3(0, Float(trunkH) + 0.15, 0)
         frondNode.scale = SCNVector3(1.0, 0.42, 1.0)
         root.addChildNode(frondNode)
+        return root
+    }
+
+    private static func makeCactus(at position: SCNVector3, rng: inout SeededRandom) -> SCNNode {
+        let root = SCNNode()
+        root.position = position
+        let h = CGFloat(1.8 + rng.float(in: 0...1.6))
+        let mat = SCNMaterial()
+        mat.lightingModel = .physicallyBased
+        mat.diffuse.contents = UIColor(red: 0.22, green: 0.42, blue: 0.24, alpha: 1)
+        mat.roughness.contents = 0.78
+        let trunk = SCNCylinder(radius: 0.16, height: h)
+        trunk.materials = [mat]
+        let trunkNode = SCNNode(geometry: trunk)
+        trunkNode.position = SCNVector3(0, Float(h) * 0.5, 0)
+        root.addChildNode(trunkNode)
+        let arm = SCNCylinder(radius: 0.1, height: h * 0.45)
+        arm.materials = [mat]
+        let armNode = SCNNode(geometry: arm)
+        armNode.position = SCNVector3(Float(h) * 0.22, Float(h) * 0.55, 0)
+        armNode.eulerAngles.z = 1.1
+        root.addChildNode(armNode)
         return root
     }
 
@@ -323,19 +359,19 @@ enum MinimalRaceEnvironment {
         }
         switch theme {
         case .desertHighway:
-            return UIColor(red: 0.62 + CGFloat(rng.unitFloat()) * 0.1, green: 0.45, blue: 0.28, alpha: 1)
+            return UIColor(red: 0.42 + CGFloat(rng.unitFloat()) * 0.08, green: 0.28, blue: 0.16, alpha: 1)
         case .alpine:
-            return UIColor(red: 0.45, green: 0.5 + CGFloat(rng.unitFloat()) * 0.08, blue: 0.55, alpha: 1)
+            return UIColor(red: 0.28, green: 0.32 + CGFloat(rng.unitFloat()) * 0.06, blue: 0.34, alpha: 1)
         case .industrialPort:
-            return UIColor(red: 0.32, green: 0.34, blue: 0.36, alpha: 1)
+            return UIColor(red: 0.22, green: 0.22, blue: 0.24, alpha: 1)
         case .coastalNeon, .tropical:
-            return UIColor(red: 0.55, green: 0.62, blue: 0.68, alpha: 1)
+            return UIColor(red: 0.28, green: 0.24, blue: 0.20, alpha: 1)
         case .historicNarrow:
-            return UIColor(red: 0.48, green: 0.36, blue: 0.3, alpha: 1)
+            return UIColor(red: 0.34, green: 0.24, blue: 0.20, alpha: 1)
         case .luxuryBoulevard:
-            return UIColor(red: 0.7, green: 0.72, blue: 0.76, alpha: 1)
+            return UIColor(red: 0.30, green: 0.26, blue: 0.22, alpha: 1)
         default:
-            return UIColor(red: 0.35, green: 0.38, blue: 0.44, alpha: 1)
+            return UIColor(red: 0.22, green: 0.24, blue: 0.28, alpha: 1)
         }
     }
 
@@ -561,7 +597,7 @@ enum MinimalRaceEnvironment {
 
     /// Flat green disc under the circuit so sky does not bleed through track gaps.
     static func addGroundPlane(into parent: SCNNode, night: Bool = false, theme: CityVisualTheme = .urbanDense, city: CityRuntimeConfig? = nil) {
-        let ground = SCNCylinder(radius: 380, height: 0.4)
+        let ground = SCNCylinder(radius: 560, height: 0.4)
         let mat = SCNMaterial()
         mat.lightingModel = .physicallyBased
         if let city, let artGround = CityEnvironmentArt.profile(for: city).groundDay, !night {
@@ -652,7 +688,7 @@ enum MinimalRaceEnvironment {
         camera.vignettingPower = 1.0
         camera.saturation = 1.0
         camera.contrast = night ? 1.08 : 1.04
-        camera.zFar = max(camera.zFar, 820)
+        camera.zFar = max(camera.zFar, 1100)
         _ = preset
     }
 

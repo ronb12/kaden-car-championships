@@ -77,17 +77,50 @@ enum RacingEnvironmentPipeline {
             night: night,
             weather: weather
         )
-        // No roadside buildings on race circuits — storefronts stay Courier-only.
+        TrackHillTunnelBuilder.build(
+            into: trackRoot,
+            track: city.track,
+            city: city,
+            night: night
+        )
+        TrackSceneryEnhancer.build(
+            into: trackRoot,
+            track: city.track,
+            city: city,
+            night: night,
+            quality: quality
+        )
+        let cityArt = CityEnvironmentArt.profile(for: city)
+        if preset.oceanEnabled, cityArt.prefersOcean || city.trackProfile.prefersOcean {
+            OceanEnvironmentBuilder.build(
+                into: trackRoot,
+                track: city.track,
+                night: night,
+                rainy: false,
+                enabled: true
+            )
+        }
+        if !city.themeId.hasPreviewCardPhoto {
+            NatureEnvironmentBuilder.build(
+                into: trackRoot,
+                track: city.track,
+                city: city,
+                night: night,
+                profile: city.trackProfile,
+                mountainsEnabled: preset.mountainRingEnabled || city.trackProfile.prefersMountains
+            )
+        }
         MinimalRaceEnvironment.enableShadows(on: trackRoot)
 
-        // Empty city layer — full pipeline populates this with ProceduralCityDecor / WorldProps.
+        // Opaque Kenney/procedural roadside — off the racing line. Courier storefronts stay Courier-only.
         let cityRoot = SCNNode()
         cityRoot.name = "krcCityLayer"
         scene.rootNode.addChildNode(cityRoot)
+        ProceduralCityDecor.buildRaceSafeLayer(into: cityRoot, city: city, night: night, quality: quality)
 
         if let cam = cameraNode.camera {
             cam.zNear = 0.35
-            cam.zFar = max(Double(preset.maxDrawDistance) * 1.35, 820)
+            cam.zFar = max(Double(preset.maxDrawDistance) * 1.6, 1100)
             MinimalRaceEnvironment.configureCamera(cam, quality: quality, night: night)
         }
 
@@ -237,18 +270,24 @@ enum RacingEnvironmentPipeline {
     private static func addTrackFloodlights(to parent: SCNNode, track: ClosedTrackSpline) {
         let pts = track.points
         let step = max(4, pts.count / 24)
+        let lateral = TrackRoadsideClearance.poleMinLateral
         for i in stride(from: 0, to: pts.count, by: step) {
             let t = Float(i) / Float(pts.count)
             let base = track.position(at: t)
             let right = track.right(at: t)
             for side: Float in [-1, 1] {
-                let polePos = base + right * (11.0 * side)
-                addFloodlightPole(to: parent, base: polePos)
+                let polePos = base + right * (lateral * side)
+                addFloodlightPole(to: parent, track: track, base: polePos, groundY: base.y)
             }
         }
     }
 
-    private static func addFloodlightPole(to parent: SCNNode, base: SIMD3<Float>) {
+    private static func addFloodlightPole(
+        to parent: SCNNode,
+        track: ClosedTrackSpline,
+        base: SIMD3<Float>,
+        groundY: Float
+    ) {
         let poleH: Float = 14.0
         let poleMat = SCNMaterial()
         poleMat.lightingModel = .physicallyBased
@@ -257,7 +296,13 @@ enum RacingEnvironmentPipeline {
         let pole = SCNCylinder(radius: 0.12, height: CGFloat(poleH))
         pole.materials = [poleMat]
         let poleNode = SCNNode(geometry: pole)
-        poleNode.position = SCNVector3(base.x, base.y + poleH * 0.5, base.z)
+        poleNode.position = SCNVector3(base.x, groundY + poleH * 0.5, base.z)
+        TrackRoadsideClearance.pushOutsideRoad(
+            poleNode, track: track,
+            minLateral: TrackRoadsideClearance.poleMinLateral,
+            extraFootprint: 0.4
+        )
+        poleNode.position.y = groundY + poleH * 0.5
         parent.addChildNode(poleNode)
 
         let spot = SCNLight()

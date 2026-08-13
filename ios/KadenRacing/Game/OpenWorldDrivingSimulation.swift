@@ -111,7 +111,7 @@ struct OpenWorldDrivingSimulation {
         let effectiveTop = max(0.001, drive.effectiveTopSpeed)
         let speedRatio = min(1, abs(state.speed) / effectiveTop)
 
-        let grip = config.stats.gripMul * config.difficultyGripMul * config.trackGrip
+        let grip = config.stats.gripMul * config.difficultyGripMul * config.trackGrip * (1 + speedRatio * 0.08)
 
         // Longitudinal — punchy launch so the car reaches the higher world top quickly.
         let torque = torqueCurve(speedRatio: speedRatio) * config.stats.accelMul * categoryAccel(config.category) * drive.accelMul
@@ -182,8 +182,8 @@ struct OpenWorldDrivingSimulation {
         let lowSpeedSteer = max(0.7, absSpd / max(0.35, effectiveTop * 0.08))
         let steerFactor = min(1, lowSpeedSteer) * (state.speed < 0 ? -1 : 1)
         // High-speed lockout — cars get heavier to turn as speed rises (sim-cade).
-        let speedSteerAtten = max(0.42, 1 - speedRatio * 0.48)
-        let turnRate: Float = 2.85 * steerFactor * grip * speedSteerAtten * (manual ? 1.08 : 1.0)
+        let speedSteerAtten = max(0.48, 1 - speedRatio * 0.42)
+        let turnRate: Float = 3.05 * steerFactor * grip * speedSteerAtten * (manual ? 1.1 : 1.0)
         // Positive steer = turn right (heading increases with sin/cos integration below).
         state.heading += turnRate * smoothedSteer * dtClamped
 
@@ -240,15 +240,15 @@ struct OpenWorldDrivingSimulation {
         state.trackT = projection.trackT
 
         // Body visuals
-        let targetRoll = -smoothedSteer * 0.09 * speedRatio
-        let targetPitch = smoothedBrake * 0.06 - smoothedThrottle * 0.035
+        let targetRoll = -smoothedSteer * 0.14 * speedRatio
+        let targetPitch = smoothedBrake * 0.09 - smoothedThrottle * 0.048
         state.bodyRoll += (targetRoll - state.bodyRoll) * min(1, dtClamped * 9)
         state.bodyPitch += (targetPitch - state.bodyPitch) * min(1, dtClamped * 8)
 
         // Low-amplitude ride motion for wheel visuals only — not applied 1:1 to chassis height.
         let time = Float(Date().timeIntervalSinceReferenceDate)
         let bump = speedRatio > 0.03
-            ? sin(time * 11) * 0.0012 * (0.35 + speedRatio * 0.25)
+            ? sin(time * 13) * 0.0022 * (0.4 + speedRatio * 0.35)
             : 0
         let compress = smoothedBrake * 0.022 + smoothedThrottle * 0.014 + state.slipAmount * 0.012
         state.suspension = SIMD4<Float>(

@@ -108,10 +108,10 @@ enum PalmCityEnvironment {
         p.skyHorizonDay = rgb(0xB8D8F0)
         p.fogDay = rgb(0xA8C8E0)
         p.groundDay = rgb(0x1A2830)
-        p.windowDay = rgb(0x88C8F8)
+        p.windowDay = rgb(0x1E3344)
         p.windowNight = rgb(0xAADDFF)
         p.foliage = rgb(0x2A8838)
-        p.billboardColors = [rgb(0xFF2A88), rgb(0xE8E8E8), rgb(0x48A8E8), rgb(0xF0D040)]
+        p.billboardColors = [rgb(0xFF2A88), rgb(0xC45A28), rgb(0x48A8E8), rgb(0xF0D040)]
         return p
     }
 

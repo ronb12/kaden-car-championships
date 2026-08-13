@@ -205,9 +205,9 @@ final class RaceOpponentController {
             ai.node.opacity = ghostMode ? 0.42 : 1
             ai.phase += dt
 
-            // Racing-line weave + personality — lane changes should read from chase cam.
-            var targetLat = sin(ai.phase * 0.7 + Float(i) * 1.1) * (laneW * 0.62 + Float(diff) * 0.4)
-                + ai.overtakeBias * (laneW * 0.5)
+            // Late-apex racing line — stay wide on entry, cut inside at the corner.
+            var targetLat = ai.overtakeBias * (laneW * 0.32)
+                + sin(ai.phase * 0.55 + Float(i) * 1.1) * (laneW * 0.18 + Float(diff) * 0.12)
             let aiProgress = raceProgress(lap: ai.lap, t: ai.trackT)
             let deltaProg = aiProgress - playerProgress
             // Soft preferred gap — pace nudge only, not hard slot lock.
@@ -215,15 +215,20 @@ final class RaceOpponentController {
             let slotError = (playerProgress + preferredLead) - aiProgress
 
             let tNorm = ai.trackT.truncatingRemainder(dividingBy: 1)
-            let tNext = (tNorm + 0.022).truncatingRemainder(dividingBy: 1)
+            let tApex = (tNorm + 0.038).truncatingRemainder(dividingBy: 1)
+            let tExit = (tNorm + 0.062).truncatingRemainder(dividingBy: 1)
             let tan1 = track.tangent(tNorm)
-            let tan2 = track.tangent(tNext)
-            let cornerPressure = max(0, min(1, 1 - simd_dot(simd_normalize(tan1), simd_normalize(tan2))))
-            // Apex cut: dive inside on corners, drift wide on exit.
-            let apexBias = (i % 2 == 0 ? -1 : 1) * laneW * 0.42 * cornerPressure
-            targetLat += apexBias * (1 - cornerPressure * 0.2)
-            if cornerPressure < 0.12 {
-                targetLat += sin(ai.phase * 1.6) * laneW * 0.22
+            let tanApex = track.tangent(tApex)
+            let tanExit = track.tangent(tExit)
+            let nearCorner = max(0, min(1, 1 - simd_dot(simd_normalize(tan1), simd_normalize(tanApex))))
+            let farCorner = max(0, min(1, 1 - simd_dot(simd_normalize(tan1), simd_normalize(tanExit))))
+            let cornerPressure = max(nearCorner, farCorner * 0.72)
+            // Late apex: wide on entry, dive inside as corner pressure peaks.
+            let sideSign: Float = i % 2 == 0 ? -1 : 1
+            let lateApex = sideSign * laneW * (0.16 + cornerPressure * 0.58)
+            targetLat += lateApex
+            if cornerPressure < 0.1 {
+                targetLat += sin(ai.phase * 1.4) * laneW * 0.12
             }
 
             switch ai.personality {
@@ -236,7 +241,7 @@ final class RaceOpponentController {
                     targetLat = playerLat * 0.55 + (deltaProg > 0 ? -laneW * 0.7 : laneW * 0.35)
                 }
             case .technical:
-                targetLat = targetLat * max(0.65, 1 - cornerPressure * 0.5) + apexBias
+                targetLat = targetLat * max(0.65, 1 - cornerPressure * 0.5) + lateApex * 0.35
             case .balanced:
                 if deltaProg > -0.06 && deltaProg < 0.09 {
                     targetLat += deltaProg > 0 ? -laneW * 0.55 : laneW * 0.55
@@ -475,7 +480,9 @@ final class RaceOpponentController {
         let rideY: Float = 0.37
         ai.node.position = SCNVector3(pos.x, pos.y + rideY, pos.z)
         // Face along track tangent (not player heading) so cornering reads correctly.
-        ai.node.eulerAngles.y = atan2(forward.x, forward.z)
+        let horiz = max(0.001, simd_length(SIMD2(forward.x, forward.z)))
+        let gradePitch = max(-0.26, min(0.26, -atan2(forward.y, horiz)))
+        ai.node.eulerAngles = SCNVector3(gradePitch, atan2(forward.x, forward.z), 0)
         ai.node.isHidden = false
         ai.node.opacity = 1
         ai.node.scale = SCNVector3(1, 1, 1)

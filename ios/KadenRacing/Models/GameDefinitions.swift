@@ -68,13 +68,8 @@ enum GameCatalog {
 
     /// Rear license plate text (player car vs garage / AI).
     static func plateLabel(carId: String, isPlayer: Bool) -> String {
-        if carId == "police" { return "POLICE" }
-        if isPlayer { return "Kaden's Racing" }
-        if let car = cars.first(where: { $0.id == carId }) {
-            let name = car.name
-            if name.hasPrefix("KRC ") { return String(name.dropFirst(4)) }
-            return name
-        }
+        _ = carId
+        if isPlayer { return KidShowOffLoadout.live.plate.shortText }
         return "KRC"
     }
 

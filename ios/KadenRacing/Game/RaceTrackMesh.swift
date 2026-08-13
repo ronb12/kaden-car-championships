@@ -28,7 +28,6 @@ enum RaceTrackMesh {
         let samples = resample(track, count: 520)
         guard samples.count >= 3 else { return }
         let halfW = halfWidth
-        let shoulderW: Float = 30
         let asphalt = MinimalRaceEnvironment.visibleAsphaltMaterial(night: night)
         let dashMat = dashMaterial(night: night)
         let laneLineMat = laneLineMaterial(night: night)
@@ -50,6 +49,7 @@ enum RaceTrackMesh {
         var rumbleWhiteIndices: [Int32] = []
         var grassVerts: [SCNVector3] = []
         var grassIndices: [Int32] = []
+        let grassW: Float = 6
 
         for i in 0..<(samples.count - 1) {
             let s0 = samples[i]
@@ -71,7 +71,7 @@ enum RaceTrackMesh {
                 let r0 = side > 0 ? s0.right : -s0.right
                 let r1 = side > 0 ? s1.right : -s1.right
                 let inner = halfW
-                let outer = halfW + shoulderW
+                let outer = halfW + grassW
                 let g0a = SCNVector3(s0.pos.x + r0.x * inner, yg0, s0.pos.z + r0.z * inner)
                 let g0b = SCNVector3(s0.pos.x + r0.x * outer, yg0, s0.pos.z + r0.z * outer)
                 let g1a = SCNVector3(s1.pos.x + r1.x * inner, yg1, s1.pos.z + r1.z * inner)
@@ -326,7 +326,7 @@ enum RaceTrackMesh {
         var rumbleWhiteIndices: [Int32] = []
         var grassVerts: [SCNVector3] = []
         var grassIndices: [Int32] = []
-        let shoulderW: Float = 22
+        let shoulderW: Float = 8
 
         for i in 0..<(samples.count - 1) {
             let s0 = samples[i]
@@ -731,23 +731,47 @@ enum TrackRoadsideClearance {
     static let treeMinLateral: Float = RaceTrackMesh.halfWidth + 10
     /// Palms — fronds hang wide; match building setback.
     static let palmMinLateral: Float = RaceTrackMesh.buildingSetback
+    /// Opaque race buildings — well clear of the racing line.
+    static let buildingMinLateral: Float = RaceTrackMesh.buildingSetback + 4
+    /// Lamp poles — keep the whole mesh (arms included) off asphalt.
+    static let poleMinLateral: Float = RaceTrackMesh.halfWidth + 8
 
     static func footprintRadius(_ node: SCNNode) -> Float {
         let (minB, maxB) = node.boundingBox
-        let sx = node.scale.x
-        let sz = node.scale.z
+        let sx = abs(node.scale.x)
+        let sz = abs(node.scale.z)
         return max((maxB.x - minB.x) * sx, (maxB.z - minB.z) * sz) * 0.5
+    }
+
+    /// Put the XZ origin at the mesh center so overhanging Kenney arms don't sit on the racing line.
+    static func centerPivotOnXZ(_ node: SCNNode) {
+        let (mn, mx) = node.boundingBox
+        let cx = (mn.x + mx.x) * 0.5
+        let cz = (mn.z + mx.z) * 0.5
+        node.pivot = SCNMatrix4MakeTranslation(cx, 0, cz)
     }
 
     static func closestFrame(
         to pos: SIMD3<Float>,
         track: ClosedTrackSpline
     ) -> (t: Float, center: SIMD3<Float>, right: SIMD3<Float>) {
-        let samples = 96
+        let samples = 160
         var bestT: Float = 0
         var bestD = Float.greatestFiniteMagnitude
         for i in 0..<samples {
             let t = Float(i) / Float(samples)
+            let p = track.position(at: t)
+            let d = simd_distance(SIMD2(pos.x, pos.z), SIMD2(p.x, p.z))
+            if d < bestD {
+                bestD = d
+                bestT = t
+            }
+        }
+        let window: Float = 1.5 / Float(samples)
+        for j in -12...12 {
+            var t = bestT + Float(j) * window / 12
+            t = t.truncatingRemainder(dividingBy: 1)
+            if t < 0 { t += 1 }
             let p = track.position(at: t)
             let d = simd_distance(SIMD2(pos.x, pos.z), SIMD2(p.x, p.z))
             if d < bestD {
@@ -767,16 +791,27 @@ enum TrackRoadsideClearance {
     ) {
         let footprint = max(footprintRadius(node), extraFootprint)
         let minCenterDist = minLateral + footprint
-
-        let pos = SIMD3<Float>(node.position.x, 0, node.position.z)
-        let (_, center, right) = closestFrame(to: pos, track: track)
-        let delta = pos - SIMD3<Float>(center.x, 0, center.z)
-        var lateral = simd_dot(SIMD2(delta.x, delta.z), SIMD2(right.x, right.z))
-
-        if abs(lateral) < minCenterDist {
-            lateral = lateral >= 0 ? minCenterDist : -minCenterDist
-            node.position.x = center.x + right.x * lateral
-            node.position.z = center.z + right.z * lateral
+        // Re-project after each move — tight curves otherwise leave one pole on asphalt.
+        for _ in 0..<3 {
+            let pos = SIMD3<Float>(node.position.x, 0, node.position.z)
+            let (_, center, right) = closestFrame(to: pos, track: track)
+            let delta = pos - SIMD3<Float>(center.x, 0, center.z)
+            var lateral = simd_dot(SIMD2(delta.x, delta.z), SIMD2(right.x, right.z))
+            if abs(lateral) < minCenterDist {
+                lateral = lateral >= 0 ? minCenterDist : -minCenterDist
+                node.position.x = center.x + right.x * lateral
+                node.position.z = center.z + right.z * lateral
+            }
         }
+    }
+
+    static func secure(
+        _ node: SCNNode,
+        track: ClosedTrackSpline,
+        minLateral: Float,
+        extraFootprint: Float = 0
+    ) {
+        centerPivotOnXZ(node)
+        pushOutsideRoad(node, track: track, minLateral: minLateral, extraFootprint: extraFootprint)
     }
 }

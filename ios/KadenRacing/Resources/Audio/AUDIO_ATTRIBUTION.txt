@@ -17,6 +17,26 @@ race_intensity.mp3 / Music/Race/race_intensity.mp3
 - License: CC0 — https://opengameart.org/content/pure-raceway
 - File: pure_raceway_bpm160.mp3
 
+race_fever.mp3 / Music/Race/race_fever.mp3
+- Source: “Fever Stadium” by MintoDog (OpenGameArt)
+- License: CC0 — https://opengameart.org/content/fever-stadium
+- File: fever_stadium_bpm165.mp3
+
+race_highway.mp3 / Music/Race/race_highway.mp3
+- Source: “Cool Highway [Remake]” by MintoDog (OpenGameArt)
+- License: CC0 — https://opengameart.org/content/cool-highway-remake
+- File: cool_highway_remake_bpm140.mp3
+
+race_neon.mp3 / Music/Race/race_neon.mp3
+- Source: “Neon sign Circuit [Remake]” by MintoDog (OpenGameArt)
+- License: CC0 — https://opengameart.org/content/neon-sign-circuit-remake
+- File: neon_sign_circuit_remake_bpm145.mp3
+
+race_hot.mp3 / Music/Race/race_hot.mp3
+- Source: “Hot Roadway [Remake]” by MintoDog (OpenGameArt)
+- License: CC0 — https://opengameart.org/content/hot-roadway-remake
+- File: hot_roadway_remake_bpm160.mp3
+
 menu_theme.mp3 / garage_theme.mp3 / Music/Menu/*
 - Source: “Racing Game Menu” by MintoDog (OpenGameArt)
 - License: CC0 — https://opengameart.org/content/racing-game-menu

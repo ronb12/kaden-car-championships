@@ -100,12 +100,12 @@ struct EnvironmentCameraRig {
             let lateral: Float = portrait ? 1.2 : 1.5
             #else
             // Closer + wider FOV so world-speed reads as fast (not a distant cruise).
-            let dist: Float = portrait ? 5.9 + speedRatio * 2.1 : 5.2 + speedRatio * 2.4
-            let height: Float = portrait ? 2.2 + speedRatio * 0.42 : 1.85 + speedRatio * 0.48
-            let minAbove: Float = portrait ? 1.7 : 1.4
-            let focusY: Float = portrait ? 0.78 : 0.88
-            let lookAhead: Float = 2.4 + speedRatio * 3.8
-            let fov: CGFloat = portrait ? 68 : 66
+            let dist: Float = portrait ? 5.6 + speedRatio * 2.0 : 4.9 + speedRatio * 2.3
+            let height: Float = portrait ? 2.05 + speedRatio * 0.4 : 1.72 + speedRatio * 0.46
+            let minAbove: Float = portrait ? 1.6 : 1.32
+            let focusY: Float = portrait ? 0.74 : 0.84
+            let lookAhead: Float = 2.9 + speedRatio * 4.6
+            let fov: CGFloat = portrait ? 70 : 68
             let lateral: Float = 0
             #endif
             let back = -forward * dist

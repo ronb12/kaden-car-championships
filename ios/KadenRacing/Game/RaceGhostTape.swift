@@ -24,6 +24,24 @@ struct RaceGhostTape: Codable, Equatable {
     }
 }
 
+/// Last finished run on this device — the “beat Dad / sibling” ghost.
+enum HouseGhostStore {
+    private static let prefix = "krc.ghost.house."
+
+    static func load(trackKey: String) -> RaceGhostTape? {
+        let key = prefix + trackKey
+        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(RaceGhostTape.self, from: data)
+    }
+
+    static func save(_ tape: RaceGhostTape) {
+        guard tape.samples.count >= 8, tape.totalTime > 1 else { return }
+        if let data = try? JSONEncoder().encode(tape) {
+            UserDefaults.standard.set(data, forKey: prefix + tape.trackKey)
+        }
+    }
+}
+
 enum RaceGhostStore {
     private static let prefix = "krc.ghost.pb."
 
@@ -51,6 +69,8 @@ final class RaceGhostController {
     private var playback: RaceGhostTape?
     private var recordAccum: Float = 0
     private let sampleHz: Float = 12
+    private(set) var lastHouseDelta: TimeInterval?
+    private(set) var racedHouseGhost = false
 
     func beginRecording() {
         recording.removeAll(keepingCapacity: true)
@@ -64,7 +84,7 @@ final class RaceGhostController {
         guard tape != nil else { return }
 
         let root = SCNNode()
-        root.name = "krcPBGhost"
+        root.name = "krcHouseGhost"
         root.opacity = 0.48
         #if targetEnvironment(simulator)
         let body = SCNBox(width: 1.7, height: 0.55, length: 3.6, chamferRadius: 0.08)
@@ -124,6 +144,8 @@ final class RaceGhostController {
     }
 
     func finishTape(trackKey: String, carId: String, totalTime: Float) -> RaceGhostTape? {
+        lastHouseDelta = nil
+        racedHouseGhost = false
         guard recording.count >= 8 else { return nil }
         let tape = RaceGhostTape(
             trackKey: trackKey,
@@ -131,6 +153,11 @@ final class RaceGhostController {
             totalTime: totalTime,
             samples: recording
         )
+        if let existing = HouseGhostStore.load(trackKey: trackKey) {
+            racedHouseGhost = true
+            lastHouseDelta = TimeInterval(tape.totalTime - existing.totalTime)
+        }
+        HouseGhostStore.save(tape)
         RaceGhostStore.saveIfBetter(tape)
         return tape
     }

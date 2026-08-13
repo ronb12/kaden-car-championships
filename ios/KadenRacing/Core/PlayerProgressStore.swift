@@ -68,6 +68,63 @@ final class PlayerProgressStore: ObservableObject {
         didSet { defaults.set(courierDeliveriesLifetime, forKey: Keys.courierDeliveries) }
     }
 
+    /// Stickers collected (id → count) for the trophy row.
+    @Published private(set) var stickerCounts: [String: Int] {
+        didSet { defaults.set(stickerCounts, forKey: Keys.stickers) }
+    }
+
+    @Published private(set) var unlockedPaintIds: Set<String> {
+        didSet { defaults.set(Array(unlockedPaintIds), forKey: Keys.paints) }
+    }
+
+    @Published private(set) var unlockedWrapIds: Set<String> {
+        didSet { defaults.set(Array(unlockedWrapIds), forKey: Keys.wraps) }
+    }
+
+    @Published private(set) var racesFinishedCount: Int {
+        didSet { defaults.set(racesFinishedCount, forKey: Keys.racesFinished) }
+    }
+
+    @Published private(set) var ownedToyIds: Set<String> {
+        didSet { defaults.set(Array(ownedToyIds), forKey: Keys.toys) }
+    }
+
+    @Published private(set) var equippedToyIds: Set<String> {
+        didSet { defaults.set(Array(equippedToyIds), forKey: Keys.equippedToys) }
+    }
+
+    @Published private(set) var ownedPlateIds: Set<String> {
+        didSet { defaults.set(Array(ownedPlateIds), forKey: Keys.plates) }
+    }
+
+    @Published private(set) var equippedPlateId: String {
+        didSet { defaults.set(equippedPlateId, forKey: Keys.equippedPlate) }
+    }
+
+    @Published private(set) var ownedHatIds: Set<String> {
+        didSet { defaults.set(Array(ownedHatIds), forKey: Keys.hats) }
+    }
+
+    @Published private(set) var equippedHatId: String {
+        didSet { defaults.set(equippedHatId, forKey: Keys.equippedHat) }
+    }
+
+    @Published private(set) var equippedHoodStickerId: String {
+        didSet { defaults.set(equippedHoodStickerId, forKey: Keys.hoodSticker) }
+    }
+
+    @Published private(set) var equippedDoorStickerId: String {
+        didSet { defaults.set(equippedDoorStickerId, forKey: Keys.doorSticker) }
+    }
+
+    @Published private(set) var lifetimeCrystals: Int {
+        didSet { defaults.set(lifetimeCrystals, forKey: Keys.crystals) }
+    }
+
+    @Published private(set) var trophyWins: Int {
+        didSet { defaults.set(trophyWins, forKey: Keys.trophies) }
+    }
+
     init() {
         let savedCredits = Int64(defaults.integer(forKey: Keys.credits))
         credits = savedCredits == 0 && defaults.object(forKey: Keys.credits) == nil
@@ -102,10 +159,184 @@ final class PlayerProgressStore: ObservableObject {
             max(0, PursuitCampaign.chapters.count - 1)
         )
         courierDeliveriesLifetime = max(0, defaults.integer(forKey: Keys.courierDeliveries))
+        stickerCounts = (defaults.dictionary(forKey: Keys.stickers) as? [String: Int]) ?? [:]
+        if let arr = defaults.array(forKey: Keys.paints) as? [String], !arr.isEmpty {
+            unlockedPaintIds = Set(arr)
+        } else {
+            unlockedPaintIds = Set(KidPlayLoop.starterPaints.map(\.rawValue))
+        }
+        if let arr = defaults.array(forKey: Keys.wraps) as? [String], !arr.isEmpty {
+            unlockedWrapIds = Set(arr)
+        } else {
+            unlockedWrapIds = Set(KidPlayLoop.starterWraps.map(\.rawValue))
+        }
+        racesFinishedCount = max(0, defaults.integer(forKey: Keys.racesFinished))
+        if let arr = defaults.array(forKey: Keys.toys) as? [String] {
+            ownedToyIds = Set(arr)
+        } else {
+            ownedToyIds = []
+        }
+        if let arr = defaults.array(forKey: Keys.equippedToys) as? [String] {
+            equippedToyIds = Set(arr)
+        } else {
+            equippedToyIds = []
+        }
+        let plates: Set<String>
+        if let arr = defaults.array(forKey: Keys.plates) as? [String], !arr.isEmpty {
+            plates = Set(arr)
+        } else {
+            plates = Set(KidPlayLoop.starterPlates.map(\.rawValue))
+        }
+        ownedPlateIds = plates
+        let savedPlate = defaults.string(forKey: Keys.equippedPlate) ?? KidPlate.krc.rawValue
+        equippedPlateId = plates.contains(savedPlate) ? savedPlate : KidPlate.krc.rawValue
+        if let arr = defaults.array(forKey: Keys.hats) as? [String] {
+            ownedHatIds = Set(arr)
+        } else {
+            ownedHatIds = []
+        }
+        equippedHatId = defaults.string(forKey: Keys.equippedHat) ?? ""
+        equippedHoodStickerId = defaults.string(forKey: Keys.hoodSticker) ?? ""
+        equippedDoorStickerId = defaults.string(forKey: Keys.doorSticker) ?? ""
+        lifetimeCrystals = max(0, defaults.integer(forKey: Keys.crystals))
+        trophyWins = max(0, defaults.integer(forKey: Keys.trophies))
         migrateGarageEconomyIfNeeded()
+        migrateKidCollectionIfNeeded()
         rollDailyIfNeeded()
         loadWeekly()
         applyCourierRankUnlocks()
+        syncShowOff()
+    }
+
+    private func migrateKidCollectionIfNeeded() {
+        guard !defaults.bool(forKey: Keys.kidCollection) else { return }
+        defaults.set(true, forKey: Keys.kidCollection)
+        var paints = unlockedPaintIds.union(KidPlayLoop.starterPaints.map(\.rawValue))
+        var wraps = unlockedWrapIds.union(KidPlayLoop.starterWraps.map(\.rawValue))
+        for car in GameCatalog.cars {
+            let style = GarageCustomization.style(for: car.id)
+            paints.insert(style.paint.rawValue)
+            wraps.insert(style.wrap.rawValue)
+        }
+        unlockedPaintIds = paints
+        unlockedWrapIds = wraps
+    }
+
+    func ownsPaint(_ paint: GaragePaintSwatch) -> Bool {
+        unlockedPaintIds.contains(paint.rawValue)
+    }
+
+    func ownsWrap(_ wrap: GarageWrapStyle) -> Bool {
+        wrap == .none || unlockedWrapIds.contains(wrap.rawValue)
+    }
+
+    /// Apply a post-race loot drop. Returns the same drop with credits already granted.
+    @discardableResult
+    func grantKidLoot(_ drop: KidLootDrop) -> KidLootDrop {
+        stickerCounts[drop.sticker.rawValue, default: 0] += 1
+        if equippedHoodStickerId.isEmpty {
+            equippedHoodStickerId = drop.sticker.rawValue
+        } else if equippedDoorStickerId.isEmpty {
+            equippedDoorStickerId = drop.sticker.rawValue
+        }
+        if let paint = drop.paint {
+            unlockedPaintIds.insert(paint.rawValue)
+        }
+        if let wrap = drop.wrap {
+            unlockedWrapIds.insert(wrap.rawValue)
+        }
+        if let toy = drop.toy {
+            ownedToyIds.insert(toy.rawValue)
+            equippedToyIds.insert(toy.rawValue)
+        }
+        if let plate = drop.plate {
+            ownedPlateIds.insert(plate.rawValue)
+            equippedPlateId = plate.rawValue
+        }
+        if let hat = drop.hat {
+            ownedHatIds.insert(hat.rawValue)
+            equippedHatId = hat.rawValue
+        }
+        if drop.crystals > 0 {
+            lifetimeCrystals += drop.crystals
+        }
+        if drop.trophy {
+            trophyWins += 1
+        }
+        if drop.bonusCredits > 0 {
+            creditsMutation(drop.bonusCredits)
+        }
+        racesFinishedCount += 1
+        syncShowOff()
+        return drop
+    }
+
+    var trophyStickers: [KidSticker] {
+        KidSticker.allCases.filter { (stickerCounts[$0.rawValue] ?? 0) > 0 }
+    }
+
+    var albumSubtitle: String {
+        let stickers = trophyStickers.count
+        return "\(stickers) stickers · \(lifetimeCrystals) crystals · \(trophyWins) trophies"
+    }
+
+    func ownsToy(_ toy: KidToy) -> Bool { ownedToyIds.contains(toy.rawValue) }
+    func ownsPlate(_ plate: KidPlate) -> Bool { ownedPlateIds.contains(plate.rawValue) }
+    func ownsHat(_ hat: KidHat) -> Bool { ownedHatIds.contains(hat.rawValue) }
+    func ownsSticker(_ sticker: KidSticker) -> Bool { (stickerCounts[sticker.rawValue] ?? 0) > 0 }
+
+    func equipHoodSticker(_ sticker: KidSticker?) {
+        equippedHoodStickerId = sticker?.rawValue ?? ""
+        syncShowOff()
+    }
+
+    func equipDoorSticker(_ sticker: KidSticker?) {
+        equippedDoorStickerId = sticker?.rawValue ?? ""
+        syncShowOff()
+    }
+
+    func toggleToy(_ toy: KidToy) {
+        guard ownsToy(toy) else { return }
+        if equippedToyIds.contains(toy.rawValue) {
+            equippedToyIds.remove(toy.rawValue)
+        } else {
+            equippedToyIds.insert(toy.rawValue)
+        }
+        syncShowOff()
+    }
+
+    func equipPlate(_ plate: KidPlate) {
+        guard ownsPlate(plate) else { return }
+        equippedPlateId = plate.rawValue
+        syncShowOff()
+    }
+
+    func equipHat(_ hat: KidHat?) {
+        if let hat {
+            guard ownsHat(hat) else { return }
+            equippedHatId = hat.rawValue
+        } else {
+            equippedHatId = ""
+        }
+        syncShowOff()
+    }
+
+    func syncShowOff() {
+        let owned = KidSticker.allCases.filter { (stickerCounts[$0.rawValue] ?? 0) > 0 }
+        var counts: [KidSticker: Int] = [:]
+        for sticker in owned {
+            counts[sticker] = stickerCounts[sticker.rawValue] ?? 0
+        }
+        let toys = Set(KidToy.allCases.filter { equippedToyIds.contains($0.rawValue) })
+        KidShowOffLoadout.live = KidShowOffLoadout(
+            hoodSticker: KidSticker(rawValue: equippedHoodStickerId),
+            doorSticker: KidSticker(rawValue: equippedDoorStickerId),
+            toys: toys,
+            plate: KidPlate(rawValue: equippedPlateId) ?? .krc,
+            hat: KidHat(rawValue: equippedHatId),
+            ownedStickers: owned,
+            stickerCounts: counts
+        )
     }
 
     /// Rebuild unlocks from starters + career rewards when moving off the free-garage era.
@@ -411,6 +642,21 @@ final class PlayerProgressStore: ObservableObject {
         dailyStreak = 0
         dailyClaimedDayKey = 0
         pursuitChapterUnlocked = 0
+        stickerCounts = [:]
+        unlockedPaintIds = Set(KidPlayLoop.starterPaints.map(\.rawValue))
+        unlockedWrapIds = Set(KidPlayLoop.starterWraps.map(\.rawValue))
+        racesFinishedCount = 0
+        ownedToyIds = []
+        equippedToyIds = []
+        ownedPlateIds = Set(KidPlayLoop.starterPlates.map(\.rawValue))
+        equippedPlateId = KidPlate.krc.rawValue
+        ownedHatIds = []
+        equippedHatId = ""
+        equippedHoodStickerId = ""
+        equippedDoorStickerId = ""
+        lifetimeCrystals = 0
+        trophyWins = 0
+        syncShowOff()
         weeklyKey = WeeklyEvents.weekKey()
         weeklyProgress = [:]
         weeklyClaimed = []
@@ -460,6 +706,21 @@ final class PlayerProgressStore: ObservableObject {
         static let dailyClaimed = "krc.daily.claimed"
         static let pursuitChapter = "krc.pursuit.chapter"
         static let courierDeliveries = "krc.courier.deliveries"
+        static let stickers = "krc.kid.stickers"
+        static let paints = "krc.kid.paints"
+        static let wraps = "krc.kid.wraps"
+        static let racesFinished = "krc.kid.races"
+        static let kidCollection = "krc.kid.collection.v1"
+        static let toys = "krc.kid.toys"
+        static let equippedToys = "krc.kid.toys.eq"
+        static let plates = "krc.kid.plates"
+        static let equippedPlate = "krc.kid.plate.eq"
+        static let hats = "krc.kid.hats"
+        static let equippedHat = "krc.kid.hat.eq"
+        static let hoodSticker = "krc.kid.sticker.hood"
+        static let doorSticker = "krc.kid.sticker.door"
+        static let crystals = "krc.kid.crystals"
+        static let trophies = "krc.kid.trophies"
         static let weeklyKey = "krc.weekly.key"
         static let weeklyProgress = "krc.weekly.progress"
         static let weeklyClaimed = "krc.weekly.claimed"

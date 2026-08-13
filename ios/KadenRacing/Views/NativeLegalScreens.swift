@@ -175,7 +175,7 @@ struct NativeSettingsView: View {
                             .onChange(of: transmissionMode) { v in
                                 VehicleDrivingPreferences.transmissionMode = v
                             }
-                            Toggle("Manual driving (no assists)", isOn: $manualControl)
+                            Toggle("Pro controls (assists off)", isOn: $manualControl)
                                 .tint(KRCDesign.hotOrange)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 8)

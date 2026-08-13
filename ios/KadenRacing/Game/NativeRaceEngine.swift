@@ -116,6 +116,9 @@ struct CourierSessionConfig {
     var cargoCapacity: Int = 1
     var nightPremium: Bool = false
     var timeBonus: TimeInterval = 0
+    var jobGoal: Int = 3
+    var timeLimit: TimeInterval = 120
+    var autoPickFirst: Bool = true
 
     static func from(progress: PlayerProgressStore, nightRace: Bool) -> CourierSessionConfig {
         let rank = progress.courierRank
@@ -123,7 +126,10 @@ struct CourierSessionConfig {
             careerMul: rank.payoutMul,
             cargoCapacity: rank.cargoCapacity,
             nightPremium: nightRace,
-            timeBonus: rank.timeBonusSeconds
+            timeBonus: rank.timeBonusSeconds,
+            jobGoal: 3,
+            timeLimit: 120,
+            autoPickFirst: true
         )
     }
 }
@@ -148,6 +154,9 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
     private var scene = SCNScene()
     private var carNode = SCNNode()
     private var cameraNode = SCNNode()
+    private var rearCameraNode = SCNNode()
+    /// Player mesh only — rear-view camera excludes this bit so the bumper doesn't fill the mirror.
+    static let playerVisualCategory = 1 << 1
     private var trackQuery: TrackWorldQuery!
     private var openWorld = OpenWorldDrivingSimulation.State()
     private var openWorldSim = OpenWorldDrivingSimulation()
@@ -163,6 +172,7 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
     private var paused = false
     private var finished = false
     private var nitro: Float = 1
+    private var wasNitroOn = false
     private var heat: Float = 0
     private var damage: Float = 0
     private var lastRewardBreakdown: (base: Int64, position: Int64, heat: Int64, arcade: Int64) = (0, 0, 0, 0)
@@ -236,6 +246,8 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
     @Published var courierShiftGrade: String = ""
     let lapGoal: Int
     var onRaceFinished: ((TimeInterval) -> Void)?
+    private(set) var houseGhostDelta: TimeInterval?
+    private(set) var hadHouseGhost = false
 
     // Backing vars mutated on the SceneKit render thread; flushed to @Published on main.
     private var _lapIndex: Int = 1
@@ -293,6 +305,29 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         audio.prepare()
         audio.beginRaceIntro()
         startTime = Date()
+    }
+
+    func raceScene() -> SCNScene { scene }
+
+    func rearViewPointOfView() -> SCNNode { rearCameraNode }
+
+    private func installRearViewCamera() {
+        carNode.enumerateHierarchy { node, _ in
+            node.categoryBitMask = Self.playerVisualCategory
+        }
+        rearCameraNode.childNodes.forEach { $0.removeFromParentNode() }
+        rearCameraNode.removeFromParentNode()
+        let cam = SCNCamera()
+        cam.fieldOfView = 62
+        cam.zNear = 0.9
+        cam.zFar = 240
+        cam.categoryBitMask = ~Self.playerVisualCategory
+        rearCameraNode.camera = cam
+        rearCameraNode.name = "krcRearViewCamera"
+        // Camera looks along local −Z, which is the car's rear after heading alignment.
+        rearCameraNode.position = SCNVector3(0, 1.28, -0.42)
+        rearCameraNode.eulerAngles = SCNVector3(0.1, 0, 0)
+        carNode.addChildNode(rearCameraNode)
     }
 
     func setPaused(_ paused: Bool) {
@@ -498,6 +533,7 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         )
         #endif
         scene.rootNode.addChildNode(carNode)
+        installRearViewCamera()
         AutomotiveReflectionSystem.bindScene(scene, to: carNode)
 
         if shouldSpawnOpponents {
@@ -550,18 +586,26 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
             }
         }
 
-        // Local PB ghost for Ghost Duel / Time Trial.
+        // Local PB ghost for Ghost Duel / Time Trial. House ghost (last run on this device) on circuit / career.
         if mode == .ghostDuel || mode == .timeTrial {
             let key = ghostTrackKey
                 ?? RaceGhostTape.trackKey(trackIndex: city.catalogTrackIndex ?? playerCarIndex, laps: lapGoal)
-            let tape = RaceGhostStore.load(trackKey: key)
+            let tape = RaceGhostStore.load(trackKey: key) ?? HouseGhostStore.load(trackKey: key)
             ghostController.attachPlaybackGhost(
                 tape: tape,
                 into: scene.rootNode,
-                bodyColor: carColor
+                bodyColor: UIColor(red: 0.35, green: 0.9, blue: 1, alpha: 1)
             )
             ghostController.beginRecording()
         } else if mode == .circuit || mode == .career {
+            let key = ghostTrackKey
+                ?? RaceGhostTape.trackKey(trackIndex: city.catalogTrackIndex ?? playerCarIndex, laps: lapGoal)
+            let tape = HouseGhostStore.load(trackKey: key)
+            ghostController.attachPlaybackGhost(
+                tape: tape,
+                into: scene.rootNode,
+                bodyColor: UIColor(red: 0.35, green: 0.9, blue: 1, alpha: 1)
+            )
             ghostController.beginRecording()
         }
 
@@ -571,10 +615,13 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
                 to: scene.rootNode,
                 track: city.track,
                 seed: seed ^ 0xC0DE51,
+                goal: courierConfig.jobGoal,
+                timeLimit: courierConfig.timeLimit,
                 careerMul: courierConfig.careerMul,
                 cargoCapacity: courierConfig.cargoCapacity,
                 nightPremium: courierConfig.nightPremium,
-                timeBonus: courierConfig.timeBonus
+                timeBonus: courierConfig.timeBonus,
+                autoPickFirst: courierConfig.autoPickFirst
             )
             courier.bindCar(carNode)
             _courierSnapshot = courier.snapshot
@@ -651,7 +698,8 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         guard let cam = cameraNode.camera, !cameraPostConfigured else { return }
         let preset = EnvironmentGraphicsSettings.preset(for: raceQuality)
         cam.zNear = 0.35
-        cam.zFar = Double(preset.maxDrawDistance) * 1.35
+        cam.zFar = max(Double(preset.maxDrawDistance) * 1.6, 1100)
+        cam.categoryBitMask = Int.max
         if MinimalRaceEnvironment.isEnabled {
             MinimalRaceEnvironment.configureCamera(
                 cam,
@@ -766,6 +814,8 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
             lateral: projection.signedLateral,
             maxLateral: RaceTrackMesh.halfWidth
         )
+        let corner = VehicleCornering.severity(track: city.track, t: openWorld.trackT)
+        trackGrip *= max(0.74, 1 - corner * 0.22)
         trackGrip *= arcadeMods.gripMul
         let sample = OpenWorldDrivingSimulation.InputSample(
             throttle: input.effectiveThrottle,
@@ -819,10 +869,12 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         RaceCarGeometry.setBrakeLights(root: carNode, amount: openWorld.brakeGlow)
         updateVehicleLights()
         if nitroOn {
+            if !wasNitroOn { KRCUISounds.playHorn() }
             nitro = max(0, nitro - 0.22 * dt * (1 / max(0.5, stats.nitroCapacityMul)))
         } else {
             nitro = min(1, nitro + 0.06 * stats.nitroRefillMul * dt)
         }
+        wasNitroOn = nitroOn
         if mode == .endless {
             // Heat rises with speed and time — high heat bleeds top speed (see damageDrag/heatDrag).
             let speedHeat = min(1, abs(openWorld.speed) / max(0.001, maxWorldSpeed))
@@ -993,7 +1045,8 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
             nitroActive: nitroOn,
             drifting: openWorld.isDrifting,
             slip: openWorld.slipAmount,
-            braking: input.effectiveBrake > 0.1
+            braking: input.effectiveBrake > 0.1,
+            throttle: input.effectiveThrottle
         )
         VehicleEnvironmentEffects.update(
             on: carNode,
@@ -1001,6 +1054,9 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
             speed: openWorld.speed,
             onDirt: abs(projection.signedLateral) > RaceTrackMesh.halfWidth
         )
+        if openWorld.impactImpulse > 0.55 {
+            KRCUISounds.playHorn()
+        }
         if openWorld.impactImpulse > 0.4 && lastHapticImpact < 0.2 {
             let intensity = CGFloat(min(1, openWorld.impactImpulse))
             DispatchQueue.main.async {
@@ -1115,8 +1171,15 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         let attitudeAlpha = min(1, dt * 7)
         smoothedBodyPitch += (openWorld.bodyPitch - smoothedBodyPitch) * attitudeAlpha
         smoothedBodyRoll += (openWorld.bodyRoll - smoothedBodyRoll) * attitudeAlpha
-        // No pitch/roll until contact seating is rock-solid — attitude was burying USDZ into asphalt.
-        carNode.eulerAngles = SCNVector3(0, openWorld.heading, 0)
+        // Grade on the root so hills read; roll/pitch on the vehicle child so tires stay planted.
+        let tan = city.track.tangent(openWorld.trackT)
+        let horiz = max(0.001, simd_length(SIMD2(tan.x, tan.z)))
+        let gradePitch = max(-0.26, min(0.26, -atan2(tan.y, horiz)))
+        carNode.eulerAngles = SCNVector3(gradePitch, openWorld.heading, 0)
+        if let body = carNode.childNode(withName: "krcVehicleRoot", recursively: false) {
+            body.eulerAngles = SCNVector3(smoothedBodyPitch * 0.5, 0, smoothedBodyRoll * 0.35)
+        }
+        WheelAssembly.applySuspension(in: carNode, compression: openWorld.suspension)
 
         let speedRatio = min(1, abs(openWorld.speed) / max(0.001, maxWorldSpeed * stats.topSpeedMul))
         let portrait = (view?.bounds.height ?? 0) > (view?.bounds.width ?? 1)
@@ -1185,6 +1248,8 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         let key = ghostTrackKey
             ?? RaceGhostTape.trackKey(trackIndex: city.catalogTrackIndex ?? 0, laps: lapGoal)
         _ = ghostController.finishTape(trackKey: key, carId: carId, totalTime: Float(elapsed))
+        houseGhostDelta = ghostController.lastHouseDelta
+        hadHouseGhost = ghostController.racedHouseGhost
         let aiPosition = opponents?.playerPosition(playerLap: _lapIndex, playerTrackT: openWorld.trackT) ?? 1
         let aiRacerCount = opponents?.activeRacerCount ?? 1
         let finalDrift = _driftAccumulator

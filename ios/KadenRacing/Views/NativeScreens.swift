@@ -82,6 +82,7 @@ struct MainMenuScreen: View {
     @State private var showPrivacy = false
     @State private var showTerms = false
     @State private var showWeekly = false
+    @State private var showAlbum = false
     @State private var titleScale: CGFloat = 1.0
     @State private var titleOpacity: Double = 1.0
     @State private var titleBlur: CGFloat = 0
@@ -188,6 +189,65 @@ struct MainMenuScreen: View {
                     // ── Race modes — must be height-bounded to scroll ──────
                     ScrollView(.vertical, showsIndicators: landscape) {
                         VStack(spacing: 10) {
+                            Button {
+                                flow.beginKidPlay(progress: progress)
+                            } label: {
+                                VStack(spacing: 6) {
+                                    Text("PLAY")
+                                        .font(.system(size: landscape ? 22 : 28, weight: .black, design: .rounded))
+                                        .tracking(2)
+                                    Text(KidPlayLoop.nextPrize(progress: progress).line)
+                                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                                        .multilineTextAlignment(.center)
+                                        .opacity(0.92)
+                                }
+                                .foregroundStyle(.black)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, landscape ? 12 : 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [KRCDesign.gold, KRCDesign.hotOrange],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
+                                        )
+                                        .shadow(color: KRCDesign.gold.opacity(0.45), radius: 12, y: 4)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("menu.play")
+
+                            HStack(spacing: 8) {
+                                KidToyButton(
+                                    icon: "shield.fill",
+                                    title: "HOT PURSUIT",
+                                    subtitle: "90s bust",
+                                    accent: Color(red: 0.3, green: 0.6, blue: 1)
+                                ) { flow.beginPoliceChase(progress: progress) }
+                                KidToyButton(
+                                    icon: "shippingbox.fill",
+                                    title: "COURIER",
+                                    subtitle: "3 packages",
+                                    accent: Color(red: 0.35, green: 0.9, blue: 0.55)
+                                ) { flow.beginCourier(progress: progress, returningTo: .mainMenu) }
+                            }
+
+                            RaceMenuButton(
+                                icon: "paintpalette.fill",
+                                title: "PAINT SHOP",
+                                subtitle: "Dress the car · wraps unlock after races",
+                                accent: Color(red: 1, green: 0.45, blue: 0.75)
+                            ) { flow.openCarSelect(returningTo: .mainMenu) }
+
+                            RaceMenuButton(
+                                icon: "square.grid.2x2.fill",
+                                title: "TROPHY ALBUM",
+                                subtitle: progress.albumSubtitle,
+                                accent: KRCDesign.gold
+                            ) { showAlbum = true }
+
                             RaceMenuButton(
                                 icon: "star.fill",
                                 title: progress.careerComplete
@@ -230,19 +290,9 @@ struct MainMenuScreen: View {
                             ) { showWeekly = true }
 
                             RaceMenuButton(
-                                icon: "shield.fill",
-                                title: "HOT PURSUIT",
-                                subtitle: {
-                                    let ch = PursuitCampaign.chapter(at: progress.pursuitChapterUnlocked)
-                                    return "\(ch.title) · \(ch.blurb)"
-                                }(),
-                                accent: Color(red: 0.3, green: 0.6, blue: 1)
-                            ) { flow.beginPoliceChase(progress: progress) }
-
-                            RaceMenuButton(
                                 icon: "gamecontroller.fill",
-                                title: "ARCADE MODES",
-                                subtitle: "Endless · drift · ghost duel",
+                                title: "MORE MODES",
+                                subtitle: "Endless · ghost duel · time trial",
                                 accent: Color(red: 0.85, green: 0.3, blue: 1)
                             ) { flow.openModeSelect() }
                         }
@@ -294,6 +344,9 @@ struct MainMenuScreen: View {
         }
         .sheet(isPresented: $showWeekly) {
             WeeklyContractsSheet(progress: progress, onDismiss: { showWeekly = false })
+        }
+        .sheet(isPresented: $showAlbum) {
+            KidTrophyAlbumSheet(progress: progress, onDismiss: { showAlbum = false })
         }
         .alert(
             "Game Center",
@@ -405,6 +458,42 @@ struct MainMenuScreen: View {
                 .foregroundStyle(active ? Color.black : Color.white.opacity(0.6))
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct KidToyButton: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let accent: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(accent)
+                Text(title)
+                    .font(.system(size: 11, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                Text(subtitle)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.black.opacity(0.38))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(accent.opacity(0.4), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("menu.\(title.replacingOccurrences(of: " ", with: "_").lowercased())")
     }
 }
 
@@ -586,7 +675,8 @@ struct CarSelectScreen: View {
                             CarPreview3DView(
                                 car: selectedCar,
                                 height: 150,
-                                bodyColorOverride: GarageCustomization.bodyColor(for: selectedCar)
+                                bodyColorOverride: GarageCustomization.bodyColor(for: selectedCar),
+                                appearanceKey: "\(styleTick)-\(GarageCustomization.style(for: selectedCar.id).rim.rawValue)-\(GarageCustomization.style(for: selectedCar.id).wrap.rawValue)-\(GarageCustomization.style(for: selectedCar.id).paint.rawValue)-\(KidShowOffLoadout.live.appearanceKey)"
                             )
                             // Remount only when the car identity changes — styleTick used to
                             // rebuild the whole SCNView on every paint/wrap tweak and flash the spin.
@@ -721,21 +811,31 @@ struct CarSelectScreen: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(GaragePaintSwatch.allCases) { swatch in
+                            let owned = progress.ownsPaint(swatch)
                             Button {
+                                guard owned else { return }
                                 GarageCustomization.setPaint(swatch, for: carId)
                                 styleTick += 1
                             } label: {
-                                Circle()
-                                    .fill(Color(swatch.color ?? selectedCar.uiColor))
-                                    .frame(width: 28, height: 28)
-                                    .overlay(
-                                        Circle().strokeBorder(
-                                            style.paint == swatch ? KRCDesign.gold : Color.white.opacity(0.25),
-                                            lineWidth: style.paint == swatch ? 2 : 1
+                                ZStack {
+                                    Circle()
+                                        .fill(Color(swatch.color ?? selectedCar.uiColor))
+                                        .frame(width: 28, height: 28)
+                                        .overlay(
+                                            Circle().strokeBorder(
+                                                style.paint == swatch ? KRCDesign.gold : Color.white.opacity(0.25),
+                                                lineWidth: style.paint == swatch ? 2 : 1
+                                            )
                                         )
-                                    )
+                                    if !owned {
+                                        Image(systemName: "lock.fill")
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundStyle(.white)
+                                    }
+                                }
+                                .opacity(owned ? 1 : 0.45)
                             }
-                            .accessibilityLabel(swatch.label)
+                            .accessibilityLabel(owned ? swatch.label : "\(swatch.label) locked")
                         }
                     }
                 }
@@ -743,7 +843,9 @@ struct CarSelectScreen: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(GarageWrapStyle.allCases) { wrap in
+                            let owned = progress.ownsWrap(wrap)
                             Button {
+                                guard owned else { return }
                                 GarageCustomization.setWrap(wrap, for: carId)
                                 styleTick += 1
                             } label: {
@@ -757,6 +859,11 @@ struct CarSelectScreen: View {
                                                 .fill(Color(second))
                                                 .frame(width: 8, height: 22)
                                         }
+                                        if !owned {
+                                            Image(systemName: "lock.fill")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundStyle(.white)
+                                        }
                                     }
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -765,13 +872,94 @@ struct CarSelectScreen: View {
                                                 lineWidth: style.wrap == wrap ? 2 : 1
                                             )
                                     )
-                                    Text(wrap.label)
+                                    .opacity(owned ? 1 : 0.45)
+                                    Text(owned ? wrap.label : "Race")
                                         .font(.system(size: 9, weight: .bold))
                                         .foregroundStyle(style.wrap == wrap ? KRCDesign.gold : .white.opacity(0.75))
                                 }
                             }
-                            .accessibilityLabel(wrap.label)
+                            .accessibilityLabel(owned ? wrap.label : "\(wrap.label) locked")
                         }
+                    }
+                }
+                KRCDesign.SectionLabel(text: "HOOD STICKER")
+                collectibleChipRow(items: KidSticker.allCases.map { item in
+                    CollectibleChip(
+                        id: item.rawValue,
+                        title: item.title,
+                        symbol: item.symbolName,
+                        tint: Color(uiColor: item.tint),
+                        owned: progress.ownsSticker(item),
+                        equipped: progress.equippedHoodStickerId == item.rawValue
+                    )
+                }) { id in
+                    if let sticker = KidSticker(rawValue: id) {
+                        progress.equipHoodSticker(progress.equippedHoodStickerId == id ? nil : sticker)
+                        styleTick += 1
+                    }
+                }
+                KRCDesign.SectionLabel(text: "DOOR STICKER")
+                collectibleChipRow(items: KidSticker.allCases.map { item in
+                    CollectibleChip(
+                        id: item.rawValue,
+                        title: item.title,
+                        symbol: item.symbolName,
+                        tint: Color(uiColor: item.tint),
+                        owned: progress.ownsSticker(item),
+                        equipped: progress.equippedDoorStickerId == item.rawValue
+                    )
+                }) { id in
+                    if let sticker = KidSticker(rawValue: id) {
+                        progress.equipDoorSticker(progress.equippedDoorStickerId == id ? nil : sticker)
+                        styleTick += 1
+                    }
+                }
+                KRCDesign.SectionLabel(text: "RARE TOYS")
+                collectibleChipRow(items: KidToy.allCases.map { item in
+                    CollectibleChip(
+                        id: item.rawValue,
+                        title: item.title,
+                        symbol: item.symbolName,
+                        tint: KRCDesign.hotOrange,
+                        owned: progress.ownsToy(item),
+                        equipped: progress.equippedToyIds.contains(item.rawValue)
+                    )
+                }) { id in
+                    if let toy = KidToy(rawValue: id) {
+                        progress.toggleToy(toy)
+                        styleTick += 1
+                    }
+                }
+                KRCDesign.SectionLabel(text: "PLATES")
+                collectibleChipRow(items: KidPlate.allCases.map { item in
+                    CollectibleChip(
+                        id: item.rawValue,
+                        title: item.shortText,
+                        symbol: "rectangle.fill",
+                        tint: KRCDesign.gold,
+                        owned: progress.ownsPlate(item),
+                        equipped: progress.equippedPlateId == item.rawValue
+                    )
+                }) { id in
+                    if let plate = KidPlate(rawValue: id) {
+                        progress.equipPlate(plate)
+                        styleTick += 1
+                    }
+                }
+                KRCDesign.SectionLabel(text: "DRIVER HATS")
+                collectibleChipRow(items: KidHat.allCases.map { item in
+                    CollectibleChip(
+                        id: item.rawValue,
+                        title: item.title,
+                        symbol: item.symbolName,
+                        tint: Color(uiColor: item.color),
+                        owned: progress.ownsHat(item),
+                        equipped: progress.equippedHatId == item.rawValue
+                    )
+                }) { id in
+                    if let hat = KidHat(rawValue: id) {
+                        progress.equipHat(progress.equippedHatId == id ? nil : hat)
+                        styleTick += 1
                     }
                 }
                 KRCDesign.SectionLabel(text: "RIMS")
@@ -823,6 +1011,57 @@ struct CarSelectScreen: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .id(styleTick)
+        }
+    }
+
+    private struct CollectibleChip: Identifiable {
+        var id: String
+        var title: String
+        var symbol: String
+        var tint: Color
+        var owned: Bool
+        var equipped: Bool
+    }
+
+    private func collectibleChipRow(items: [CollectibleChip], action: @escaping (String) -> Void) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(items) { item in
+                    Button {
+                        guard item.owned else { return }
+                        action(item.id)
+                    } label: {
+                        VStack(spacing: 4) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(item.tint.opacity(item.owned ? 0.35 : 0.12))
+                                    .frame(width: 52, height: 36)
+                                Image(systemName: item.symbol)
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(item.owned ? .white : .white.opacity(0.35))
+                                if !item.owned {
+                                    Image(systemName: "lock.fill")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundStyle(.white)
+                                        .offset(x: 16, y: -10)
+                                }
+                            }
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .strokeBorder(
+                                        item.equipped ? KRCDesign.gold : Color.white.opacity(0.18),
+                                        lineWidth: item.equipped ? 2 : 1
+                                    )
+                            )
+                            Text(item.owned ? item.title : "Race")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(item.equipped ? KRCDesign.gold : .white.opacity(0.75))
+                        }
+                    }
+                    .accessibilityLabel(item.owned ? item.title : "\(item.title) locked")
+                    .opacity(item.owned ? 1 : 0.5)
+                }
+            }
         }
     }
 
@@ -1249,7 +1488,11 @@ struct ActiveRaceScreen: View {
     @State private var scenePrepared = false
     @State private var matchGateReady = false
     @State private var matchmakingTask: Task<Void, Never>?
+    #if DEBUG
     @State private var showTutorial = !KRCTutorial.hasShownControlsTip && !KRCDebugUI.isQALaunch
+    #else
+    @State private var showTutorial = !KRCTutorial.hasShownControlsTip
+    #endif
     @State private var tilt = TiltSteeringController()
 
     init(flow: GameFlowState, progress: PlayerProgressStore) {
@@ -1413,6 +1656,8 @@ struct ActiveRaceScreen: View {
                                 courierGrade: session.engine.isCourierRun()
                                     ? session.engine.courierShiftGrade
                                     : nil,
+                                houseGhostDelta: session.engine.houseGhostDelta,
+                                hadHouseGhost: session.engine.hadHouseGhost,
                                 progress: progress
                             )
                         }
@@ -1540,7 +1785,14 @@ struct ActiveRaceScreen: View {
             let topInset = geo.safeAreaInsets.top
             ZStack {
                 VStack(spacing: 0) {
-                    raceHUD(portrait: portrait, topInset: topInset)
+                    HStack {
+                        Spacer(minLength: 0)
+                        RearViewMirrorView(engine: session.engine, portrait: portrait)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.top, max(topInset - 4, 0))
+                    .padding(.bottom, 2)
+                    raceHUD(portrait: portrait, topInset: 0)
                     Spacer(minLength: 0)
                     if !portrait && !useDPadControls {
                         touchControls(portrait: false)
@@ -1870,15 +2122,24 @@ struct RaceFinishedScreen: View {
             Color.black.opacity(0.62).ignoresSafeArea()
             ScrollView {
                 VStack(spacing: 20) {
-                    Image(systemName: flow.activeGameMode == .courier
-                          ? "shippingbox.fill"
-                          : "flag.checkered.circle.fill")
-                        .font(.system(size: 52))
-                        .foregroundStyle(KRCDesign.gold)
-                        .shadow(color: KRCDesign.gold.opacity(0.45), radius: 12)
-                        .scaleEffect(appear ? 1 : 0.55)
-                        .opacity(appear ? 1 : 0)
-                    KRCDesign.ScreenHeader(title: "FINISH", subtitle: flow.venueDisplayName())
+                    ZStack {
+                        if flow.lastRaceReward?.celebratePodium == true {
+                            KidPodiumBurst(active: appear)
+                        }
+                        Image(systemName: flow.activeGameMode == .courier
+                              ? "shippingbox.fill"
+                              : (flow.lastFinishPlace == 1 ? "trophy.fill" : "flag.checkered.circle.fill"))
+                            .font(.system(size: 52))
+                            .foregroundStyle(KRCDesign.gold)
+                            .shadow(color: KRCDesign.gold.opacity(0.45), radius: 12)
+                            .scaleEffect(appear ? 1 : 0.55)
+                            .opacity(appear ? 1 : 0)
+                    }
+                    .frame(height: 72)
+                    KRCDesign.ScreenHeader(
+                        title: flow.lastFinishPlace == 1 ? "YOU WIN" : "FINISH",
+                        subtitle: flow.venueDisplayName()
+                    )
                     KRCDesign.ModeBadge(text: flow.activeGameMode.displayTitle)
                     Text(finishGrade)
                         .font(.system(size: 56, weight: .black, design: .rounded))
@@ -1945,6 +2206,40 @@ struct RaceFinishedScreen: View {
                                         .font(.caption.weight(.bold))
                                         .foregroundStyle(KRCDesign.neonCyan)
                                         .padding(.top, 4)
+                                }
+                                if let symbol = reward.stickerSymbol, let title = reward.stickerTitle {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: symbol)
+                                            .foregroundStyle(KRCDesign.gold)
+                                        Text(reward.lootHeadline ?? "New sticker: \(title)")
+                                            .font(.caption.weight(.bold))
+                                            .foregroundStyle(.white)
+                                    }
+                                    .padding(.top, 6)
+                                }
+                                if let ghost = reward.houseGhostLine {
+                                    Text(ghost)
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(KRCDesign.neonCyan)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.top, 2)
+                                }
+                                HStack(spacing: 10) {
+                                    Label("\(progress.lifetimeCrystals)", systemImage: "diamond.fill")
+                                    Label("\(progress.trophyWins)", systemImage: "trophy.fill")
+                                }
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(KRCDesign.gold)
+                                .padding(.top, 4)
+                                if !progress.trophyStickers.isEmpty {
+                                    HStack(spacing: 6) {
+                                        ForEach(progress.trophyStickers) { sticker in
+                                            Image(systemName: sticker.symbolName)
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundStyle(Color(uiColor: sticker.tint))
+                                        }
+                                    }
+                                    .padding(.top, 4)
                                 }
                                 if let teaser = nextUnlockTeaser {
                                     Text(teaser)
@@ -2186,5 +2481,126 @@ private struct WeeklyContractsSheet: View {
             .onAppear { progress.rollWeeklyIfNeeded() }
         }
         .preferredColorScheme(.dark)
+    }
+}
+
+private struct KidTrophyAlbumSheet: View {
+    @ObservedObject var progress: PlayerProgressStore
+    let onDismiss: () -> Void
+
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack(spacing: 12) {
+                            albumStat(icon: "diamond.fill", value: "\(progress.lifetimeCrystals)", label: "Crystals")
+                            albumStat(icon: "trophy.fill", value: "\(progress.trophyWins)", label: "Trophies")
+                            albumStat(icon: "star.fill", value: "\(progress.trophyStickers.count)", label: "Stickers")
+                        }
+                        KRCDesign.SectionLabel(text: "STICKERS")
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 72), spacing: 10)], spacing: 10) {
+                            ForEach(KidSticker.allCases) { sticker in
+                                let count = progress.stickerCounts[sticker.rawValue] ?? 0
+                                VStack(spacing: 6) {
+                                    Image(systemName: sticker.symbolName)
+                                        .font(.system(size: 22, weight: .bold))
+                                        .foregroundStyle(count > 0 ? Color(uiColor: sticker.tint) : .white.opacity(0.2))
+                                    Text(sticker.title)
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundStyle(.white.opacity(count > 0 ? 0.9 : 0.35))
+                                    Text(count > 0 ? "×\(count)" : "—")
+                                        .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                        .foregroundStyle(KRCDesign.gold.opacity(count > 0 ? 1 : 0.3))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(Color.white.opacity(count > 0 ? 0.08 : 0.04))
+                                )
+                            }
+                        }
+                        KRCDesign.SectionLabel(text: "RARE TOYS")
+                        albumOwnedRow(KidToy.allCases.map { ($0.rawValue, $0.title, $0.symbolName, progress.ownsToy($0)) })
+                        KRCDesign.SectionLabel(text: "PLATES")
+                        albumOwnedRow(KidPlate.allCases.map { ($0.rawValue, $0.shortText, "rectangle.fill", progress.ownsPlate($0)) })
+                        KRCDesign.SectionLabel(text: "HATS")
+                        albumOwnedRow(KidHat.allCases.map { ($0.rawValue, $0.title, $0.symbolName, progress.ownsHat($0)) })
+                    }
+                    .padding(16)
+                }
+            }
+            .navigationTitle("Trophy Album")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", action: onDismiss)
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func albumStat(icon: String, value: String, label: String) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .foregroundStyle(KRCDesign.gold)
+            Text(value)
+                .font(.system(size: 22, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+            Text(label)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(KRCDesign.mutedText)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.06))
+        )
+    }
+
+    private func albumOwnedRow(_ items: [(String, String, String, Bool)]) -> some View {
+        HStack(spacing: 8) {
+            ForEach(items, id: \.0) { item in
+                VStack(spacing: 4) {
+                    Image(systemName: item.2)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(item.3 ? KRCDesign.gold : .white.opacity(0.25))
+                    Text(item.1)
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(item.3 ? .white : .white.opacity(0.35))
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+}
+
+/// Quick podium sparkle burst on the results screen.
+private struct KidPodiumBurst: View {
+    let active: Bool
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<10, id: \.self) { i in
+                Image(systemName: "star.fill")
+                    .font(.system(size: CGFloat(8 + (i % 4) * 3), weight: .bold))
+                    .foregroundStyle(i % 3 == 0 ? KRCDesign.gold : KRCDesign.neonCyan)
+                    .offset(
+                        x: active ? CGFloat((i % 5) * 18 - 36) : 0,
+                        y: active ? CGFloat((i % 3) * 14 - 20) : 0
+                    )
+                    .opacity(active ? 0.9 : 0)
+                    .animation(
+                        .spring(response: 0.55, dampingFraction: 0.62).delay(Double(i) * 0.03),
+                        value: active
+                    )
+            }
+        }
+        .allowsHitTesting(false)
     }
 }

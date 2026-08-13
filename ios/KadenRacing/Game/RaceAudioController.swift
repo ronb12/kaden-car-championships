@@ -417,16 +417,16 @@ final class RaceAudioController {
             let nitroHz: Double = 88
             let tireHz = 90 + Double(drive) * 70 + steer * 40
             let passHz = 150 + passBy * 140
-            let windGain = (!samplesActive || speed > 0.22)
-                ? (samplesActive ? 0.007 : 0.018) * (0.25 + Double(drive) * 1.15)
+            let windGain = (!samplesActive || speed > 0.18)
+                ? (samplesActive ? 0.016 : 0.028) * (0.28 + Double(drive) * 1.25)
                 : 0
-            let tireGain = steer > 0.08
-                ? (samplesActive ? 0.01 : 0.028) * steer * (0.35 + Double(speed))
+            let tireGain = steer > 0.06
+                ? (samplesActive ? 0.022 : 0.038) * steer * (0.4 + Double(speed))
                 : 0
             let nitroGain = (nitroOn || whoosh > 0.02)
-                ? (samplesActive ? 0.012 : 0.04) * max(whoosh, nitroOn ? 1 : 0)
+                ? (samplesActive ? 0.02 : 0.05) * max(whoosh, nitroOn ? 1 : 0)
                 : 0
-            let passGain = passBy > 0.06 ? (samplesActive ? 0.02 : 0.045) * passBy : 0
+            let passGain = passBy > 0.06 ? (samplesActive ? 0.032 : 0.055) * passBy : 0
             let synthGain = synth ? (0.08 + Double(drive) * 0.22 + (gas ? 0.06 : 0)) : 0
             let synthHz = 48 + Double(drive) * 40 + (gas ? 8 : 0)
 
@@ -491,13 +491,15 @@ final class RaceAudioController {
     private func engineProfile(for category: VehicleCategory) -> EngineProfile {
         switch category {
         case .muscle, .policeInterceptor:
-            return EngineProfile(rumbleMul: 1.15, bodyMul: 0.85, rateMul: 1.0, rateOffset: -0.02)
-        case .hypercar, .supercar:
-            return EngineProfile(rumbleMul: 0.95, bodyMul: 1.05, rateMul: 1.02, rateOffset: 0.01)
+            return EngineProfile(rumbleMul: 1.22, bodyMul: 0.82, rateMul: 0.97, rateOffset: -0.04)
+        case .hypercar:
+            return EngineProfile(rumbleMul: 0.82, bodyMul: 1.18, rateMul: 1.06, rateOffset: 0.04)
+        case .supercar:
+            return EngineProfile(rumbleMul: 0.9, bodyMul: 1.1, rateMul: 1.04, rateOffset: 0.025)
         case .compact:
-            return EngineProfile(rumbleMul: 0.9, bodyMul: 0.9, rateMul: 1.03, rateOffset: 0.02)
+            return EngineProfile(rumbleMul: 0.78, bodyMul: 0.88, rateMul: 1.05, rateOffset: 0.03)
         case .sports:
-            return EngineProfile(rumbleMul: 1.05, bodyMul: 1.0, rateMul: 1.0, rateOffset: 0)
+            return EngineProfile(rumbleMul: 1.05, bodyMul: 1.0, rateMul: 1.01, rateOffset: 0.005)
         }
     }
 

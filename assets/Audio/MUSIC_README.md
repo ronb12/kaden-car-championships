@@ -6,7 +6,7 @@ Drop licensed tracks into `ios/KadenRacing/Resources/Audio/` using these names:
 |------|--------|----------|
 | `menu_theme.m4a` | `Music/Menu/` | Main menu |
 | `garage_theme.m4a` | `Music/Menu/` | Garage / car select |
-| `race_intensity.m4a` | `Music/Race/` | In-race (loops) |
+| `race_intensity.m4a` | `Music/Race/` | In-race playlist (shuffled with race_fever / highway / neon / hot) |
 | `countdown.m4a` | `Music/Race/` | Start countdown |
 | `victory.m4a` | `Music/Victory/` | Finish screen |
 

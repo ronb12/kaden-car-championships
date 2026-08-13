@@ -104,12 +104,36 @@ enum KenneyEnvironmentLoader {
     // MARK: - Roads & props
 
     static func loadStreetLight(night: Bool) -> SCNNode? {
-        loadRoadProp(
-            preferred: ["light-square", "light-curved", "light-square-double"],
-            targetHeight: 7.5,
-            night: night,
-            emissionBoost: 0.35
-        )
+        // Kenney lamp arms hang over the racing line; use a centered solid pole.
+        makeSolidLampPole(night: night)
+    }
+
+    /// Centered opaque pole + lamp — origin at the base, no overhanging arm.
+    static func makeSolidLampPole(night: Bool) -> SCNNode {
+        let root = SCNNode()
+        let poleMat = SCNMaterial()
+        poleMat.lightingModel = .physicallyBased
+        poleMat.diffuse.contents = UIColor(white: 0.22, alpha: 1)
+        poleMat.roughness.contents = 0.7
+        poleMat.transparency = 1
+        poleMat.writesToDepthBuffer = true
+        let pole = SCNCylinder(radius: 0.1, height: 6.4)
+        pole.materials = [poleMat]
+        let poleNode = SCNNode(geometry: pole)
+        poleNode.position = SCNVector3(0, 3.2, 0)
+        root.addChildNode(poleNode)
+
+        let lampMat = SCNMaterial()
+        lampMat.lightingModel = .constant
+        lampMat.diffuse.contents = UIColor(red: 1, green: 0.92, blue: 0.72, alpha: 1)
+        lampMat.emission.contents = UIColor(red: 1, green: 0.86, blue: 0.5, alpha: night ? 0.85 : 0.4)
+        lampMat.transparency = 1
+        let lamp = SCNSphere(radius: 0.22)
+        lamp.materials = [lampMat]
+        let lampNode = SCNNode(geometry: lamp)
+        lampNode.position = SCNVector3(0, 6.5, 0)
+        root.addChildNode(lampNode)
+        return root
     }
 
     static func loadRoadBarrier() -> SCNNode? {
@@ -192,11 +216,19 @@ enum KenneyEnvironmentLoader {
         return node
     }
 
-    static func loadTree(targetHeight: Float, coastal: Bool, rng: inout SeededRandom) -> SCNNode? {
+    static func loadTree(targetHeight: Float, coastal: Bool, rng: inout SeededRandom, alpine: Bool = false) -> SCNNode? {
         warmCatalog()
         guard !treesCatalog.isEmpty else { return nil }
         let coastalPool = treesCatalog.filter { $0.contains("palm") }
-        let pool = coastal && !coastalPool.isEmpty ? coastalPool : treesCatalog
+        let pinePool = treesCatalog.filter { $0.contains("pine") }
+        let pool: [String]
+        if coastal, !coastalPool.isEmpty {
+            pool = coastalPool
+        } else if alpine, !pinePool.isEmpty {
+            pool = pinePool
+        } else {
+            pool = treesCatalog
+        }
         let name = pool[rng.int(in: 0...(pool.count - 1))]
         guard let template = loadTemplate(named: name, subdirectory: "models/city/trees", cache: &treesCache) else {
             return nil
@@ -324,16 +356,30 @@ enum KenneyEnvironmentLoader {
             geo.materials = geo.materials.map { mat in
                 let m = mat.copy() as? SCNMaterial ?? mat
                 m.lightingModel = .physicallyBased
-                m.isDoubleSided = false
-                if let colormap {
-                    m.diffuse.contents = colormap
-                    m.diffuse.wrapS = .repeat
-                    m.diffuse.wrapT = .repeat
-                } else if m.diffuse.contents == nil || isUntexturedWhite(m) {
-                    m.diffuse.contents = UIColor(red: 0.72, green: 0.70, blue: 0.66, alpha: 1)
+                m.isDoubleSided = true
+                m.writesToDepthBuffer = true
+                m.readsFromDepthBuffer = true
+                m.transparent.contents = nil
+                m.transparency = 1
+                m.transparencyMode = .default
+                if useAtlas {
+                    m.blendMode = .replace
+                    if let colormap {
+                        m.diffuse.contents = opaqueImage(colormap)
+                        m.diffuse.wrapS = .repeat
+                        m.diffuse.wrapT = .repeat
+                    } else if m.diffuse.contents == nil || isUntexturedWhite(m) {
+                        m.diffuse.contents = UIColor(red: 0.38, green: 0.32, blue: 0.26, alpha: 1)
+                    }
+                } else {
+                    m.blendMode = .alpha
+                    if m.diffuse.contents == nil || isUntexturedWhite(m) {
+                        m.diffuse.contents = UIColor(red: 0.38, green: 0.32, blue: 0.26, alpha: 1)
+                    }
                 }
-                m.metalness.contents = 0.04
-                m.roughness.contents = 0.82
+                m.metalness.contents = 0.02
+                m.roughness.contents = 0.88
+                m.multiply.contents = UIColor(white: 0.52, alpha: 1)
                 return m
             }
         }
@@ -353,6 +399,18 @@ enum KenneyEnvironmentLoader {
             }
         }
         return nil
+    }
+
+    private static func opaqueImage(_ image: UIImage) -> UIImage {
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = true
+        format.scale = image.scale
+        let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
+        return renderer.image { _ in
+            UIColor(red: 0.42, green: 0.41, blue: 0.39, alpha: 1).setFill()
+            UIRectFill(CGRect(origin: .zero, size: image.size))
+            image.draw(in: CGRect(origin: .zero, size: image.size))
+        }
     }
 
     private static func isUntexturedWhite(_ mat: SCNMaterial) -> Bool {
@@ -383,6 +441,29 @@ enum KenneyEnvironmentLoader {
             if name.contains("window") || name.contains("glass") {
                 let warm = UIColor(red: 0.95, green: 0.82, blue: 0.58, alpha: min(0.42, 0.28 + emissionBoost * 0.12))
                 mat.emission.contents = warm
+            }
+        }
+    }
+
+    /// Race circuits must never show see-through Kenney glass / alpha holes on the racing line.
+    static func forceOpaque(_ node: SCNNode) {
+        node.opacity = 1
+        node.enumerateHierarchy { child, _ in
+            child.opacity = 1
+            guard let geo = child.geometry else { return }
+            for mat in geo.materials {
+                mat.transparency = 1
+                mat.transparencyMode = .default
+                mat.blendMode = .alpha
+                mat.isDoubleSided = true
+                mat.writesToDepthBuffer = true
+                mat.readsFromDepthBuffer = true
+                mat.transparent.contents = nil
+                if let img = mat.diffuse.contents as? UIImage {
+                    mat.diffuse.contents = opaqueImage(img)
+                } else if let color = mat.diffuse.contents as? UIColor {
+                    mat.diffuse.contents = color.withAlphaComponent(1)
+                }
             }
         }
     }

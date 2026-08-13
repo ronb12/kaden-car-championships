@@ -66,14 +66,21 @@ enum TrackSceneryEnhancer {
         art: CityEnvironmentArt.Profile,
         rng: inout SeededRandom
     ) {
-        if art.prefersPalms, rng.unitFloat() < 0.62 {
+        if art.prefersPalms, rng.unitFloat() < 0.72 {
             placeTree(into: parent, track: track, base: base, right: right, yaw: yaw, coastal: true, rng: &rng, lateral: TrackRoadsideClearance.palmMinLateral + rng.float(in: 2...12))
+            if rng.unitFloat() < 0.45 {
+                placeTree(
+                    into: parent, track: track, base: base, right: right, yaw: yaw,
+                    coastal: true, rng: &rng,
+                    lateral: TrackRoadsideClearance.palmMinLateral + rng.float(in: 6...16)
+                )
+            }
         }
         if rng.unitFloat() < 0.28 {
             placeSandBerms(into: parent, base: base, right: right, yaw: yaw, rng: &rng)
         }
         if rng.unitFloat() < 0.18 {
-            placeBollard(into: parent, base: base, right: right, yaw: yaw, night: night, rng: &rng)
+            placeBollard(into: parent, track: track, base: base, right: right, yaw: yaw, night: night, rng: &rng)
         }
     }
 
@@ -85,20 +92,14 @@ enum TrackSceneryEnhancer {
         yaw: Float,
         rng: inout SeededRandom
     ) {
-        if rng.unitFloat() < 0.35 {
-            let bush = SCNSphere(radius: CGFloat(rng.float(in: 0.35...0.75)))
-            let mat = SCNMaterial()
-            mat.lightingModel = .physicallyBased
-            mat.diffuse.contents = UIColor(red: 0.42, green: 0.36, blue: 0.22, alpha: 1)
-            mat.roughness.contents = 0.94
-            bush.materials = [mat]
-            let node = SCNNode(geometry: bush)
-            let side: Float = rng.unitFloat() > 0.5 ? 1 : -1
-            let off = right * ((TrackRoadsideClearance.treeMinLateral + 4) * side)
-            node.position = SCNVector3(base.x + off.x, base.y + 0.35, base.z + off.z)
-            node.scale = SCNVector3(1.2, 0.65, 1.2)
-            TrackRoadsideClearance.pushOutsideRoad(node, track: track, minLateral: TrackRoadsideClearance.treeMinLateral)
-            parent.addChildNode(node)
+        if rng.unitFloat() < 0.42 {
+            placeRock(into: parent, track: track, base: base, right: right, yaw: yaw, rng: &rng, desert: true)
+        }
+        if rng.unitFloat() < 0.32 {
+            placeCactus(into: parent, track: track, base: base, right: right, rng: &rng)
+        }
+        if rng.unitFloat() < 0.38 {
+            placeSandBerms(into: parent, base: base, right: right, yaw: yaw, rng: &rng)
         }
     }
 
@@ -110,8 +111,18 @@ enum TrackSceneryEnhancer {
         yaw: Float,
         rng: inout SeededRandom
     ) {
-        if rng.unitFloat() < 0.48 {
-            placeTree(into: parent, track: track, base: base, right: right, yaw: yaw, coastal: false, rng: &rng, lateral: TrackRoadsideClearance.treeMinLateral + rng.float(in: 3...14))
+        if rng.unitFloat() < 0.62 {
+            placeTree(
+                into: parent, track: track, base: base, right: right, yaw: yaw,
+                coastal: false, alpine: true, rng: &rng,
+                lateral: TrackRoadsideClearance.treeMinLateral + rng.float(in: 3...16)
+            )
+        }
+        if rng.unitFloat() < 0.36 {
+            placeRock(into: parent, track: track, base: base, right: right, yaw: yaw, rng: &rng, desert: false)
+        }
+        if rng.unitFloat() < 0.28 {
+            placeGuardrail(into: parent, track: track, base: base, right: right, yaw: yaw, rng: &rng)
         }
     }
 
@@ -134,7 +145,7 @@ enum TrackSceneryEnhancer {
             parent.addChildNode(barrier)
         }
         if night, rng.unitFloat() < 0.12 {
-            placeBollard(into: parent, base: base, right: right, yaw: yaw, night: true, rng: &rng)
+            placeBollard(into: parent, track: track, base: base, right: right, yaw: yaw, night: true, rng: &rng)
         }
     }
 
@@ -152,7 +163,11 @@ enum TrackSceneryEnhancer {
             let off = right * ((TrackRoadsideClearance.treeMinLateral + 3) * side)
             light.position = SCNVector3(base.x + off.x, base.y, base.z + off.z)
             light.eulerAngles.y = yaw + (side > 0 ? Float.pi * 0.5 : -Float.pi * 0.5)
-            TrackRoadsideClearance.pushOutsideRoad(light, track: track, minLateral: TrackRoadsideClearance.treeMinLateral)
+            TrackRoadsideClearance.secure(
+                light, track: track,
+                minLateral: TrackRoadsideClearance.poleMinLateral,
+                extraFootprint: 1.2
+            )
             parent.addChildNode(light)
         }
     }
@@ -175,7 +190,11 @@ enum TrackSceneryEnhancer {
             let off = right * ((TrackRoadsideClearance.treeMinLateral + 5) * side)
             light.position = SCNVector3(base.x + off.x, base.y, base.z + off.z)
             light.eulerAngles.y = yaw
-            TrackRoadsideClearance.pushOutsideRoad(light, track: track, minLateral: TrackRoadsideClearance.treeMinLateral)
+            TrackRoadsideClearance.secure(
+                light, track: track,
+                minLateral: TrackRoadsideClearance.poleMinLateral,
+                extraFootprint: 1.2
+            )
             parent.addChildNode(light)
         }
     }
@@ -189,13 +208,15 @@ enum TrackSceneryEnhancer {
         right: SIMD3<Float>,
         yaw: Float,
         coastal: Bool,
+        alpine: Bool = false,
         rng: inout SeededRandom,
         lateral: Float
     ) {
         guard let tree = KenneyEnvironmentLoader.loadTree(
-            targetHeight: rng.float(in: 5...10),
+            targetHeight: alpine ? rng.float(in: 7...13) : rng.float(in: 5...10),
             coastal: coastal,
-            rng: &rng
+            rng: &rng,
+            alpine: alpine
         ) else { return }
         let side: Float = rng.unitFloat() > 0.5 ? 1 : -1
         let off = right * (lateral * side)
@@ -230,6 +251,7 @@ enum TrackSceneryEnhancer {
 
     private static func placeBollard(
         into parent: SCNNode,
+        track: ClosedTrackSpline,
         base: SIMD3<Float>,
         right: SIMD3<Float>,
         yaw: Float,
@@ -244,9 +266,99 @@ enum TrackSceneryEnhancer {
         mat.metalness.contents = 0.7
         pole.materials = [mat]
         let node = SCNNode(geometry: pole)
-        let off = right * ((RaceTrackMesh.halfWidth + 7.5) * side)
+        let off = right * (TrackRoadsideClearance.poleMinLateral * side)
         node.position = SCNVector3(base.x + off.x, base.y + 0.55, base.z + off.z)
         node.eulerAngles.y = yaw
+        TrackRoadsideClearance.pushOutsideRoad(
+            node, track: track, minLateral: TrackRoadsideClearance.poleMinLateral
+        )
+        parent.addChildNode(node)
+    }
+
+    private static func placeRock(
+        into parent: SCNNode,
+        track: ClosedTrackSpline,
+        base: SIMD3<Float>,
+        right: SIMD3<Float>,
+        yaw: Float,
+        rng: inout SeededRandom,
+        desert: Bool
+    ) {
+        let w = rng.float(in: desert ? 1.6...3.8 : 2.2...5.2)
+        let h = rng.float(in: desert ? 0.7...1.8 : 1.2...3.4)
+        let d = rng.float(in: desert ? 1.4...3.2 : 1.8...4.4)
+        let box = SCNBox(width: CGFloat(w), height: CGFloat(h), length: CGFloat(d), chamferRadius: CGFloat(min(w, h, d) * 0.18))
+        let mat = SCNMaterial()
+        mat.lightingModel = .physicallyBased
+        if desert {
+            mat.diffuse.contents = UIColor(red: 0.52, green: 0.38, blue: 0.22, alpha: 1)
+        } else {
+            mat.diffuse.contents = UIColor(red: 0.42, green: 0.44, blue: 0.46, alpha: 1)
+        }
+        mat.roughness.contents = 0.92
+        mat.metalness.contents = 0.02
+        box.materials = [mat]
+        let node = SCNNode(geometry: box)
+        let side: Float = rng.unitFloat() > 0.5 ? 1 : -1
+        let off = right * ((TrackRoadsideClearance.treeMinLateral + rng.float(in: 3...14)) * side)
+        node.position = SCNVector3(base.x + off.x, base.y + h * 0.42, base.z + off.z)
+        node.eulerAngles.y = yaw + rng.float(in: -0.4...0.4)
+        node.eulerAngles.z = rng.float(in: -0.12...0.12)
+        TrackRoadsideClearance.pushOutsideRoad(node, track: track, minLateral: TrackRoadsideClearance.treeMinLateral)
+        parent.addChildNode(node)
+    }
+
+    private static func placeCactus(
+        into parent: SCNNode,
+        track: ClosedTrackSpline,
+        base: SIMD3<Float>,
+        right: SIMD3<Float>,
+        rng: inout SeededRandom
+    ) {
+        let h = rng.float(in: 1.6...3.4)
+        let trunk = SCNCylinder(radius: CGFloat(rng.float(in: 0.12...0.2)), height: CGFloat(h))
+        let mat = SCNMaterial()
+        mat.lightingModel = .physicallyBased
+        mat.diffuse.contents = UIColor(red: 0.22, green: 0.42, blue: 0.24, alpha: 1)
+        mat.roughness.contents = 0.78
+        trunk.materials = [mat]
+        let node = SCNNode(geometry: trunk)
+        let side: Float = rng.unitFloat() > 0.5 ? 1 : -1
+        let off = right * ((TrackRoadsideClearance.treeMinLateral + rng.float(in: 4...12)) * side)
+        node.position = SCNVector3(base.x + off.x, base.y + h * 0.5, base.z + off.z)
+        if rng.unitFloat() < 0.7 {
+            let arm = SCNCylinder(radius: 0.09, height: CGFloat(h * 0.42))
+            arm.materials = [mat]
+            let armNode = SCNNode(geometry: arm)
+            armNode.position = SCNVector3(h * 0.18, h * 0.08, 0)
+            armNode.eulerAngles.z = 1.15
+            node.addChildNode(armNode)
+        }
+        TrackRoadsideClearance.pushOutsideRoad(node, track: track, minLateral: TrackRoadsideClearance.treeMinLateral)
+        parent.addChildNode(node)
+    }
+
+    private static func placeGuardrail(
+        into parent: SCNNode,
+        track: ClosedTrackSpline,
+        base: SIMD3<Float>,
+        right: SIMD3<Float>,
+        yaw: Float,
+        rng: inout SeededRandom
+    ) {
+        let side: Float = rng.unitFloat() > 0.5 ? 1 : -1
+        let rail = SCNBox(width: 0.12, height: 0.55, length: 6.4, chamferRadius: 0.02)
+        let mat = SCNMaterial()
+        mat.lightingModel = .physicallyBased
+        mat.diffuse.contents = UIColor(red: 0.62, green: 0.64, blue: 0.66, alpha: 1)
+        mat.metalness.contents = 0.72
+        mat.roughness.contents = 0.38
+        rail.materials = [mat]
+        let node = SCNNode(geometry: rail)
+        let off = right * ((RaceTrackMesh.halfWidth + 7.2) * side)
+        node.position = SCNVector3(base.x + off.x, base.y + 0.55, base.z + off.z)
+        node.eulerAngles.y = yaw
+        TrackRoadsideClearance.pushOutsideRoad(node, track: track, minLateral: RaceTrackMesh.halfWidth + 6.5)
         parent.addChildNode(node)
     }
 }

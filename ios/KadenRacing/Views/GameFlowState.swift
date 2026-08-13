@@ -26,6 +26,11 @@ final class GameFlowState: ObservableObject {
         var ticketLines: [String]
         var unlockedCarName: String?
         var courierGrade: String?
+        var lootHeadline: String?
+        var stickerSymbol: String?
+        var stickerTitle: String?
+        var houseGhostLine: String?
+        var celebratePodium: Bool
 
         /// Total CR added to the wallet for this finish.
         var total: Int64 { grantedPurse + career }
@@ -34,8 +39,8 @@ final class GameFlowState: ObservableObject {
     @Published var screen: Screen = .mainMenu
     /// Where **Car Select → Back** returns (main menu vs mode picker).
     @Published var carSelectBackScreen: Screen = .mainMenu
-    /// 0 = Casual, 1 = Pro, 2 = Elite (matches web garage).
-    @Published var difficultyIndex: Int = 1
+    /// 0 = Casual, 1 = Pro, 2 = Elite. Casual default so kids stay on track.
+    @Published var difficultyIndex: Int = 0
     /// Primary gameplay mode for the next session.
     @Published var activeGameMode: GameModeKind = .circuit
     /// Visual preset (toggle later from settings).
@@ -79,6 +84,15 @@ final class GameFlowState: ObservableObject {
     /// Quick Race — same as web `garage.html?mode=quick`.
     func beginQuickRace() {
         beginCircuit()
+    }
+
+    /// One-tap Play — career prize if the ladder is open, otherwise a short circuit.
+    func beginKidPlay(progress: PlayerProgressStore) {
+        if progress.careerComplete {
+            beginQuickRace()
+        } else {
+            beginCareerMode(progress: progress)
+        }
     }
 
     /// Daily Challenge — seeded time trial. Track is deterministic per calendar day.
@@ -192,7 +206,7 @@ final class GameFlowState: ObservableObject {
         beginGhostDuel()
     }
 
-    func beginCourier(progress: PlayerProgressStore? = nil) {
+    func beginCourier(progress: PlayerProgressStore? = nil, returningTo back: Screen = .modeSelect) {
         careerSessionActive = false
         dailyChallengeActive = false
         activeGameMode = .courier
@@ -206,7 +220,7 @@ final class GameFlowState: ObservableObject {
             nightRace = true
         }
         syncLapsToSelectedTrack()
-        openCarSelect(returningTo: .modeSelect)
+        openCarSelect(returningTo: back)
     }
 
     func beginCareerMode(progress: PlayerProgressStore) {
@@ -338,6 +352,8 @@ final class GameFlowState: ObservableObject {
         ticketLines: [String] = [],
         crystalsCollected: Int = 0,
         courierGrade: String? = nil,
+        houseGhostDelta: TimeInterval? = nil,
+        hadHouseGhost: Bool = false,
         progress: PlayerProgressStore
     ) {
         let base = segmentTime.msScaledCredits + driftScore / 40
@@ -400,6 +416,14 @@ final class GameFlowState: ObservableObject {
         }
 
         progress.creditsMutation(racePurse)
+        let loot = progress.grantKidLoot(
+            KidPlayLoop.rollLoot(
+                progress: progress,
+                mode: activeGameMode,
+                place: place,
+                crystals: crystalsCollected
+            )
+        )
         progress.noteWeeklyProgress(
             racesFinished: 1,
             crystals: crystalsCollected,
@@ -419,7 +443,12 @@ final class GameFlowState: ObservableObject {
             grantedPurse: racePurse,
             ticketLines: activeGameMode == .policeChase ? ticketLines : [],
             unlockedCarName: unlockedName,
-            courierGrade: activeGameMode == .courier ? courierGrade : nil
+            courierGrade: activeGameMode == .courier ? courierGrade : nil,
+            lootHeadline: loot.headline,
+            stickerSymbol: loot.sticker.symbolName,
+            stickerTitle: loot.sticker.title,
+            houseGhostLine: KidPlayLoop.houseGhostLine(delta: houseGhostDelta, hadGhost: hadHouseGhost),
+            celebratePodium: place <= 3 && activeGameMode != .courier
         )
         lastFinishPlace = place
 

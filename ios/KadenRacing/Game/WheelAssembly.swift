@@ -26,6 +26,23 @@ enum WheelAssembly {
         ]
     }
 
+    /// Re-apply the garage rim pick on an already-built car (preview + race).
+    static func restyleGarageWheels(in root: SCNNode, carId: String, scale: Float) {
+        let host = root.childNode(withName: "krcVehicleRoot", recursively: false) ?? root
+        let mesh = host.childNode(withName: "krcBundledContainer", recursively: false)
+            ?? host.childNode(withName: "krcVehicleBody", recursively: true)
+            ?? host
+        if !usdzWheelHubs(in: mesh).isEmpty {
+            prepareBundledWheels(carNode: mesh, container: host, scale: scale, carId: carId)
+            return
+        }
+        for group in wheelGroups(in: root) {
+            group.removeFromParentNode()
+        }
+        let style = VehicleVisualProfile.profile(carId: carId).wheelStyle
+        attachStyledWheels(to: host, style: style, scale: scale, anchors: defaultAnchors(scale: scale))
+    }
+
     /// Clean up and restyle wheels on the bundled USDZ.
     static func prepareBundledWheels(carNode: SCNNode, container: SCNNode, scale: Float, carId: String? = nil) {
         stripDuplicateWheelDecals(from: carNode)
@@ -108,9 +125,11 @@ enum WheelAssembly {
                 (mn.x * 0.78 + mx.x * 0.22, midY, mn.z * 0.72 + mx.z * 0.28),
                 (mn.x * 0.22 + mx.x * 0.78, midY, mn.z * 0.72 + mx.z * 0.28),
             ]
+            let bodySpan = max(mx.x - mn.x, mx.y - mn.y, mx.z - mn.z)
+            let faceScale = max(scale * 2.4, bodySpan * 0.12)
             for (x, y, z) in pairs {
                 let side: Float = x >= 0 ? 1 : -1
-                let face = makeRimFace(rim: rim, scale: scale, sideSign: side)
+                let face = makeRimFace(rim: rim, scale: faceScale, sideSign: side)
                 face.position = SCNVector3(x, y, z)
                 carNode.addChildNode(face)
             }
@@ -120,7 +139,8 @@ enum WheelAssembly {
         for hub in hubs {
             let name = (hub.name ?? "").lowercased()
             let side = hubSideSign(name: name, hub: hub, body: carNode)
-            let face = makeRimFace(rim: rim, scale: scale, sideSign: side)
+            let faceScale = rimFaceScale(for: hub, fallback: scale)
+            let face = makeRimFace(rim: rim, scale: faceScale, sideSign: side)
             hub.addChildNode(face)
         }
     }
@@ -434,15 +454,46 @@ enum WheelAssembly {
         return hubs
     }
 
+    private static func rimFaceScale(for hub: SCNNode, fallback: Float) -> Float {
+        let (mn, mx) = hub.boundingBox
+        let span = max(mx.x - mn.x, mx.y - mn.y, mx.z - mn.z)
+        // makeRimFace uses outerR ≈ 0.15 * scale; match the inner rim of the USDZ tire.
+        if span > 0.12 {
+            return max(fallback, span * 3.0)
+        }
+        return max(fallback * 2.6, 1.8)
+    }
+
     private static func findNode(matchingPrefix prefix: String, in root: SCNNode) -> SCNNode? {
         let key = prefix.lowercased()
         var hit: SCNNode?
         root.enumerateHierarchy { node, stop in
-            guard (node.name ?? "").lowercased() == key else { return }
-            hit = node
-            stop.pointee = true
+            let n = (node.name ?? "").lowercased()
+            if n.contains("krcrim") { return }
+            if n == key || n.hasPrefix(key + "_") || n.contains(key) {
+                hit = node
+                stop.pointee = true
+            }
         }
         return hit
+    }
+
+    private static var hubRestY: [ObjectIdentifier: Float] = [:]
+
+    /// Subtle per-corner travel so braking/throttle reads on the chassis.
+    static func applySuspension(in root: SCNNode, compression: SIMD4<Float>) {
+        let hubs = usdzWheelHubs(in: root)
+        let corners = hubs.isEmpty ? wheelGroups(in: root) : hubs
+        guard !corners.isEmpty else { return }
+        if hubRestY.count > 48 { hubRestY.removeAll(keepingCapacity: true) }
+        let values: [Float] = [compression.x, compression.y, compression.z, compression.w]
+        for (i, hub) in corners.prefix(4).enumerated() {
+            let id = ObjectIdentifier(hub)
+            if hubRestY[id] == nil { hubRestY[id] = hub.position.y }
+            let rest = hubRestY[id] ?? hub.position.y
+            let travel = max(-0.04, min(0.04, values[i]))
+            hub.position.y = rest + travel
+        }
     }
 
     static func spinWheels(in root: SCNNode, speed: Float, dt: Float) {

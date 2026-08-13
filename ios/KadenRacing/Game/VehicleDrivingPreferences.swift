@@ -24,10 +24,10 @@ enum VehicleDrivingPreferences {
 
     static var isManualTransmission: Bool { transmissionMode == .manual }
 
-    /// When true (default), assists are off — full player control like arcade racers.
+    /// When true, assists are off. Default is assists ON so kids stay on the road.
     static var manualControl: Bool {
         get {
-            if UserDefaults.standard.object(forKey: manualKey) == nil { return true }
+            if UserDefaults.standard.object(forKey: manualKey) == nil { return false }
             return UserDefaults.standard.bool(forKey: manualKey)
         }
         set { UserDefaults.standard.set(newValue, forKey: manualKey) }
@@ -43,10 +43,10 @@ enum VehicleDrivingPreferences {
     }
 
     /// Raw slider values for Settings (ignores manual override).
-    static var storedSteeringAssist: Float { stored(assistKey, default: 0.42) }
-    static var storedDriftAssist: Float { stored(driftKey, default: 0.55) }
-    static var storedBrakeAssist: Float { stored(brakeAssistKey, default: 0.35) }
-    static var storedTractionControl: Float { stored(tractionKey, default: 0.5) }
+    static var storedSteeringAssist: Float { stored(assistKey, default: 0.58) }
+    static var storedDriftAssist: Float { stored(driftKey, default: 0.62) }
+    static var storedBrakeAssist: Float { stored(brakeAssistKey, default: 0.48) }
+    static var storedTractionControl: Float { stored(tractionKey, default: 0.58) }
 
     static var steeringAssist: Float {
         get { manualControl ? 0 : storedSteeringAssist }

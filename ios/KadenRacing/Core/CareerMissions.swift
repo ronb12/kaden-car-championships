@@ -28,9 +28,9 @@ enum CareerMissions {
         CareerMission(
             id: "c01-rookie",
             title: "Rookie Circuit",
-            blurb: "Finish 3 laps. Earn your first purse.",
+            blurb: "Finish 1 lap. Earn your first car.",
             trackIndex: 0,
-            laps: 3,
+            laps: 1,
             nightPreferred: false,
             rewardCredits: 800,
             unlockCarId: "s2000",

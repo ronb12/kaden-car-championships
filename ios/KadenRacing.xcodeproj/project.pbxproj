@@ -10,6 +10,7 @@
 		KRCCAREER000000000002 /* CareerMissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCCAREER000000000001 /* CareerMissions.swift */; };
 		COUR1ERCARR000000000001 /* CourierCareer.swift in Sources */ = {isa = PBXBuildFile; fileRef = COUR1ERCARR000000000002 /* CourierCareer.swift */; };
 		KRCTUTORIAL0000000002 /* KRCTutorial.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCTUTORIAL0000000001 /* KRCTutorial.swift */; };
+		KRCKIDLOOP0000000002 /* KidPlayLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCKIDLOOP0000000001 /* KidPlayLoop.swift */; };
 		KRCGHOSTTAPE0000000002 /* RaceGhostTape.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCGHOSTTAPE0000000001 /* RaceGhostTape.swift */; };
 		KRCPURSUITCMP000000002 /* PursuitCampaign.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCPURSUITCMP000000001 /* PursuitCampaign.swift */; };
 		KRCGARAGESTY0000000002 /* GarageCustomization.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCGARAGESTY0000000001 /* GarageCustomization.swift */; };
@@ -65,6 +66,10 @@
 		MENUTHEMEMP3FILE0001 /* menu_theme.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = MENUTHEMEMP3FILE0002 /* menu_theme.mp3 */; };
 		GARAGETHEMEMP3FIL001 /* garage_theme.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = GARAGETHEMEMP3FIL002 /* garage_theme.mp3 */; };
 		VICTORYMP3FILE000001 /* victory.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = VICTORYMP3FILE000002 /* victory.mp3 */; };
+		RACEFEVERMP3FILE0001 /* race_fever.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = RACEFEVERMP3FILE0002 /* race_fever.mp3 */; };
+		RACEHIGHWAYMP3FIL001 /* race_highway.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = RACEHIGHWAYMP3FIL002 /* race_highway.mp3 */; };
+		RACENEONMP3FILE00001 /* race_neon.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = RACENEONMP3FILE00002 /* race_neon.mp3 */; };
+		RACEHOTMP3FILE000001 /* race_hot.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = RACEHOTMP3FILE000002 /* race_hot.mp3 */; };
 		70B9116815E04B0E96F5344F /* VehicleEnvironmentEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9CD60C6CB36434DA66C4910 /* VehicleEnvironmentEffects.swift */; };
 		75DB7BB6095B48AABE96353E /* EnvironmentGraphicsSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34C485985EA54159AE1F75E9 /* EnvironmentGraphicsSettings.swift */; };
 		761D7D6A9F451EF115CD7FD5 /* car-17.png in Resources */ = {isa = PBXBuildFile; fileRef = 8280633549CC7E88167D10E8 /* car-17.png */; };
@@ -163,6 +168,7 @@
 		RCEPRELD0000000000000001 /* RaceEnvironmentPreloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = RCEPRELD0000000000000002 /* RaceEnvironmentPreloader.swift */; };
 		SPLASHSCR0000000000000001 /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SPLASHSCR0000000000000002 /* SplashScreenView.swift */; };
 		TRCKSCNRY00000000000001 /* TrackSceneryEnhancer.swift in Sources */ = {isa = PBXBuildFile; fileRef = TRCKSCNRY00000000000002 /* TrackSceneryEnhancer.swift */; };
+		TRCKH1LLTUN000000000001 /* TrackHillTunnelBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = TRCKH1LLTUN000000000002 /* TrackHillTunnelBuilder.swift */; };
 		TRCKWRLDQRY000000000001 /* TrackWorldQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = TRCKWRLDQRY000000000002 /* TrackWorldQuery.swift */; };
 		VHCLAXES00000000000000001 /* VehicleAxes.swift in Sources */ = {isa = PBXBuildFile; fileRef = VHCLAXES00000000000000002 /* VehicleAxes.swift */; };
 		VHCLLGHT0000000000000001 /* VehicleLighting.swift in Sources */ = {isa = PBXBuildFile; fileRef = VHCLLGHT0000000000000002 /* VehicleLighting.swift */; };
@@ -172,6 +178,7 @@
 		KRCCAREER000000000001 /* CareerMissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerMissions.swift; sourceTree = "<group>"; };
 		COUR1ERCARR000000000002 /* CourierCareer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourierCareer.swift; sourceTree = "<group>"; };
 		KRCTUTORIAL0000000001 /* KRCTutorial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCTutorial.swift; sourceTree = "<group>"; };
+		KRCKIDLOOP0000000001 /* KidPlayLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KidPlayLoop.swift; sourceTree = "<group>"; };
 		KRCGHOSTTAPE0000000001 /* RaceGhostTape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceGhostTape.swift; sourceTree = "<group>"; };
 		KRCPURSUITCMP000000001 /* PursuitCampaign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PursuitCampaign.swift; sourceTree = "<group>"; };
 		KRCGARAGESTY0000000001 /* GarageCustomization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GarageCustomization.swift; sourceTree = "<group>"; };
@@ -278,6 +285,10 @@
 		MENUTHEMEMP3FILE0002 /* menu_theme.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = menu_theme.mp3; sourceTree = "<group>"; };
 		GARAGETHEMEMP3FIL002 /* garage_theme.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = garage_theme.mp3; sourceTree = "<group>"; };
 		VICTORYMP3FILE000002 /* victory.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = victory.mp3; sourceTree = "<group>"; };
+		RACEFEVERMP3FILE0002 /* race_fever.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = race_fever.mp3; sourceTree = "<group>"; };
+		RACEHIGHWAYMP3FIL002 /* race_highway.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = race_highway.mp3; sourceTree = "<group>"; };
+		RACENEONMP3FILE00002 /* race_neon.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = race_neon.mp3; sourceTree = "<group>"; };
+		RACEHOTMP3FILE000002 /* race_hot.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = race_hot.mp3; sourceTree = "<group>"; };
 		DFC5CDC798D4A49948E50FFD /* car-29.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-29.png"; sourceTree = "<group>"; };
 		DFEFD30B2F7626A7EABB8689 /* car-16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "car-16.png"; sourceTree = "<group>"; };
 		DPADRACE0000000000000002 /* DPadRaceControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DPadRaceControls.swift; sourceTree = "<group>"; };
@@ -328,6 +339,7 @@
 		RCEPRELD0000000000000002 /* RaceEnvironmentPreloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceEnvironmentPreloader.swift; sourceTree = "<group>"; };
 		SPLASHSCR0000000000000002 /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
 		TRCKSCNRY00000000000002 /* TrackSceneryEnhancer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackSceneryEnhancer.swift; sourceTree = "<group>"; };
+		TRCKH1LLTUN000000000002 /* TrackHillTunnelBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackHillTunnelBuilder.swift; sourceTree = "<group>"; };
 		TRCKWRLDQRY000000000002 /* TrackWorldQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackWorldQuery.swift; sourceTree = "<group>"; };
 		VHCLAXES00000000000000002 /* VehicleAxes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleAxes.swift; sourceTree = "<group>"; };
 		VHCLLGHT0000000000000002 /* VehicleLighting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleLighting.swift; sourceTree = "<group>"; };
@@ -434,6 +446,7 @@
 				KRCWEEKLYEVT0000000001 /* WeeklyEvents.swift */,
 				KRCSTOREPOLISH00000001 /* KRCAppStorePolish.swift */,
 				KRCTUTORIAL0000000001 /* KRCTutorial.swift */,
+				KRCKIDLOOP0000000001 /* KidPlayLoop.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -452,6 +465,10 @@
 				80CB87CBCA7ED81C4A77D5A9 /* AUDIO_ATTRIBUTION.txt */,
 				D77918A96F3C3C980974A300 /* car_engine_racing.mp3 */,
 				RACEINTENSITYMP30002 /* race_intensity.mp3 */,
+				RACEFEVERMP3FILE0002 /* race_fever.mp3 */,
+				RACEHIGHWAYMP3FIL002 /* race_highway.mp3 */,
+				RACENEONMP3FILE00002 /* race_neon.mp3 */,
+				RACEHOTMP3FILE000002 /* race_hot.mp3 */,
 				MENUTHEMEMP3FILE0002 /* menu_theme.mp3 */,
 				GARAGETHEMEMP3FIL002 /* garage_theme.mp3 */,
 				VICTORYMP3FILE000002 /* victory.mp3 */,
@@ -580,6 +597,7 @@
 				B9A514B8F4C848CE84AC6DA6 /* NatureEnvironmentBuilder.swift */,
 				6B837B5B8E6B44C6B2C7FAF0 /* RoadEnvironmentBuilder.swift */,
 				TRCKSCNRY00000000000002 /* TrackSceneryEnhancer.swift */,
+				TRCKH1LLTUN000000000002 /* TrackHillTunnelBuilder.swift */,
 				A7D3D5F6165145598E2B807D /* WorldPropsPlacer.swift */,
 				B4C528631F5442D3BA244E52 /* RacingEnvironmentPipeline.swift */,
 				RCEPRELD0000000000000002 /* RaceEnvironmentPreloader.swift */,
@@ -698,6 +716,10 @@
 				9413B0790508017862B5E1DD /* car-police.png in Resources */,
 				70451007795EF8ABF4741B4C /* car_engine_racing.mp3 in Resources */,
 				RACEINTENSITYMP30001 /* race_intensity.mp3 in Resources */,
+				RACEFEVERMP3FILE0001 /* race_fever.mp3 in Resources */,
+				RACEHIGHWAYMP3FIL001 /* race_highway.mp3 in Resources */,
+				RACENEONMP3FILE00001 /* race_neon.mp3 in Resources */,
+				RACEHOTMP3FILE000001 /* race_hot.mp3 in Resources */,
 				MENUTHEMEMP3FILE0001 /* menu_theme.mp3 in Resources */,
 				GARAGETHEMEMP3FIL001 /* garage_theme.mp3 in Resources */,
 				VICTORYMP3FILE000001 /* victory.mp3 in Resources */,
@@ -745,6 +767,7 @@
 				KRCWEEKLYEVT0000000002 /* WeeklyEvents.swift in Sources */,
 				KRCSTOREPOLISH00000002 /* KRCAppStorePolish.swift in Sources */,
 				KRCTUTORIAL0000000002 /* KRCTutorial.swift in Sources */,
+				KRCKIDLOOP0000000002 /* KidPlayLoop.swift in Sources */,
 				KRCGHOSTTAPE0000000002 /* RaceGhostTape.swift in Sources */,
 				03811865CE19936A4375A23B /* AssetManager.swift in Sources */,
 				94F1A98D2C5FB4B8779262F6 /* CarDecals.swift in Sources */,
@@ -770,6 +793,7 @@
 				DA4F6E67143141CDB9D4FA81 /* NatureEnvironmentBuilder.swift in Sources */,
 				F22802D966434C32B0CA2E3F /* RoadEnvironmentBuilder.swift in Sources */,
 				TRCKSCNRY00000000000001 /* TrackSceneryEnhancer.swift in Sources */,
+				TRCKH1LLTUN000000000001 /* TrackHillTunnelBuilder.swift in Sources */,
 				56E6F0D1FF2F406682068919 /* WorldPropsPlacer.swift in Sources */,
 				D6019E0179024973A271298B /* RacingEnvironmentPipeline.swift in Sources */,
 				RCEPRELD0000000000000001 /* RaceEnvironmentPreloader.swift in Sources */,
@@ -863,7 +887,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = KadenRacing/KadenRacing.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = KadenRacing/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Kaden's Racing Championships";
@@ -946,7 +970,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = KadenRacing/KadenRacing.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = KadenRacing/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Kaden's Racing Championships";

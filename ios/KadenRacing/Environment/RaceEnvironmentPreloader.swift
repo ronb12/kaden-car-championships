@@ -93,9 +93,7 @@ enum RaceEnvironmentPreloader {
         }
 
         let buildScene: () -> Prepared = {
-            if !MinimalRaceEnvironment.isEnabled {
-                KenneyEnvironmentLoader.prewarm()
-            }
+            KenneyEnvironmentLoader.prewarm()
             let camera = SCNNode()
             camera.camera = SCNCamera()
             let scene = SCNScene()

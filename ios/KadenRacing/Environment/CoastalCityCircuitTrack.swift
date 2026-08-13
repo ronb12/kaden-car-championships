@@ -4,17 +4,17 @@ import simd
 /// **Coastal City Circuit** — ocean highway, skyline straights, mountain esses, tunnel-friendly layout.
 enum CoastalCityCircuitTrack {
 
-    private static let scale: Float = 1.45
+    private static let scale: Float = 2.5
 
     static func makeTrack() -> ClosedTrackSpline {
-        let segments = 128
+        let segments = 160
         var points: [SIMD3<Float>] = []
         points.reserveCapacity(segments)
 
         for i in 0..<segments {
             let t = Float(i) / Float(segments) * 2 * Float.pi
             let p = sample(t: t)
-            points.append(SIMD3<Float>(p.x * scale, p.y * scale, p.z * scale))
+            points.append(SIMD3<Float>(p.x * scale, p.y * 1.6, p.z * scale))
         }
         return ClosedTrackSpline(points: points)
     }
@@ -28,10 +28,8 @@ enum CoastalCityCircuitTrack {
         let x = s * 92 + sin(2 * t) * 22 + cos(3 * t) * 8
         let z = c * 68 * (1 + 0.38 * sin(2 * t)) + sin(4 * t) * 10
 
-        // Elevation: mountain esses on back sector, flat ocean highway on front.
-        let sector = sin(t - 0.4)
-        let mountain = max(0, sector) * max(0, sector)
-        let y = mountain * 14 + max(0, cos(2 * t)) * 4
+        // Road itself climbs and drops — no extra dirt mounds.
+        let y = 8.5 * sin(t - 0.4) + 3.2 * sin(2.15 * t) + 1.4 * cos(3.05 * t)
 
         return (x, y, z)
     }

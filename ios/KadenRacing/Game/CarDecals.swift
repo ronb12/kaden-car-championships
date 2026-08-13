@@ -5,47 +5,236 @@ import UIKit
 enum CarDecals {
 
     static func apply(to carNode: SCNNode, container: SCNNode, carId: String, isPlayer: Bool, scale: Float) {
-        carNode.childNode(withName: "krcLicensePlate", recursively: false)?.removeFromParentNode()
-        carNode.childNode(withName: "krcPoliceKit", recursively: false)?.removeFromParentNode()
-        carNode.childNode(withName: "krcPoliceMarkings", recursively: false)?.removeFromParentNode()
+        carNode.childNode(withName: "krcLicensePlate", recursively: true)?.removeFromParentNode()
+        container.childNode(withName: "krcLicensePlate", recursively: true)?.removeFromParentNode()
+        carNode.childNode(withName: "krcPoliceKit", recursively: true)?.removeFromParentNode()
+        carNode.childNode(withName: "krcPoliceMarkings", recursively: true)?.removeFromParentNode()
 
         if carId == "police" {
             applyPoliceKit(to: carNode, scale: scale)
         }
 
-        let layout = rearPlateLayout(carNode: carNode, scale: scale)
+        let host = container.childNode(withName: "krcVehicleRoot", recursively: false) ?? carNode
+        let layout = rearPlateLayout(carNode: host, scale: scale)
         let label = GameCatalog.plateLabel(carId: carId, isPlayer: isPlayer)
         licensePlate(
-            to: carNode,
+            to: host,
             text: label,
             position: SCNVector3(0, layout.y, layout.z),
             yaw: layout.yaw,
-            planeW: layout.width * (carId == "police" ? 0.85 : 1),
+            pitch: layout.pitch,
+            planeW: layout.width * (carId == "police" ? 0.9 : 1),
             planeH: layout.height,
             darkPlate: carId == "police"
         )
+
+        if isPlayer {
+            applyKidShowOff(to: host, container: container, carId: carId, scale: scale)
+        }
     }
 
-    /// Rear bumper placement in the car mesh node's local space.
-    private static func rearPlateLayout(carNode: SCNNode, scale: Float) -> (y: Float, z: Float, yaw: Float, width: Float, height: Float) {
-        let (minB, maxB) = carNode.boundingBox
-        let u = carNode.scale.x
-        let height = maxB.y - minB.y
-        let widthX = maxB.x - minB.x
+    private static func applyKidShowOff(to carNode: SCNNode, container: SCNNode, carId: String, scale: Float) {
+        carNode.childNode(withName: "krcStickerHood", recursively: true)?.removeFromParentNode()
+        carNode.childNode(withName: "krcStickerDoor", recursively: true)?.removeFromParentNode()
+        carNode.childNode(withName: "krcKidToyKit", recursively: true)?.removeFromParentNode()
+        container.childNode(withName: "krcDriverHat", recursively: true)?.removeFromParentNode()
+        carNode.childNode(withName: "krcFlameToy", recursively: true)?.removeFromParentNode()
 
-        let rearIsMinZ = minB.z < maxB.z
-        let rearEdge = rearIsMinZ ? minB.z : maxB.z
-        let lengthZ = maxB.z - minB.z
-        // Sit on the bumper — tiny inset avoids z-fighting without floating off the body.
-        let flushInset = lengthZ * 0.006
-        let z = rearIsMinZ ? (rearEdge + flushInset) : (rearEdge - flushInset)
-        let yaw: Float = rearIsMinZ ? .pi : 0
+        let loadout = KidShowOffLoadout.live
+        let hull = VehicleAxes.paintedHull(in: carNode)
+        let frame = VehicleAxes.frame(in: carNode)
+        let frontIsMaxZ = (frame?.frontZ ?? hull.max.z) >= (frame?.rearZ ?? hull.min.z)
+        let spanX = max(0.4, hull.max.x - hull.min.x)
+        let spanY = max(0.25, hull.max.y - hull.min.y)
+        let spanZ = max(0.4, hull.max.z - hull.min.z)
+        let cx = (hull.min.x + hull.max.x) * 0.5
+        let cz = (hull.min.z + hull.max.z) * 0.5
+        let frontZ = frontIsMaxZ ? hull.max.z : hull.min.z
+        let towardFront: Float = frontIsMaxZ ? 1 : -1
 
-        let y = minB.y + height * 0.38
-        // Sized for the rear bumper plate recess (not full body width).
-        let plateW = max(widthX * u * 0.22, 0.52 * scale)
-        let plateH = plateW * 0.28
-        return (y, z, yaw, plateW, plateH)
+        if let sticker = loadout.hoodSticker {
+            let size = min(spanX, spanZ) * 0.28
+            slapSticker(
+                sticker,
+                named: "krcStickerHood",
+                onto: carNode,
+                position: SCNVector3(
+                    cx,
+                    hull.max.y + 0.012 * scale,
+                    cz + towardFront * spanZ * 0.18
+                ),
+                euler: SCNVector3(-Float.pi / 2, 0, 0),
+                width: size,
+                height: size
+            )
+        }
+        if let sticker = loadout.doorSticker {
+            let size = min(spanY, spanZ) * 0.32
+            slapSticker(
+                sticker,
+                named: "krcStickerDoor",
+                onto: carNode,
+                position: SCNVector3(
+                    hull.max.x + 0.014 * scale,
+                    hull.min.y + spanY * 0.52,
+                    cz
+                ),
+                euler: SCNVector3(0, Float.pi / 2, 0),
+                width: size,
+                height: size
+            )
+        }
+
+        let kit = SCNNode()
+        kit.name = "krcKidToyKit"
+        if loadout.toys.contains(.lightBar), carId != "police" {
+            let barW = spanX * 0.46
+            let barGeo = SCNBox(
+                width: CGFloat(barW),
+                height: CGFloat(0.07 * scale),
+                length: CGFloat(0.18 * scale),
+                chamferRadius: 0.015
+            )
+            let barMat = SCNMaterial()
+            barMat.lightingModel = .constant
+            barMat.diffuse.contents = UIColor(red: 0.08, green: 0.10, blue: 0.16, alpha: 1)
+            barGeo.materials = [barMat]
+            let bar = SCNNode(geometry: barGeo)
+            bar.name = "krcKidLightBar"
+            bar.position = SCNVector3(cx, hull.max.y + 0.04 * scale, cz + towardFront * spanZ * 0.08)
+            kit.addChildNode(bar)
+            let lenses: [(Float, UIColor)] = [
+                (-0.38, UIColor(red: 1, green: 0.08, blue: 0.14, alpha: 1)),
+                (0, UIColor(red: 0.12, green: 0.48, blue: 1, alpha: 1)),
+                (0.38, UIColor(red: 1, green: 0.08, blue: 0.14, alpha: 1)),
+            ]
+            for (nx, color) in lenses {
+                let lens = SCNBox(width: CGFloat(0.12 * scale), height: CGFloat(0.05 * scale), length: CGFloat(0.12 * scale), chamferRadius: 0.01)
+                let mat = SCNMaterial()
+                mat.lightingModel = .constant
+                mat.diffuse.contents = color
+                mat.emission.contents = color
+                lens.materials = [mat]
+                let node = SCNNode(geometry: lens)
+                node.name = "krcKidLightLens"
+                node.position = SCNVector3(cx + nx * barW * 0.5, hull.max.y + 0.07 * scale, cz + towardFront * spanZ * 0.08)
+                kit.addChildNode(node)
+            }
+        }
+        if loadout.toys.contains(.roofBox) {
+            let box = SCNBox(
+                width: CGFloat(spanX * 0.42),
+                height: CGFloat(0.16 * scale),
+                length: CGFloat(spanZ * 0.28),
+                chamferRadius: 0.03
+            )
+            let mat = SCNMaterial()
+            mat.lightingModel = .lambert
+            mat.diffuse.contents = UIColor(red: 0.82, green: 0.55, blue: 0.16, alpha: 1)
+            mat.emission.contents = UIColor(red: 0.82, green: 0.55, blue: 0.16, alpha: 0.18)
+            box.materials = [mat]
+            let node = SCNNode(geometry: box)
+            node.name = "krcKidRoofBox"
+            node.position = SCNVector3(cx, hull.max.y + 0.12 * scale, cz - towardFront * spanZ * 0.08)
+            kit.addChildNode(node)
+        }
+        if loadout.toys.contains(.flameTrail) {
+            for sx: Float in [-1, 1] {
+                let cone = SCNCone(topRadius: 0.01, bottomRadius: CGFloat(0.045 * scale), height: CGFloat(0.22 * scale))
+                let mat = SCNMaterial()
+                mat.lightingModel = .constant
+                mat.diffuse.contents = UIColor(red: 1, green: 0.42, blue: 0.08, alpha: 1)
+                mat.emission.contents = UIColor(red: 1, green: 0.55, blue: 0.12, alpha: 1)
+                cone.materials = [mat]
+                let node = SCNNode(geometry: cone)
+                node.name = "krcFlameToy"
+                node.eulerAngles.x = Float.pi / 2
+                let rearZ = frontIsMaxZ ? hull.min.z : hull.max.z
+                node.position = SCNVector3(
+                    cx + sx * spanX * 0.18,
+                    hull.min.y + spanY * 0.22,
+                    rearZ - towardFront * 0.06 * scale
+                )
+                kit.addChildNode(node)
+            }
+        }
+        if !kit.childNodes.isEmpty {
+            carNode.addChildNode(kit)
+        }
+
+        if let hat = loadout.hat {
+            let driver = container.childNode(withName: "krcDriver", recursively: true)
+            let host = driver ?? carNode
+            let brim = SCNCylinder(radius: CGFloat(0.09 * scale), height: CGFloat(0.025 * scale))
+            let brimMat = SCNMaterial()
+            brimMat.lightingModel = .constant
+            brimMat.diffuse.contents = hat.color
+            brimMat.emission.contents = hat.color.withAlphaComponent(0.25)
+            brim.materials = [brimMat]
+            let hatNode = SCNNode(geometry: brim)
+            hatNode.name = "krcDriverHat"
+            if driver != nil {
+                hatNode.position = SCNVector3(0, 0.42, 0)
+            } else {
+                hatNode.position = SCNVector3(cx, hull.max.y + 0.08 * scale, cz + towardFront * spanZ * 0.12)
+            }
+            host.addChildNode(hatNode)
+
+            let crownH: Float = hat == .champ ? 0.07 : 0.05
+            let crown = SCNCylinder(radius: CGFloat(0.055 * scale), height: CGFloat(crownH * scale))
+            crown.materials = [brimMat]
+            let crownNode = SCNNode(geometry: crown)
+            crownNode.name = "krcDriverHatCrown"
+            crownNode.position.y = 0.03 * scale
+            hatNode.addChildNode(crownNode)
+        }
+        _ = frontZ
+    }
+
+    private static func slapSticker(
+        _ sticker: KidSticker,
+        named name: String,
+        onto parent: SCNNode,
+        position: SCNVector3,
+        euler: SCNVector3,
+        width: Float,
+        height: Float
+    ) {
+        let plane = SCNPlane(width: CGFloat(width), height: CGFloat(height))
+        let mat = SCNMaterial()
+        let image = sticker.makeImage()
+        mat.lightingModel = .constant
+        mat.diffuse.contents = image
+        mat.emission.contents = image
+        mat.emission.intensity = 0.85
+        mat.isDoubleSided = true
+        mat.writesToDepthBuffer = true
+        plane.materials = [mat]
+        let node = SCNNode(geometry: plane)
+        node.name = name
+        node.position = position
+        node.eulerAngles = euler
+        node.renderingOrder = 130
+        parent.addChildNode(node)
+    }
+
+    /// Rear bumper face of the painted hull — inset so the plate sits on the valence, not the spoiler AABB.
+    private static func rearPlateLayout(carNode: SCNNode, scale: Float) -> (y: Float, z: Float, yaw: Float, pitch: Float, width: Float, height: Float) {
+        let hull = VehicleAxes.paintedHull(in: carNode)
+        let widthX = max(0.4, hull.max.x - hull.min.x)
+        let bodyH = max(0.25, hull.max.y - hull.min.y)
+        let frame = VehicleAxes.frame(in: carNode)
+        let frontIsMaxZ = (frame?.frontZ ?? hull.max.z) >= (frame?.rearZ ?? hull.min.z)
+        let rearZ = frontIsMaxZ ? hull.min.z : hull.max.z
+        let outward: Float = frontIsMaxZ ? -1 : 1
+        // Pull into the bumper so the frame back kisses the shell (not floating on kit/exhaust bounds).
+        let z = rearZ - outward * (0.022 * max(0.6, scale))
+        let yaw: Float = outward < 0 ? .pi : 0
+        // Bumper band, above exhaust tips (~11% height).
+        let y = hull.min.y + bodyH * 0.33
+        let plateW = max(0.62 * scale, widthX * 0.30)
+        let plateH = plateW * 0.34
+        return (y, z, yaw, 0, plateW, plateH)
     }
 
     private static func applyPoliceKit(to carNode: SCNNode, scale: Float) {
@@ -176,19 +365,20 @@ enum CarDecals {
         text: String,
         position: SCNVector3,
         yaw: Float,
+        pitch: Float = 0,
         planeW: Float,
         planeH: Float,
         darkPlate: Bool = false
     ) {
-        let image = renderLicensePlate(text: text, canvasW: 1024, canvasH: 360, darkPlate: darkPlate)
+        let image = renderLicensePlate(text: text, canvasW: 2048, canvasH: 640, darkPlate: darkPlate)
 
         let mount = SCNNode()
         mount.name = "krcLicensePlate"
         mount.position = position
-        mount.eulerAngles.y = yaw
+        mount.eulerAngles = SCNVector3(pitch, yaw, 0)
 
-        let framePad: CGFloat = 0.018
-        let depth: CGFloat = 0.014
+        let framePad: CGFloat = 0.012
+        let depth: CGFloat = 0.008
         let frameGeo = SCNBox(
             width: CGFloat(planeW) + framePad,
             height: CGFloat(planeH) + framePad,
@@ -214,26 +404,28 @@ enum CarDecals {
 
         let faceMat = SCNMaterial()
         faceMat.name = darkPlate ? "krcPolicePlateFaceMat" : "krcPlateFaceMat"
-        faceMat.lightingModel = darkPlate ? .constant : .physicallyBased
+        faceMat.lightingModel = .constant
         faceMat.diffuse.contents = image
-        if darkPlate {
-            faceMat.emission.contents = UIColor(white: 0.08, alpha: 1)
-        } else {
-            faceMat.metalness.contents = 0.28
-            faceMat.roughness.contents = 0.18
-            faceMat.specular.contents = UIColor(white: 0.85, alpha: 1)
-        }
+        faceMat.diffuse.magnificationFilter = .linear
+        faceMat.diffuse.minificationFilter = .linear
+        faceMat.diffuse.mipFilter = .none
+        faceMat.diffuse.wrapS = .clamp
+        faceMat.diffuse.wrapT = .clamp
+        faceMat.emission.contents = image
+        faceMat.emission.intensity = 1.55
+        faceMat.ambient.contents = image
         faceMat.isDoubleSided = true
         faceMat.writesToDepthBuffer = true
         faceMat.readsFromDepthBuffer = true
+        faceMat.locksAmbientWithDiffuse = true
 
         let plane = SCNPlane(width: CGFloat(planeW), height: CGFloat(planeH))
-        plane.cornerRadius = CGFloat(planeH) * 0.11
+        plane.cornerRadius = CGFloat(planeH) * 0.08
         plane.materials = [faceMat]
         let faceNode = SCNNode(geometry: plane)
         faceNode.name = darkPlate ? "krcPolicePlateFace" : "krcPlateFace"
-        let forward: Float = 0.0008
-        faceNode.position.z = yaw > 1.5 ? -forward : forward
+        // SCNPlane faces local +Z — sit it on the outward face of the frame, not inside it.
+        faceNode.position.z = Float(depth) * 0.5 + 0.002
         faceNode.renderingOrder = 121
         mount.addChildNode(faceNode)
 
@@ -289,201 +481,69 @@ enum CarDecals {
         let size = CGSize(width: canvasW, height: canvasH)
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { ctx in
-            let cg = ctx.cgContext
-            let outer = CGRect(origin: .zero, size: size).insetBy(dx: 6, dy: 6)
-            let framePath = UIBezierPath(roundedRect: outer, cornerRadius: 22)
+            // Mirror X so chase-cam (yaw π) reads "KRC" left-to-right.
+            ctx.cgContext.translateBy(x: size.width, y: 0)
+            ctx.cgContext.scaleBy(x: -1, y: 1)
+            let outer = CGRect(origin: .zero, size: size).insetBy(dx: 8, dy: 8)
+            let framePath = UIBezierPath(roundedRect: outer, cornerRadius: 28)
+            (darkPlate
+                ? UIColor(red: 0.12, green: 0.14, blue: 0.18, alpha: 1)
+                : UIColor(red: 0.18, green: 0.18, blue: 0.2, alpha: 1)
+            ).setFill()
+            framePath.fill()
 
-            // Metal frame gradient
-            cg.saveGState()
-            framePath.addClip()
-            let frameColors = darkPlate
-                ? [UIColor(red: 0.32, green: 0.34, blue: 0.38, alpha: 1).cgColor,
-                   UIColor(red: 0.14, green: 0.15, blue: 0.18, alpha: 1).cgColor]
-                : [UIColor(red: 0.88, green: 0.89, blue: 0.91, alpha: 1).cgColor,
-                   UIColor(red: 0.58, green: 0.60, blue: 0.64, alpha: 1).cgColor]
-            if let grad = CGGradient(
-                colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                colors: frameColors as CFArray,
-                locations: [0, 1]
-            ) {
-                cg.drawLinearGradient(grad, start: CGPoint(x: outer.minX, y: outer.minY),
-                                      end: CGPoint(x: outer.maxX, y: outer.maxY), options: [])
-            }
-            cg.restoreGState()
-
-            let inner = outer.insetBy(dx: 14, dy: 14)
-            let platePath = UIBezierPath(roundedRect: inner, cornerRadius: 16)
-
-            // Face fill + subtle reflective sheen
-            cg.saveGState()
-            platePath.addClip()
+            let inner = outer.insetBy(dx: 18, dy: 18)
+            let platePath = UIBezierPath(roundedRect: inner, cornerRadius: 18)
+            // High-contrast face — yellow reads at chase-cam distance.
             if darkPlate {
-                UIColor(red: 0.05, green: 0.07, blue: 0.12, alpha: 1).setFill()
+                UIColor(red: 1, green: 0.92, blue: 0.18, alpha: 1).setFill()
             } else {
-                let faceColors = [
-                    UIColor(red: 0.99, green: 0.99, blue: 1.0, alpha: 1).cgColor,
-                    UIColor(red: 0.90, green: 0.91, blue: 0.93, alpha: 1).cgColor,
-                    UIColor(red: 0.96, green: 0.96, blue: 0.98, alpha: 1).cgColor,
-                ]
-                if let grad = CGGradient(
-                    colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                    colors: faceColors as CFArray,
-                    locations: [0, 0.55, 1]
-                ) {
-                    cg.drawLinearGradient(
-                        grad,
-                        start: CGPoint(x: inner.midX, y: inner.minY),
-                        end: CGPoint(x: inner.midX, y: inner.maxY),
-                        options: []
-                    )
-                }
+                UIColor(red: 1, green: 0.94, blue: 0.22, alpha: 1).setFill()
             }
             platePath.fill()
-            // Reflective streak
-            UIColor(white: 1, alpha: darkPlate ? 0.06 : 0.22).setFill()
-            UIBezierPath(
-                roundedRect: CGRect(
-                    x: inner.minX + inner.width * 0.08,
-                    y: inner.minY + inner.height * 0.12,
-                    width: inner.width * 0.84,
-                    height: inner.height * 0.18
-                ),
-                cornerRadius: 8
-            ).fill()
-            cg.restoreGState()
-
-            platePath.lineWidth = 2
-            UIColor(white: darkPlate ? 0.35 : 0.72, alpha: 0.9).setStroke()
-            platePath.stroke()
-
-            drawPlateBolts(in: inner, dark: darkPlate)
-
-            // Header strip (state-style)
-            let headerH = inner.height * 0.22
-            let headerRect = CGRect(x: inner.minX + 10, y: inner.minY + 8, width: inner.width - 20, height: headerH)
-            let headerPath = UIBezierPath(roundedRect: headerRect, cornerRadius: 6)
-            if darkPlate {
-                UIColor(red: 0.12, green: 0.14, blue: 0.22, alpha: 1).setFill()
-            } else {
-                UIColor(red: 0.08, green: 0.22, blue: 0.52, alpha: 1).setFill()
-            }
-            headerPath.fill()
-            if darkPlate {
-                let accent = UIBezierPath(rect: CGRect(x: headerRect.minX, y: headerRect.maxY - 3,
-                                                       width: headerRect.width, height: 3))
-                UIColor(red: 0.85, green: 0.12, blue: 0.18, alpha: 1).setFill()
-                accent.fill()
-                UIBezierPath(rect: CGRect(x: headerRect.minX, y: headerRect.maxY - 6,
-                                          width: headerRect.width * 0.48, height: 3)).fill()
-                UIColor(red: 0.12, green: 0.35, blue: 0.92, alpha: 1).setFill()
-                UIBezierPath(rect: CGRect(x: headerRect.minX + headerRect.width * 0.52,
-                                          y: headerRect.maxY - 6, width: headerRect.width * 0.48, height: 3)).fill()
-            }
-
-            let headerFont = UIFont.systemFont(ofSize: 22, weight: .bold)
-            let headerAttrs: [NSAttributedString.Key: Any] = [
-                .font: headerFont,
-                .foregroundColor: UIColor(white: 0.96, alpha: 1),
-                .kern: 3.2,
-            ]
-            let headerText = darkPlate ? "EMERGENCY" : "KRC"
-            let headerSize = (headerText as NSString).size(withAttributes: headerAttrs)
-            (headerText as NSString).draw(
-                at: CGPoint(x: headerRect.midX - headerSize.width / 2,
-                            y: headerRect.midY - headerSize.height / 2),
-                withAttributes: headerAttrs
-            )
 
             drawPlateMainText(
-                text: text.uppercased(),
-                in: CGRect(
-                    x: inner.minX + 12,
-                    y: headerRect.maxY + 6,
-                    width: inner.width - 24,
-                    height: inner.maxY - headerRect.maxY - 14
-                ),
-                darkPlate: darkPlate
+                text: text,
+                in: inner.insetBy(dx: 20, dy: 16),
+                darkPlate: false
             )
-        }
-    }
-
-    private static func drawPlateBolts(in rect: CGRect, dark: Bool) {
-        let inset: CGFloat = 18
-        let r: CGFloat = 5
-        let points = [
-            CGPoint(x: rect.minX + inset, y: rect.minY + inset),
-            CGPoint(x: rect.maxX - inset, y: rect.minY + inset),
-            CGPoint(x: rect.minX + inset, y: rect.maxY - inset),
-            CGPoint(x: rect.maxX - inset, y: rect.maxY - inset),
-        ]
-        for p in points {
-            let bolt = UIBezierPath(ovalIn: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2))
-            UIColor(white: dark ? 0.28 : 0.55, alpha: 1).setFill()
-            bolt.fill()
-            UIColor(white: dark ? 0.12 : 0.32, alpha: 1).setStroke()
-            bolt.lineWidth = 1.2
-            bolt.stroke()
-            UIColor(white: dark ? 0.42 : 0.78, alpha: 0.55).setFill()
-            UIBezierPath(ovalIn: CGRect(x: p.x - 1.5, y: p.y - 1.5, width: 3, height: 3)).fill()
         }
     }
 
     private static func drawPlateMainText(text: String, in rect: CGRect, darkPlate: Bool) {
-        let lines: [String]
-        if text.count > 14, text.contains(" ") {
-            let parts = text.split(separator: " ", maxSplits: 1).map(String.init)
-            lines = parts.count == 2 ? parts : [text]
-        } else if text.count > 16 {
-            let mid = text.index(text.startIndex, offsetBy: text.count / 2)
-            lines = [String(text[..<mid]), String(text[mid...])]
-        } else {
-            lines = [text]
-        }
-
-        let fontSize: CGFloat = lines.count > 1 ? 38 : (text.count > 12 ? 40 : 48)
-        let font = UIFont(name: "Arial-BoldMT", size: fontSize)
-            ?? UIFont.systemFont(ofSize: fontSize, weight: .black)
+        let line = text.replacingOccurrences(of: "  ", with: " ")
         let para = NSMutableParagraphStyle()
         para.alignment = .center
-        para.lineSpacing = 2
 
-        let fillColor = darkPlate
-            ? UIColor(red: 0.94, green: 0.95, blue: 0.98, alpha: 1)
-            : UIColor(red: 0.06, green: 0.08, blue: 0.12, alpha: 1)
-        let shadowColor = darkPlate
-            ? UIColor.black.withAlphaComponent(0.55)
-            : UIColor.white.withAlphaComponent(0.85)
-        let strokeColor = darkPlate
-            ? UIColor.black.withAlphaComponent(0.65)
-            : UIColor(white: 0.02, alpha: 0.9)
-
-        let lineHeight = font.lineHeight + para.lineSpacing
-        let totalH = lineHeight * CGFloat(lines.count) - para.lineSpacing
-        var y = rect.midY - totalH / 2
-
-        for line in lines {
-            let attrs: [NSAttributedString.Key: Any] = [
-                .font: font,
-                .foregroundColor: fillColor,
-                .strokeColor: strokeColor,
-                .strokeWidth: -2.8,
-                .paragraphStyle: para,
-            ]
-            let str = NSAttributedString(string: line, attributes: attrs)
-            let size = str.size()
-            let textRect = CGRect(x: rect.minX, y: y, width: rect.width, height: size.height)
-
-            let shadowAttrs: [NSAttributedString.Key: Any] = [
-                .font: font,
-                .foregroundColor: shadowColor,
-                .paragraphStyle: para,
-            ]
-            let shadowRect = textRect.offsetBy(dx: 0, dy: darkPlate ? 2.5 : -2.5)
-            NSAttributedString(string: line, attributes: shadowAttrs).draw(
-                with: shadowRect, options: .usesLineFragmentOrigin, context: nil
-            )
-            str.draw(with: textRect, options: .usesLineFragmentOrigin, context: nil)
-            y += lineHeight
+        var fontSize = min(rect.height * 0.88, 360)
+        var font = UIFont(name: "Arial-Black", size: fontSize)
+            ?? UIFont.systemFont(ofSize: fontSize, weight: .black)
+        while fontSize > 40 {
+            font = UIFont(name: "Arial-Black", size: fontSize)
+                ?? UIFont.systemFont(ofSize: fontSize, weight: .black)
+            let measured = (line as NSString).size(withAttributes: [.font: font])
+            if measured.width <= rect.width && measured.height <= rect.height { break }
+            fontSize -= 4
         }
+
+        let fill = UIColor(red: 0.04, green: 0.04, blue: 0.05, alpha: 1)
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: fill,
+            .kern: 2,
+            .paragraphStyle: para,
+            .strokeColor: UIColor.black,
+            .strokeWidth: -4,
+        ]
+        let str = NSAttributedString(string: line, attributes: attrs)
+        let size = str.size()
+        let textRect = CGRect(
+            x: rect.minX,
+            y: rect.midY - size.height / 2,
+            width: rect.width,
+            height: size.height
+        )
+        str.draw(with: textRect, options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+        _ = darkPlate
     }
 }

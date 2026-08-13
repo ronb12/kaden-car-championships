@@ -6,6 +6,8 @@ struct CarPreview3DView: UIViewRepresentable {
     let car: CarChoice
     var height: CGFloat = 88
     var bodyColorOverride: UIColor? = nil
+    /// Bumps when paint / wrap / rim changes so the spinning car actually restyles.
+    var appearanceKey: String = ""
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
@@ -20,6 +22,7 @@ struct CarPreview3DView: UIViewRepresentable {
         context.coordinator.updateCar(
             car: car,
             bodyColor: bodyColorOverride ?? GarageCustomization.bodyColor(for: car),
+            appearanceKey: appearanceKey,
             in: view
         )
         return view
@@ -29,6 +32,7 @@ struct CarPreview3DView: UIViewRepresentable {
         context.coordinator.updateCar(
             car: car,
             bodyColor: bodyColorOverride ?? GarageCustomization.bodyColor(for: car),
+            appearanceKey: appearanceKey,
             in: view
         )
     }
@@ -42,8 +46,14 @@ struct CarPreview3DView: UIViewRepresentable {
         private weak var sceneView: SCNView?
         private weak var previewCamera: SCNNode?
         private var lastCarKey: String?
+        private var lastPaint: GaragePaintSwatch?
+        private var lastWrap: GarageWrapStyle?
+        private var lastRim: GarageRimStyle?
+        private var lastCarId: String?
+        private var previewCar: CarChoice?
         private var didFrameCamera = false
         private var seatWorkItem: DispatchWorkItem?
+        private let previewScale: CGFloat = 0.82
 
         func setupScene(in view: SCNView) {
             sceneView = view
@@ -91,14 +101,74 @@ struct CarPreview3DView: UIViewRepresentable {
             scene.background.contents = UIColor(red: 0.03, green: 0.04, blue: 0.07, alpha: 1)
             scene.rootNode.addChildNode(KRCSceneKitHelpers.garageShowroomPlatform())
             scene.rootNode.addChildNode(KRCSceneKitHelpers.reflectiveFloor(radius: 5.5, opacity: 0))
+            scene.rootNode.addChildNode(Self.makeStickerWall())
         }
 
-        func updateCar(car: CarChoice, bodyColor: UIColor, in view: SCNView) {
+        private static func makeStickerWall() -> SCNNode {
+            let wall = SCNNode()
+            wall.name = "krcGarageStickerWall"
+            let board = SCNBox(width: 3.4, height: 1.8, length: 0.06, chamferRadius: 0.02)
+            let mat = SCNMaterial()
+            mat.lightingModel = .constant
+            mat.diffuse.contents = UIColor(red: 0.10, green: 0.09, blue: 0.08, alpha: 1)
+            board.materials = [mat]
+            let boardNode = SCNNode(geometry: board)
+            boardNode.name = "krcGarageStickerBoard"
+            wall.addChildNode(boardNode)
+            wall.position = SCNVector3(0, 1.35, -2.35)
+            return wall
+        }
+
+        private func refreshStickerWall(in scene: SCNScene) {
+            guard let wall = scene.rootNode.childNode(withName: "krcGarageStickerWall", recursively: false) else { return }
+            wall.childNodes.filter { $0.name == "krcGarageWallSticker" }.forEach { $0.removeFromParentNode() }
+            let owned = KidShowOffLoadout.live.ownedStickers
+            guard !owned.isEmpty else { return }
+            let cols = min(4, max(1, owned.count))
+            for (i, sticker) in owned.prefix(8).enumerated() {
+                let col = i % cols
+                let row = i / cols
+                let plane = SCNPlane(width: 0.42, height: 0.42)
+                let mat = SCNMaterial()
+                let image = sticker.makeImage()
+                mat.lightingModel = .constant
+                mat.diffuse.contents = image
+                mat.emission.contents = image
+                mat.isDoubleSided = true
+                plane.materials = [mat]
+                let node = SCNNode(geometry: plane)
+                node.name = "krcGarageWallSticker"
+                let x = (Float(col) - Float(cols - 1) * 0.5) * 0.62
+                let y = 0.35 - Float(row) * 0.55
+                node.position = SCNVector3(x, y, 0.05)
+                wall.addChildNode(node)
+            }
+        }
+
+        func updateCar(car: CarChoice, bodyColor: UIColor, appearanceKey: String, in view: SCNView) {
             guard let scene = view.scene else { return }
             let style = GarageCustomization.style(for: car.id)
-            let carKey = "\(car.id)-\(bodyColor.hash)-\(style.paint.rawValue)-\(style.wrap.rawValue)-\(style.rim.rawValue)"
+            let carKey = "\(car.id)-\(bodyColor.hash)-\(style.paint.rawValue)-\(style.wrap.rawValue)-\(style.rim.rawValue)-\(appearanceKey)"
             guard carKey != lastCarKey else { return }
+            previewCar = car
+
+            // Rim-only: restyle wheels on the live mesh so the spin doesn't flash.
+            if let root = carRoot,
+               lastCarId == car.id,
+               lastPaint == style.paint,
+               lastWrap == style.wrap,
+               lastRim != style.rim {
+                WheelAssembly.restyleGarageWheels(in: root, carId: car.id, scale: Float(previewScale))
+                lastRim = style.rim
+                lastCarKey = carKey
+                return
+            }
+
             lastCarKey = carKey
+            lastCarId = car.id
+            lastPaint = style.paint
+            lastWrap = style.wrap
+            lastRim = style.rim
 
             seatWorkItem?.cancel()
             seatWorkItem = nil
@@ -126,7 +196,7 @@ struct CarPreview3DView: UIViewRepresentable {
                 root: root,
                 bodyColor: bodyColor,
                 carId: car.id,
-                scale: 0.82,
+                scale: previewScale,
                 isPlayer: true,
                 category: GameCatalog.vehicleCategory(for: car.id),
                 applyLivery: true,
@@ -142,6 +212,7 @@ struct CarPreview3DView: UIViewRepresentable {
             frameCamera(on: root)
             view.pointOfView = previewCamera
             startSpin(on: pivot)
+            refreshStickerWall(in: scene)
             scheduleLateSeatIfNeeded(root: root, pivot: pivot)
         }
 
@@ -182,6 +253,9 @@ struct CarPreview3DView: UIViewRepresentable {
                 guard let self, let root, let pivot, self.carRoot === root else { return }
                 let yaw = pivot.eulerAngles.y
                 self.seatOnPlatform(root)
+                if let car = self.previewCar {
+                    self.reseatPlates(on: root, car: car)
+                }
                 // Keep current spin phase; do not reframe camera (that caused the garage glitch).
                 pivot.eulerAngles.y = yaw
                 if !self.didFrameCamera {
@@ -190,6 +264,18 @@ struct CarPreview3DView: UIViewRepresentable {
             }
             seatWorkItem = work
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
+        }
+
+        private func reseatPlates(on root: SCNNode, car: CarChoice) {
+            let host = root.childNode(withName: "krcVehicleRoot", recursively: false) ?? root
+            let mesh = host.childNode(withName: "krcVehicleBody", recursively: true) ?? host
+            CarDecals.apply(
+                to: mesh,
+                container: root,
+                carId: car.id,
+                isPlayer: true,
+                scale: Float(previewScale)
+            )
         }
 
         private func frameCamera(on car: SCNNode) {

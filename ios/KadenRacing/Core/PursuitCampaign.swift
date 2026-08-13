@@ -18,10 +18,10 @@ enum PursuitCampaign {
         PursuitChapter(
             id: "p01-rookies",
             title: "Rookie Sweep",
-            blurb: "Bust 3 street racers before the clock runs out.",
+            blurb: "90 seconds. Bust 3 street racers.",
             trackIndex: 0,
             suspectCount: 3,
-            timeLimitSeconds: 150,
+            timeLimitSeconds: 90,
             nightPreferred: false,
             roadblocks: false,
             rewardBonus: 200
@@ -29,10 +29,10 @@ enum PursuitCampaign {
         PursuitChapter(
             id: "p02-neon",
             title: "Neon Night Shift",
-            blurb: "Night intercept — 4 suspects, tighter timer.",
+            blurb: "Night intercept — 3 suspects, 100 seconds.",
             trackIndex: 1,
-            suspectCount: 4,
-            timeLimitSeconds: 165,
+            suspectCount: 3,
+            timeLimitSeconds: 100,
             nightPreferred: true,
             roadblocks: true,
             rewardBonus: 320

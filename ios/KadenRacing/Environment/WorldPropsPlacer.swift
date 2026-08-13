@@ -28,9 +28,14 @@ enum WorldPropsPlacer {
 
             for side: Float in [-1, 1] {
                 if let light = KenneyEnvironmentLoader.loadStreetLight(night: night) {
-                    let offset = right * ((RaceTrackMesh.halfWidth + 5.5) * side)
+                    let offset = right * (TrackRoadsideClearance.poleMinLateral * side)
                     light.position = SCNVector3(base.x + offset.x, base.y, base.z + offset.z)
                     light.eulerAngles.y = yaw + (side > 0 ? Float.pi * 0.5 : -Float.pi * 0.5)
+                    TrackRoadsideClearance.pushOutsideRoad(
+                        light, track: track,
+                        minLateral: TrackRoadsideClearance.poleMinLateral,
+                        extraFootprint: 1.2
+                    )
                     parent.addChildNode(light)
                 }
             }

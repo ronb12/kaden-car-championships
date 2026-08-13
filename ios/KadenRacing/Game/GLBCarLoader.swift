@@ -39,6 +39,11 @@ enum GLBCarLoader {
         return "krc-camber-ss"
     }
 
+    /// True when this car has its own USDZ instead of the shared Camber SS shell.
+    static func hasUniqueMesh(forCarId carId: String) -> Bool {
+        perCarModelFiles[carId] != nil
+    }
+
     static func load(
         carId: String,
         bodyColor: UIColor,
@@ -532,7 +537,8 @@ enum GLBCarLoader {
         switch nodeName {
         case "krcaxlefront", "krcaxlerear", "krcheadlightspot", "krcbrakeglow",
              "krcheadlightlens", "krctailamp", "krcbrakelamp", "krcdriver",
-             "krclicenseplate", "krcpolicekit", "krcclasskit":
+             "krclicenseplate", "krcpolicekit", "krcclasskit",
+             "krcstickerhood", "krcstickerdoor", "krckidtoykit", "krcdriverhat":
             return true
         default:
             return false

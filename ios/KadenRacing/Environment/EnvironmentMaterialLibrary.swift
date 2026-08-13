@@ -24,9 +24,9 @@ enum EnvironmentMaterialLibrary {
             let m = SCNMaterial()
             m.lightingModel = .physicallyBased
             m.diffuse.contents = UIColor(
-                red: night ? 0.22 : 0.58,
-                green: night ? 0.22 : 0.56,
-                blue: night ? 0.24 : 0.54,
+                red: night ? 0.16 : 0.32,
+                green: night ? 0.16 : 0.30,
+                blue: night ? 0.18 : 0.28,
                 alpha: 1
             )
             m.roughness.contents = 0.78
@@ -138,6 +138,7 @@ enum EnvironmentMaterialLibrary {
             )
             m.roughness.contents = 0.92
             m.metalness.contents = 0
+            m.isDoubleSided = true
             return m
         }
     }

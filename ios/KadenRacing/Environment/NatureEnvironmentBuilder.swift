@@ -44,7 +44,7 @@ enum NatureEnvironmentBuilder {
             let node = SCNNode(geometry: cone)
             node.position = SCNVector3(
                 center.x + cos(angle) * radius,
-                h * 0.5 - 2,
+                center.y + h * 0.5 - 2,
                 center.z + sin(angle) * radius
             )
             node.castsShadow = false
@@ -64,7 +64,7 @@ enum NatureEnvironmentBuilder {
         ringMat.metalness.contents = 0
         ring.materials = [ringMat]
         let ringNode = SCNNode(geometry: ring)
-        ringNode.position = SCNVector3(center.x, -1.5, center.z)
+        ringNode.position = SCNVector3(center.x, center.y - 1.5, center.z)
         ringNode.scale = SCNVector3(1, 0.35, 1)
         ringNode.castsShadow = false
         parent.addChildNode(ringNode)

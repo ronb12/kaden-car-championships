@@ -80,8 +80,8 @@ enum RoadEnvironmentBuilder {
             let pillar = SCNCylinder(radius: 0.45, height: 3.2)
             pillar.materials = [mat]
             let p = SCNNode(geometry: pillar)
-            let ox = sin(yaw) * 11 * side
-            let oz = cos(yaw) * 11 * side
+            let ox = sin(yaw) * TrackRoadsideClearance.poleMinLateral * side
+            let oz = cos(yaw) * TrackRoadsideClearance.poleMinLateral * side
             p.position = SCNVector3(base.x + ox, base.y + 1.6, base.z + oz)
             parent.addChildNode(p)
         }

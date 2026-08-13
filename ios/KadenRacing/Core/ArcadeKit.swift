@@ -39,12 +39,12 @@ enum GameModeKind: String, Codable, CaseIterable, Identifiable, Hashable {
         switch self {
         case .circuit: return "Classic arcade laps"
         case .championshipSerie: return "4 rounds · cumulative time"
-        case .policeChase: return "Drive the interceptor · bust fleeing racers"
+        case .policeChase: return "90-second busts · sirens · tickets"
         case .endless: return "One long session · chase score"
         case .timeTrial: return "Pure pace · minimal traffic"
         case .ghostDuel: return "Race your PB ghost + pace cars"
         case .career: return "Structured progression"
-        case .courier: return "Jobs · GPS · rivals · grades · courier ladder"
+        case .courier: return "2–3 packages · follow the arrow"
         }
     }
 
