@@ -211,13 +211,13 @@ final class DPadControllerView: UIView {
         let marginR = max(12, safeAreaInsets.right + 6)
         let bottom = safeAreaInsets.bottom
         let scale = controlScale()
-        let pad = 10 * scale
-        let dpadGap = 10 * scale
-        let faceGap = 12 * scale
+        let pad = 16 * scale
+        let dpadGap = 20 * scale
+        let faceGap = 28 * scale
 
-        let dpadBtnBase: CGFloat = layoutMode == .portrait ? 52 : 48
+        let dpadBtnBase: CGFloat = layoutMode == .portrait ? 54 : 50
         let dpadBtnScaled = dpadBtnBase * scale
-        let faceSize: CGFloat = (layoutMode == .portrait ? 50 : 46) * scale
+        let faceSize: CGFloat = (layoutMode == .portrait ? 52 : 48) * scale
 
         let dpadW = dpadBtnScaled * 2 + dpadGap
         let dpadH = dpadBtnScaled * 2 + dpadGap

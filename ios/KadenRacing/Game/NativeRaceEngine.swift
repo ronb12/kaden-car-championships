@@ -171,6 +171,7 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
     private var startTime = Date()
     private var countdownElapsed: Float = 0
     private var didReleaseStartGrid = false
+    private var didShowFinishSign = false
     private var lightsRemaining = 3
     private var paused = false
     private var finished = false
@@ -315,7 +316,15 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
             startLight = -1
             lightsRemaining = -1
             didReleaseStartGrid = true
+            didShowFinishSign = true
+            RaceTrackMesh.setStartFinishSignPhase(.finish, in: scene.rootNode)
+        } else {
+            didShowFinishSign = false
+            RaceTrackMesh.setStartFinishSignPhase(.start, in: scene.rootNode)
         }
+        #else
+        didShowFinishSign = false
+        RaceTrackMesh.setStartFinishSignPhase(.start, in: scene.rootNode)
         #endif
     }
 
@@ -440,6 +449,19 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
             }
         }
         return true
+    }
+
+    /// Gantry reads FINISH only after the whole field has cleared the start line — not at green flag.
+    private func updateStartFinishSignIfNeeded() {
+        guard !didShowFinishSign, didReleaseStartGrid else { return }
+        let threshold = RaceOpponentController.startLineCrossThreshold
+        let playerPast = _lapIndex > 1 || openWorld.trackT >= threshold
+        guard playerPast else { return }
+        if let opponents, !opponents.allGridCarsPastStartLine(playerLap: _lapIndex, playerTrackT: openWorld.trackT) {
+            return
+        }
+        didShowFinishSign = true
+        RaceTrackMesh.setStartFinishSignPhase(.finish, in: scene.rootNode)
     }
 
     func speedKmh() -> Int {
@@ -598,15 +620,15 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
                 pursuit = false
                 ghost = true
             case .career:
-                slots = VehicleSpawnPlanner.planOpponents(playerCarIndex: playerCarIndex, count: 3)
+                slots = VehicleSpawnPlanner.planOpponents(playerCarIndex: playerCarIndex, count: 3, playerBodyColor: carColor)
                 pursuit = false
                 ghost = false
             case .courier:
-                slots = VehicleSpawnPlanner.planOpponents(playerCarIndex: playerCarIndex, count: 2)
+                slots = VehicleSpawnPlanner.planOpponents(playerCarIndex: playerCarIndex, count: 2, playerBodyColor: carColor)
                 pursuit = false
                 ghost = false
             default:
-                slots = VehicleSpawnPlanner.planOpponents(playerCarIndex: playerCarIndex, count: 4)
+                slots = VehicleSpawnPlanner.planOpponents(playerCarIndex: playerCarIndex, count: 4, playerBodyColor: carColor)
                 pursuit = false
                 ghost = false
             }
@@ -1016,6 +1038,7 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
                 visualNight: city.visualNight
             )
         )
+        updateStartFinishSignIfNeeded()
 
         if mode == .policeChase {
             let newTickets = opponents?.processInterceptorBusts(
@@ -1223,12 +1246,23 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         smoothedBodyPitch += (openWorld.bodyPitch - smoothedBodyPitch) * attitudeAlpha
         smoothedBodyRoll += (openWorld.bodyRoll - smoothedBodyRoll) * attitudeAlpha
         // Grade on the root so hills read; roll/pitch on the vehicle child so tires stay planted.
+        // Standing start / crawl: keep the shell dead-flat so grid cars never look nose-tipped.
+        let standingStart = lightsRemaining >= 0 || abs(openWorld.speed) < 0.35
         let tan = city.track.tangent(openWorld.trackT)
         let horiz = max(0.001, simd_length(SIMD2(tan.x, tan.z)))
-        let gradePitch = max(-0.26, min(0.26, -atan2(tan.y, horiz)))
+        let gradePitch = standingStart
+            ? Float(0)
+            : max(-0.26, min(0.26, -atan2(tan.y, horiz)))
         carNode.eulerAngles = SCNVector3(gradePitch, openWorld.heading, 0)
         if let body = carNode.childNode(withName: "krcVehicleRoot", recursively: false) {
-            body.eulerAngles = SCNVector3(smoothedBodyPitch * 0.5, 0, smoothedBodyRoll * 0.35)
+            // Keep alignVehicleForward yaw; only layer suspension pitch/roll.
+            let pitch = standingStart
+                ? Float(0)
+                : max(-0.35, min(0.35, smoothedBodyPitch * 0.5))
+            let roll = standingStart
+                ? Float(0)
+                : max(-0.45, min(0.45, smoothedBodyRoll * 0.35))
+            body.eulerAngles = SCNVector3(pitch, body.eulerAngles.y, roll)
         }
         WheelAssembly.applySuspension(in: carNode, compression: openWorld.suspension)
 

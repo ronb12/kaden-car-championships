@@ -6,7 +6,8 @@ enum RaceParticles {
 
     private static let nitroName = "nitroFx"
     private static let exhaustName = "exhaustFx"
-    private static let exhaustKitName = "krcExhaustKitV3"
+    private static let exhaustKitName = "krcExhaustKitV5"
+    private static let exhaustKitStaleNames = ["krcExhaustKit", "krcExhaustKitV3", "krcExhaustKitV4"]
     private static let driftName = "driftFx"
     private static let brakeGlowName = "brakeGlowFx"
 
@@ -15,13 +16,13 @@ enum RaceParticles {
         root.enumerateHierarchy { node, _ in
             node.particleSystems?.forEach { node.removeParticleSystem($0) }
         }
-        root.childNode(withName: "krcExhaustKit", recursively: true)?.removeFromParentNode()
-        root.childNode(withName: exhaustKitName, recursively: true)?.removeFromParentNode()
+        stripExhaustKits(from: root)
         _ = ensureExhaustKit(on: root)
     }
 
     static func updateMenuExhaust(on root: SCNNode, active: Bool) {
         let tips = ensureExhaustKit(on: root)
+        let emitDir = exhaustEmitDirection(outward: bumperTipPose(on: exhaustHost(on: root)).outward)
         let rate: CGFloat = active ? 36 : 10
         for tip in tips {
             if let fx = tip.childNode(withName: "menuExhaustFx", recursively: false) {
@@ -29,7 +30,7 @@ enum RaceParticles {
                     ps.birthRate = rate
                     ps.isLocal = true
                     ps.particleVelocity = 0.05
-                    ps.emittingDirection = SCNVector3(0, 0.15, 0)
+                    ps.emittingDirection = emitDir
                 }
                 continue
             }
@@ -37,7 +38,7 @@ enum RaceParticles {
             ps.birthRate = rate
             ps.particleLifeSpan = 0.11
             ps.particleLifeSpanVariation = 0.03
-            ps.emittingDirection = SCNVector3(0, 0.15, 0)
+            ps.emittingDirection = emitDir
             ps.spreadingAngle = 14
             ps.particleSize = 0.04
             ps.particleSizeVariation = 0.012
@@ -79,38 +80,43 @@ enum RaceParticles {
 
     private static func updateNitro(on node: SCNNode, active: Bool) {
         let tips = ensureExhaustKit(on: node)
+        let outward = bumperTipPose(on: exhaustHost(on: node)).outward
+        let outerDir = nitroEmitDirection(outward: outward, core: false)
+        let coreDir = nitroEmitDirection(outward: outward, core: true)
         for tip in tips {
             if let flame = tip.childNode(withName: nitroName, recursively: false) {
                 flame.isHidden = !active
                 if active, let systems = flame.particleSystems {
-                    systems.first?.birthRate = 220
-                    systems.dropFirst().first?.birthRate = 140
+                    systems.first?.birthRate = 260
+                    systems.first?.emittingDirection = outerDir
+                    systems.dropFirst().first?.birthRate = 180
+                    systems.dropFirst().first?.emittingDirection = coreDir
                 }
                 continue
             }
             guard active else { continue }
             let outer = SCNParticleSystem()
-            outer.birthRate = 220
-            outer.particleLifeSpan = 0.07
-            outer.particleLifeSpanVariation = 0.02
-            outer.emittingDirection = SCNVector3(0, 0.2, 0)
-            outer.spreadingAngle = 8
-            outer.particleSize = 0.022
-            outer.particleSizeVariation = 0.006
-            outer.particleVelocity = 0.35
-            outer.particleVelocityVariation = 0.08
-            outer.particleColor = UIColor(red: 1.0, green: 0.42, blue: 0.08, alpha: 0.85)
+            outer.birthRate = 260
+            outer.particleLifeSpan = 0.09
+            outer.particleLifeSpanVariation = 0.025
+            outer.emittingDirection = outerDir
+            outer.spreadingAngle = 10
+            outer.particleSize = 0.028
+            outer.particleSizeVariation = 0.008
+            outer.particleVelocity = 0.55
+            outer.particleVelocityVariation = 0.12
+            outer.particleColor = UIColor(red: 1.0, green: 0.42, blue: 0.08, alpha: 0.9)
             outer.blendMode = .additive
             outer.isLocal = true
             outer.isLightingEnabled = false
             outer.loops = true
             let core = SCNParticleSystem()
-            core.birthRate = 140
-            core.particleLifeSpan = 0.045
-            core.emittingDirection = SCNVector3(0, 0.15, 0)
-            core.spreadingAngle = 4
-            core.particleSize = 0.012
-            core.particleVelocity = 0.45
+            core.birthRate = 180
+            core.particleLifeSpan = 0.06
+            core.emittingDirection = coreDir
+            core.spreadingAngle = 5
+            core.particleSize = 0.016
+            core.particleVelocity = 0.72
             core.particleColor = UIColor(red: 0.82, green: 0.94, blue: 1.0, alpha: 0.9)
             core.blendMode = .additive
             core.isLocal = true
@@ -132,6 +138,7 @@ enum RaceParticles {
         braking: Bool
     ) {
         let tips = ensureExhaustKit(on: node)
+        let emitDir = exhaustEmitDirection(outward: bumperTipPose(on: exhaustHost(on: node)).outward)
         let load = max(0, min(1, throttle))
         let moving = max(0, min(1, abs(speed) * 8))
         // Heat at the tip only — never a world-space trail behind the bumper.
@@ -148,7 +155,7 @@ enum RaceParticles {
                     ps.birthRate = rate
                     ps.isLocal = true
                     ps.particleVelocity = 0.08
-                    ps.emittingDirection = SCNVector3(0, 0.2, 0)
+                    ps.emittingDirection = emitDir
                 }
                 continue
             }
@@ -157,7 +164,7 @@ enum RaceParticles {
             ps.birthRate = rate
             ps.particleLifeSpan = 0.05
             ps.particleLifeSpanVariation = 0.015
-            ps.emittingDirection = SCNVector3(0, 0.2, 0)
+            ps.emittingDirection = emitDir
             ps.spreadingAngle = 10
             ps.particleSize = 0.018
             ps.particleSizeVariation = 0.006
@@ -183,54 +190,41 @@ enum RaceParticles {
             ?? node
     }
 
-    /// Dual chrome tips seated in the rear bumper valence — short lip, not hanging pipes.
+    /// Dual chrome tips buried in the rear bumper — only a thin ring shows on the valence.
     @discardableResult
     private static func ensureExhaustKit(on node: SCNNode) -> [SCNNode] {
         let host = exhaustHost(on: node)
-        for stale in ["krcExhaustKit", "krcExhaustKitV3"] {
-            if host !== node {
-                node.childNode(withName: stale, recursively: false)?.removeFromParentNode()
-            }
-        }
+        stripExhaustKits(from: node, keepingOn: host)
         if let kit = host.childNode(withName: exhaustKitName, recursively: false) {
             return kit.childNodes.filter { $0.name?.hasPrefix("krcExhaustTip") == true }
         }
-        host.childNode(withName: "krcExhaustKit", recursively: false)?.removeFromParentNode()
 
         let kit = SCNNode()
         kit.name = exhaustKitName
         let pose = bumperTipPose(on: host)
-        let tipLen: Float = 0.034
-        let xOff = max(0.10, pose.width * 0.12)
-        let chrome = VehicleMaterialLibrary.chrome()
+        // Dark bore disc only — no protruding pipe mesh (the old SCNTube read as a grey line in chase cam).
+        let xOff = max(0.10, pose.width * 0.13)
         let bore = VehicleMaterialLibrary.makeVisibleSurface(
-            color: UIColor(red: 0.05, green: 0.05, blue: 0.06, alpha: 1),
+            color: UIColor(red: 0.04, green: 0.04, blue: 0.05, alpha: 1),
             metalness: 0.55,
             roughness: 0.42,
             emission: 0.04
         )
         var tips: [SCNNode] = []
         for (i, x) in [xOff, -xOff].enumerated() {
-            let tube = SCNTube(innerRadius: 0.015, outerRadius: 0.024, height: CGFloat(tipLen))
-            tube.materials = [chrome]
-            let pipeNode = SCNNode(geometry: tube)
-            pipeNode.name = "krcExhaustPipe\(i)"
-            pipeNode.eulerAngles.x = .pi / 2
-            pipeNode.position = SCNVector3(x, pose.y, pose.z)
-            kit.addChildNode(pipeNode)
+            let faceZ = pose.z
 
-            let plug = SCNCylinder(radius: 0.015, height: 0.003)
+            let plug = SCNCylinder(radius: 0.012, height: 0.0015)
             plug.materials = [bore]
             let plugNode = SCNNode(geometry: plug)
             plugNode.name = "krcExhaustBore\(i)"
             plugNode.eulerAngles.x = .pi / 2
-            plugNode.position = SCNVector3(x, pose.y, pose.z - pose.outward * (tipLen * 0.4))
+            plugNode.position = SCNVector3(x, pose.y, faceZ - pose.outward * 0.001)
             kit.addChildNode(plugNode)
 
             let emitter = SCNNode()
             emitter.name = "krcExhaustTip\(i)"
-            // Open end of the tip — on the bumper face, not behind the car.
-            emitter.position = SCNVector3(x, pose.y, pose.z + pose.outward * (tipLen * 0.48))
+            emitter.position = SCNVector3(x, pose.y, faceZ + pose.outward * 0.003)
             kit.addChildNode(emitter)
             tips.append(emitter)
         }
@@ -238,65 +232,54 @@ enum RaceParticles {
         return tips
     }
 
-    /// Rear valence in host space, pulled a few cm into the bumper so fumes sit on the tips.
+    private static func stripExhaustKits(from root: SCNNode, keepingOn host: SCNNode? = nil) {
+        var names = exhaustKitStaleNames
+        if host == nil {
+            names.append(exhaustKitName)
+        }
+        for name in names {
+            while let n = root.childNode(withName: name, recursively: true) {
+                n.removeFromParentNode()
+            }
+        }
+        if let host, host !== root {
+            while let n = root.childNode(withName: exhaustKitName, recursively: false) {
+                n.removeFromParentNode()
+            }
+        }
+    }
+
+    /// Bumper-face opening in host space (same hull as the plate), inset into the valence.
     private static func bumperTipPose(on host: SCNNode) -> (y: Float, z: Float, outward: Float, width: Float) {
         let mesh = host.childNode(withName: "krcBundledContainer", recursively: false)
             ?? host.childNode(withName: "krcVehicleBody", recursively: true)
             ?? host
-        let hull = bumperHull(in: mesh)
+        let hull = VehicleAxes.paintedHull(in: mesh)
         let frame = VehicleAxes.frame(in: mesh)
-        let rearLocalZ = frame?.rearZ ?? hull.min.z
-        let frontLocalZ = frame?.frontZ ?? hull.max.z
-        let outward: Float = rearLocalZ <= frontLocalZ ? -1 : 1
+        let frontIsMaxZ = (frame?.frontZ ?? hull.max.z) >= (frame?.rearZ ?? hull.min.z)
+        let rearLocalZ = frontIsMaxZ ? hull.min.z : hull.max.z
+        let outward: Float = frontIsMaxZ ? -1 : 1
         let rear = host.convertPosition(SCNVector3(0, 0, rearLocalZ), from: mesh)
-        let base = host.convertPosition(SCNVector3(0, frame?.baseY ?? hull.min.y, 0), from: mesh)
-        let height = frame?.height ?? max(0.25, hull.max.y - hull.min.y)
-        let width = frame?.width ?? max(0.6, hull.max.x - hull.min.x)
-        let y = base.y + height * 0.11
-        // 6 cm toward the car center from the rear face.
-        let z = rear.z - outward * 0.06
+        let base = host.convertPosition(SCNVector3(0, hull.min.y, 0), from: mesh)
+        let height = max(0.25, hull.max.y - hull.min.y)
+        let width = max(0.6, hull.max.x - hull.min.x)
+        // In the bumper valence, under the plate — not hanging under the car.
+        let y = base.y + height * 0.20
+        // Recessed into the same rear face the plate uses.
+        let z = rear.z - outward * 0.055
         return (y, z, outward, width)
     }
 
-    /// Painted bumper hull — skip wheels, glass, wings, and plates so tips sit on the valence.
-    private static func bumperHull(in root: SCNNode) -> (min: SCNVector3, max: SCNVector3) {
-        var minV = SIMD3<Float>(repeating: Float.greatestFiniteMagnitude)
-        var maxV = SIMD3<Float>(repeating: -Float.greatestFiniteMagnitude)
-        var any = false
-        root.enumerateHierarchy { node, _ in
-            guard node.geometry != nil else { return }
-            let n = ((node.name ?? "") + " " + (node.geometry?.materials.first?.name ?? "")).lowercased()
-            if n.contains("wheel") || n.contains("tire") || n.contains("rubber")
-                || n.contains("rim") || n.contains("brake") || n.contains("caliper")
-                || n.contains("glass") || n.contains("window") || n.contains("windshield")
-                || n.contains("spoiler") || n.contains("wing")
-                || n.contains("krcclasskit") || n.contains("krclicense")
-                || n.contains("krcpolice") || n.contains("krcexhaust")
-                || n.contains("krcplate") {
-                return
-            }
-            let (mn, mx) = node.boundingBox
-            let corners = [
-                SCNVector3(mn.x, mn.y, mn.z), SCNVector3(mx.x, mn.y, mn.z),
-                SCNVector3(mn.x, mx.y, mn.z), SCNVector3(mx.x, mx.y, mn.z),
-                SCNVector3(mn.x, mn.y, mx.z), SCNVector3(mx.x, mn.y, mx.z),
-                SCNVector3(mn.x, mx.y, mx.z), SCNVector3(mx.x, mx.y, mx.z),
-            ]
-            for c in corners {
-                let p = node.convertPosition(c, to: root)
-                minV = simd_min(minV, SIMD3(p.x, p.y, p.z))
-                maxV = simd_max(maxV, SIMD3(p.x, p.y, p.z))
-                any = true
-            }
+    /// Rearward puff from each bumper tip — slight lift so flames read from chase cam.
+    private static func exhaustEmitDirection(outward: Float) -> SCNVector3 {
+        SCNVector3(0, 0.05, outward * 0.97)
+    }
+
+    private static func nitroEmitDirection(outward: Float, core: Bool) -> SCNVector3 {
+        if core {
+            return SCNVector3(0, 0.02, outward * 1.0)
         }
-        if !any {
-            let b = root.boundingBox
-            return (b.min, b.max)
-        }
-        return (
-            SCNVector3(minV.x, minV.y, minV.z),
-            SCNVector3(maxV.x, maxV.y, maxV.z)
-        )
+        return SCNVector3(0, 0.04, outward * 0.98)
     }
 
     private static func updateDrift(on node: SCNNode, active: Bool, slip: Float) {

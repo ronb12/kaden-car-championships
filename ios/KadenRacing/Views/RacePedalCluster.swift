@@ -284,13 +284,13 @@ final class PedalContainerView: UIView {
 
         let leftStack = UIStackView()
         leftStack.axis = .horizontal
-        leftStack.spacing = 10
+        leftStack.spacing = 14
         leftStack.alignment = .center
         leftStack.translatesAutoresizingMaskIntoConstraints = false
 
         let rightStack = UIStackView()
         rightStack.axis = .horizontal
-        rightStack.spacing = 10
+        rightStack.spacing = 14
         rightStack.alignment = .center
         rightStack.translatesAutoresizingMaskIntoConstraints = false
 
@@ -366,9 +366,9 @@ final class PedalContainerView: UIView {
         let bottomInset = safeAreaInsets.bottom
         let w = bounds.width
         let h = bounds.height
-        let gap: CGFloat = 8
-        let row: CGFloat = 2
-        let centerGap: CGFloat = 18
+        let gap: CGFloat = 14
+        let row: CGFloat = 4
+        let centerGap: CGFloat = 28
 
         let maxSize = pedalSize(for: .portrait)
         let size: CGFloat

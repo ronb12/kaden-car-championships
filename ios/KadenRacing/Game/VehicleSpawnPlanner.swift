@@ -43,53 +43,54 @@ enum VehicleSpawnPlanner {
 
     private static let aiNames = ["YAMAMOTO", "GARCIA", "MÜLLER", "CHEN", "RIVERA", "OKADA", "WEBB", "SANTOS"]
 
+    /// Coarse paint buckets so navy / cyan / sky all count as "blue".
+    private enum PaintFamily: String, CaseIterable {
+        case red, orange, yellow, green, blue, purple, pink, white, dark, brown
+    }
+
+    /// Fallback paints when a car's stock color collides with someone already on the grid.
+    private static let uniquePaints: [(PaintFamily, UIColor)] = [
+        (.red, UIColor(red: 0.86, green: 0.08, blue: 0.10, alpha: 1)),
+        (.orange, UIColor(red: 1.00, green: 0.45, blue: 0.06, alpha: 1)),
+        (.yellow, UIColor(red: 0.98, green: 0.82, blue: 0.08, alpha: 1)),
+        (.green, UIColor(red: 0.12, green: 0.72, blue: 0.28, alpha: 1)),
+        (.blue, UIColor(red: 0.08, green: 0.42, blue: 0.95, alpha: 1)),
+        (.purple, UIColor(red: 0.52, green: 0.18, blue: 0.85, alpha: 1)),
+        (.pink, UIColor(red: 1.00, green: 0.22, blue: 0.68, alpha: 1)),
+        (.white, UIColor(red: 0.92, green: 0.93, blue: 0.95, alpha: 1)),
+        (.dark, UIColor(red: 0.12, green: 0.13, blue: 0.15, alpha: 1)),
+        (.brown, UIColor(red: 0.48, green: 0.28, blue: 0.12, alpha: 1)),
+    ]
+
     static func planOpponents(
         playerCarIndex: Int,
         count: Int,
-        seed: UInt64 = 0x4B52435F_41495F47
+        seed: UInt64 = 0x4B52435F_41495F47,
+        playerBodyColor: UIColor? = nil
     ) -> [OpponentSlot] {
-        let playerId = GameCatalog.cars[playerCarIndex].id
-        let playerColor = GameCatalog.cars[playerCarIndex].colorUInt32
+        let playerCar = GameCatalog.cars[playerCarIndex]
+        let playerPaint = playerBodyColor ?? GarageCustomization.bodyColor(for: playerCar)
         var rng = SeededRandom(seed: seed ^ UInt64(playerCarIndex))
-        var pool = GameCatalog.cars.enumerated().filter { $0.element.id != playerId && $0.element.id != "police" }
+        var pool = GameCatalog.cars.enumerated().filter { $0.element.id != playerCar.id && $0.element.id != "police" }
         pool.shuffle(using: &rng)
         let n = min(count, pool.count, aiNames.count)
-        var usedStyles = Set<VehicleBodyStyle>()
-        var usedCarIds = Set<String>()
-        var usedColors = Set<UInt32>([playerColor])
+        var usedCarIds = Set<String>([playerCar.id])
+        var usedFamilies = Set<PaintFamily>([paintFamily(of: playerPaint)])
         var slots: [OpponentSlot] = []
 
         for i in 0..<n {
-            let pick: (Int, CarChoice)
-            if i < pool.count {
-                pick = pool[i]
-            } else {
-                pick = pool[i % pool.count]
-            }
-            var chosen = pick
-            var profile = VehicleVisualProfile.profile(carId: chosen.1.id)
-            if usedStyles.contains(profile.bodyStyle)
-                || usedCarIds.contains(profile.carId)
-                || usedColors.contains(chosen.1.colorUInt32),
-               let alt = pool.first(where: {
-                   let altProfile = VehicleVisualProfile.profile(carId: $0.element.id)
-                   return !usedStyles.contains(altProfile.bodyStyle)
-                       && !usedCarIds.contains($0.element.id)
-                       && !usedColors.contains($0.element.colorUInt32)
-               }) {
-                chosen = alt
-                profile = VehicleVisualProfile.profile(carId: alt.element.id)
-            }
-            usedStyles.insert(profile.bodyStyle)
-            usedCarIds.insert(profile.carId)
-            usedColors.insert(chosen.1.colorUInt32)
+            let pickIndex = pool.firstIndex { !usedCarIds.contains($0.element.id) } ?? (i % pool.count)
+            let pick = pool[pickIndex]
+            usedCarIds.insert(pick.element.id)
+            let profile = VehicleVisualProfile.profile(carId: pick.element.id)
+            let bodyColor = reservedUniquePaint(stock: pick.element.uiColor, used: &usedFamilies)
 
             let personality = AIPersonality.allCases[i % AIPersonality.allCases.count]
             slots.append(OpponentSlot(
                 name: aiNames[i],
                 carId: profile.carId,
-                catalogIndex: chosen.0,
-                bodyColor: chosen.1.uiColor,
+                catalogIndex: pick.offset,
+                bodyColor: bodyColor,
                 wheelStyle: profile.wheelStyle,
                 personality: personality,
                 baseSpeedMul: personality.speedBias
@@ -103,6 +104,8 @@ enum VehicleSpawnPlanner {
         let names = ["SUSPECT", "RUNNER", "FUGITIVE", "SPEEDER", "OUTLAW", "ROGUE"]
         let n = min(count, names.count)
         var used = Set<String>(["police"])
+        // Interceptor is black — keep suspects off that dark family too.
+        var usedFamilies = Set<PaintFamily>([.dark])
         var slots: [OpponentSlot] = []
         let personalities: [AIPersonality] = [.aggressive, .technical, .balanced, .aggressive]
         for i in 0..<n {
@@ -115,7 +118,7 @@ enum VehicleSpawnPlanner {
                 name: "\(names[i]) \(i + 1)",
                 carId: pick.element.id,
                 catalogIndex: pick.offset,
-                bodyColor: pick.element.uiColor,
+                bodyColor: reservedUniquePaint(stock: pick.element.uiColor, used: &usedFamilies),
                 wheelStyle: profile.wheelStyle,
                 personality: personality,
                 baseSpeedMul: personality.speedBias + Float(i) * 0.015
@@ -160,6 +163,39 @@ enum VehicleSpawnPlanner {
                 baseSpeedMul: slot.baseSpeedMul * 0.98
             )
         }
+    }
+
+    private static func reservedUniquePaint(stock: UIColor, used: inout Set<PaintFamily>) -> UIColor {
+        let stockFamily = paintFamily(of: stock)
+        if !used.contains(stockFamily) {
+            used.insert(stockFamily)
+            return stock
+        }
+        if let (family, color) = uniquePaints.first(where: { !used.contains($0.0) }) {
+            used.insert(family)
+            return color
+        }
+        return stock
+    }
+
+    private static func paintFamily(of color: UIColor) -> PaintFamily {
+        var h: CGFloat = 0
+        var s: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
+        color.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+        if s < 0.16 {
+            return b > 0.72 ? .white : .dark
+        }
+        let deg = h * 360
+        if b < 0.38, deg >= 12, deg < 55 { return .brown }
+        if deg >= 345 || deg < 12 { return .red }
+        if deg < 45 { return .orange }
+        if deg < 72 { return .yellow }
+        if deg < 155 { return .green }
+        if deg < 255 { return .blue }
+        if deg < 290 { return .purple }
+        return .pink
     }
 }
 

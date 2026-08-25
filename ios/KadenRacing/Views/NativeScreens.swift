@@ -72,6 +72,13 @@ struct NativeRootView: View {
             flow.beginQuickRace()
             flow.screen = .racing
         }
+        .onChange(of: gameCenter.pendingSoloActivityRace) { go in
+            guard go else { return }
+            gameCenter.pendingSoloActivityRace = false
+            guard flow.screen != .racing else { return }
+            flow.beginQuickRace()
+            flow.screen = .racing
+        }
     }
 
     private func raceSessionId(_ f: GameFlowState) -> String {
@@ -1357,15 +1364,19 @@ struct TrackSelectScreen: View {
     @State private var trackEnvironmentReady = false
     private let trackColumns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
 
+    private var pickableIndices: [Int] { flow.selectableTrackIndices() }
+
     var body: some View {
         KRCArcadeScreen(
             title: "SELECT CIRCUIT",
-            subtitle: "Same city + track + laps = identical layout"
+            subtitle: flow.usesKidFriendlyTracks
+                ? "Casual — smooth ovals & flow circuits only"
+                : "Same city + track + laps = identical layout"
         ) {
             KRCDesign.ArcadeTopBar(
                 backTitle: "Garage",
                 backAction: { flow.screen = .carSelect },
-                trailing: "\(GameCatalog.activeTracks.count) TRACKS"
+                trailing: "\(pickableIndices.count) TRACKS"
             )
             KRCDesign.DifficultyChips(index: $flow.difficultyIndex)
             let selectedTrack = GameCatalog.activeTracks[flow.selectedTrackIndex]
@@ -1401,7 +1412,7 @@ struct TrackSelectScreen: View {
                 }
             }
             LazyVGrid(columns: trackColumns, spacing: 10) {
-                ForEach(0..<GameCatalog.activeTracks.count, id: \.self) { i in
+                ForEach(pickableIndices, id: \.self) { i in
                     trackCard(index: i)
                 }
             }
@@ -1433,11 +1444,16 @@ struct TrackSelectScreen: View {
             }
         }
         .onAppear {
+            flow.clampSelectedTrackForDifficulty()
             flow.syncLapsToSelectedTrack()
             refreshTrackEnvironmentPreload()
         }
         .onChange(of: flow.selectedTrackIndex) { _ in
             flow.syncLapsToSelectedTrack()
+            refreshTrackEnvironmentPreload()
+        }
+        .onChange(of: flow.difficultyIndex) { _ in
+            flow.clampSelectedTrackForDifficulty()
             refreshTrackEnvironmentPreload()
         }
         .onChange(of: flow.selectedCityTheme) { _ in
@@ -1485,6 +1501,11 @@ struct TrackSelectScreen: View {
                 Text(tr.tag)
                     .font(.caption2)
                     .foregroundStyle(KRCDesign.neonCyan.opacity(0.85))
+                if flow.usesKidFriendlyTracks, tr.kidTier == .easy {
+                    Text("EASY")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(KRCDesign.gold)
+                }
             }
             .frame(maxWidth: .infinity, minHeight: 118, alignment: .leading)
             .padding(10)

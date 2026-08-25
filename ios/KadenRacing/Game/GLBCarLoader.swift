@@ -28,11 +28,10 @@ enum GLBCarLoader {
     private static var cache: [String: SCNNode] = [:]
 
     /// Per-car USDZ basenames under `models/cars/` in the app bundle. Unmapped cars share `krc-camber-ss`.
-    private static let perCarModelFiles: [String: String] = [
-        "challenger":    "challenger-muscle",
-        "falcon-gt":     "falcon-gt1973",
-        "firebird-1970": "firebird-1970",
-    ]
+    /// Falcon / Challenger USDZs are authored nose-up. LayFlat reports a flat AABB but Simulator
+    /// still draws them tippped — keep them on Camber until those assets are re-exported on XZ.
+    /// `firebird-1970.usdz` is also corrupt in-tree.
+    private static let perCarModelFiles: [String: String] = [:]
 
     static func bundledModelName(forCarId carId: String) -> String? {
         if let named = perCarModelFiles[carId] { return named }
@@ -244,7 +243,18 @@ enum GLBCarLoader {
     }
     #endif
 
+    /// Known upright garage USDZs — explicit pitch after children are rotated into the road plane.
+    private static let uprightPitchByFile: [String: Float] = [
+        "falcon-gt1973": -.pi / 2,
+        "challenger-muscle": .pi / 2,
+    ]
+
     private static func prepare(node: SCNNode, carId: String, bodyColor: UIColor, scale: Float) -> SCNNode {
+        // Some garage USDZs are authored nose-up (length along Y). Lay them flat so
+        // race heading (yaw around Y) doesn't leave cars standing on the bumper.
+        let fileHint = perCarModelFiles[carId] ?? bundledModelName(forCarId: carId) ?? ""
+        layFlatIfUpright(node, fileHint: fileHint)
+
         let (minVec, maxVec) = node.boundingBox
         let size = SCNVector3(maxVec.x - minVec.x, maxVec.y - minVec.y, maxVec.z - minVec.z)
         let uniform = KRCVehicleScale.uniformScale(forBoundingSize: size, multiplier: scale)
@@ -259,6 +269,98 @@ enum GLBCarLoader {
         stripLooseWheelArt(in: node)
         VehicleAxes.ensureMarkers(on: node)
         return node
+    }
+
+    /// If the longest axis is Y, rotate mesh children so length runs along Z (road plane).
+    /// Pitch is applied to children — SceneKit's `boundingBox` ignores the node’s own eulerAngles.
+    private static func layFlatIfUpright(_ node: SCNNode, fileHint: String) {
+        let (minV, maxV) = node.boundingBox
+        let sx = maxV.x - minV.x
+        let sy = maxV.y - minV.y
+        let sz = maxV.z - minV.z
+        let looksUpright = sy > 0.05 && sy > sz * 1.12 && sy > sx * 1.05
+        let forcedHint = uprightPitchByFile.first { fileHint.contains($0.key) }?.value
+        guard looksUpright || forcedHint != nil else { return }
+        guard !node.childNodes.isEmpty else { return }
+
+        let saved = node.childNodes.map(\.transform)
+        // Always score ±90° — a hardcoded sign can leave the car on its roof (still "flat" AABB).
+        var bestAngle: Float = forcedHint ?? -.pi / 2
+        var bestScore = Float.greatestFiniteMagnitude
+        for angle: Float in [-.pi / 2, .pi / 2] {
+            applyPitchToChildren(node, pitch: angle, bases: saved)
+            let score = uprightCorrectionScore(for: node)
+            if score < bestScore {
+                bestScore = score
+                bestAngle = angle
+            }
+        }
+        applyPitchToChildren(node, pitch: bestAngle, bases: saved)
+        // Re-center after pitch so seat/align work from a balanced AABB.
+        let (mn, mx) = node.boundingBox
+        for child in node.childNodes {
+            child.position.x -= (mn.x + mx.x) * 0.5
+            child.position.z -= (mn.z + mx.z) * 0.5
+        }
+        let (mn2, mx2) = node.boundingBox
+        NSLog(
+            "[GLBCarLoader] layFlatIfUpright %@ was (%.2f,%.2f,%.2f) → pitch=%.0f° score=%.2f flat=(%.2f,%.2f,%.2f)",
+            fileHint, sx, sy, sz, bestAngle * 180 / .pi, bestScore,
+            mx2.x - mn2.x, mx2.y - mn2.y, mx2.z - mn2.z
+        )
+    }
+
+    private static func applyPitchToChildren(_ node: SCNNode, pitch: Float, bases: [SCNMatrix4]) {
+        let rot = SCNMatrix4MakeRotation(pitch, 1, 0, 0)
+        for (i, child) in node.childNodes.enumerated() {
+            let base = i < bases.count ? bases[i] : child.transform
+            child.transform = SCNMatrix4Mult(rot, base)
+        }
+    }
+
+    /// Lower is better — wheels low / roof high after the pitch.
+    private static func uprightCorrectionScore(for node: SCNNode) -> Float {
+        let (minB, maxB) = node.boundingBox
+        let height = max(0.001, maxB.y - minB.y)
+        var wheelYs: [Float] = []
+        var roofYs: [Float] = []
+        node.enumerateHierarchy { child, _ in
+            guard child.geometry != nil else { return }
+            let n = (child.name ?? "").lowercased()
+            let (mn, mx) = child.boundingBox
+            let y = child.convertPosition(SCNVector3(0, (mn.y + mx.y) * 0.5, 0), to: node).y
+            if n.contains("wheel") || n.contains("tire") || n.contains("rim")
+                || n.contains("_fl") || n.contains("_fr") || n.contains("_rl") || n.contains("_rr") {
+                wheelYs.append(y)
+            }
+            if n.contains("roof") || n.contains("cabin") || n.contains("glass")
+                || n.contains("window") || n.contains("hood") || n.contains("windshield") {
+                roofYs.append(y)
+            }
+        }
+        if !wheelYs.isEmpty {
+            let avg = wheelYs.reduce(0, +) / Float(wheelYs.count)
+            return (avg - minB.y) / height
+        }
+        if !roofYs.isEmpty {
+            let avg = roofYs.reduce(0, +) / Float(roofYs.count)
+            // Higher roof → lower score.
+            return 1 - ((avg - minB.y) / height)
+        }
+        // No named parts — prefer the orientation with more mesh in the top half (cabin vs underbody).
+        var low: Float = 0
+        var high: Float = 0
+        let mid = (minB.y + maxB.y) * 0.5
+        node.enumerateHierarchy { child, _ in
+            guard child.geometry != nil else { return }
+            let n = (child.name ?? "").lowercased()
+            if n.hasPrefix("krc") { return }
+            let (mn, mx) = child.boundingBox
+            let y = child.convertPosition(SCNVector3(0, (mn.y + mx.y) * 0.5, 0), to: node).y
+            if y >= mid { high += 1 } else { low += 1 }
+        }
+        // Want more content above mid (not belly-up). Invert so more-high = lower score.
+        return (low + 1) / (high + 1)
     }
 
     /// USDZ ships duplicate rim-spoke cubes/cylinders beside the real tire meshes — remove them entirely.

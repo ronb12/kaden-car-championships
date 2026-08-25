@@ -63,7 +63,9 @@ final class RaceOpponentController {
     /// Fraction of lap between grid slots at spawn (spread so cars aren't stacked).
     private static let gridSpacing: Float = 0.028
     /// Tight 2-wide starting grid behind the line (circuit / career / championship).
-    private static let startGridSpacing: Float = 0.010
+    static let startGridSpacing: Float = 0.010
+    /// Track parameter past the start/finish plane — every grid car must clear this before FINISH sign.
+    static let startLineCrossThreshold: Float = 0.009
     /// Soft leash — keep a pack fight without teleporting off-camera.
     private static let maxPackLead: Float = 0.07
     private static let maxPackTrail: Float = 0.06
@@ -79,7 +81,11 @@ final class RaceOpponentController {
         self.track = track
         maxLat = RaceTrackMesh.halfWidth - 1.2
         laneW = (RaceTrackMesh.halfWidth * 2) / RaceTrackMesh.laneCount
-        spawnSlots = slots ?? VehicleSpawnPlanner.planOpponents(playerCarIndex: playerCarIndex, count: opponentCount)
+        spawnSlots = slots ?? VehicleSpawnPlanner.planOpponents(
+            playerCarIndex: playerCarIndex,
+            count: opponentCount,
+            playerBodyColor: GarageCustomization.bodyColor(for: GameCatalog.cars[playerCarIndex])
+        )
         var len: Float = 0
         let samples = 128
         for i in 0..<samples {
@@ -486,8 +492,18 @@ final class RaceOpponentController {
         ai.node.position = SCNVector3(pos.x, pos.y + rideY, pos.z)
         // Face along track tangent (not player heading) so cornering reads correctly.
         let horiz = max(0.001, simd_length(SIMD2(forward.x, forward.z)))
-        let gradePitch = max(-0.26, min(0.26, -atan2(forward.y, horiz)))
+        // Skip grade pitch while nearly stopped (grid / crawl) so AI never look nose-tipped at the line.
+        let gradePitch: Float
+        if abs(ai.speed) < 0.0008 {
+            gradePitch = 0
+        } else {
+            gradePitch = max(-0.26, min(0.26, -atan2(forward.y, horiz)))
+        }
         ai.node.eulerAngles = SCNVector3(gradePitch, atan2(forward.x, forward.z), 0)
+        if let body = ai.node.childNode(withName: "krcVehicleRoot", recursively: false) {
+            body.eulerAngles.x = 0
+            body.eulerAngles.z = 0
+        }
         ai.node.isHidden = false
         ai.node.opacity = 1
         ai.node.scale = SCNVector3(1, 1, 1)
@@ -527,4 +543,14 @@ final class RaceOpponentController {
     }
 
     var activeRacerCount: Int { 1 + opponents.filter { !$0.finished }.count }
+
+    /// True once the player and every active opponent have crossed the start line on lap 1.
+    func allGridCarsPastStartLine(playerLap: Int, playerTrackT: Float) -> Bool {
+        guard playerLap > 1 || playerTrackT >= Self.startLineCrossThreshold else { return false }
+        for ai in opponents where !ai.finished {
+            if ai.lap > 1 { continue }
+            if ai.trackT < Self.startLineCrossThreshold { return false }
+        }
+        return true
+    }
 }

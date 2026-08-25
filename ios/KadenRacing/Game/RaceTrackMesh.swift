@@ -5,12 +5,45 @@ import UIKit
 /// Smooth ribbon road along the track spline (web `buildRoadMesh` parity).
 enum RaceTrackMesh {
 
+    /// Gantry / ground sign text at the shared start–finish line.
+    enum StartFinishSignPhase {
+        case start
+        case finish
+
+        var title: String {
+            switch self {
+            case .start: return "START"
+            case .finish: return "FINISH"
+            }
+        }
+    }
+
     /// Three full driving lanes (each ~5.3 m wide in world units).
     static let laneCount: Float = 3
     /// Driving surface half-width (~28 m total road).
     static let halfWidth: Float = 14.0
     /// Minimum distance from track centerline to building footprint center.
     static let buildingSetback: Float = halfWidth + 18
+
+    private static var cachedBannerTextures: [String: UIImage] = [:]
+    private static var cachedGroundTextures: [String: UIImage] = [:]
+
+    /// Swap START ↔ FINISH on gantry banners and the ground title once the field clears the line.
+    static func setStartFinishSignPhase(_ phase: StartFinishSignPhase, in root: SCNNode) {
+        let banner = bannerTexture(title: phase.title)
+        let ground = groundTitleTexture(title: phase.title)
+        root.enumerateChildNodes { node, _ in
+            let name = node.name ?? ""
+            guard let mat = node.geometry?.firstMaterial else { return }
+            if name == "sfFinishBannerApproach" || name == "sfFinishBannerGrid" {
+                mat.diffuse.contents = banner
+                mat.emission.contents = banner
+            } else if name == "sfGroundFinish" {
+                mat.diffuse.contents = ground
+                mat.emission.contents = ground
+            }
+        }
+    }
 
     private struct Sample {
         var pos: SIMD3<Float>
@@ -151,7 +184,7 @@ enum RaceTrackMesh {
         _ = rumbleWhiteVerts
         _ = rumbleWhiteIndices
         addMesh(to: parent, vertices: grassVerts, indices: grassIndices, material: grassMaterial, name: "grassShoulder")
-        addMinimalStartFinish(parent: parent, samples: samples, halfW: halfW)
+        addStartFinishComplex(parent: parent, samples: samples, halfW: halfW, night: night)
         addMinimalEdgeRails(parent: parent, samples: samples, halfW: halfW)
     }
 
@@ -186,69 +219,560 @@ enum RaceTrackMesh {
         }
     }
 
-    /// Flat checkered paint on the road + low posts (no chunky 3D blocks).
-    private static func addMinimalStartFinish(parent: SCNNode, samples: [Sample], halfW: Float) {
-        guard samples.count >= 2 else { return }
+    /// Shared start/finish complex — deep checkers, approach chevrons, side boards, and a FINISH gantry.
+    private static func addStartFinishComplex(
+        parent: SCNNode,
+        samples: [Sample],
+        halfW: Float,
+        night: Bool
+    ) {
+        guard samples.count >= 4 else { return }
         let s0 = samples[0]
-        let s1 = samples[1]
-        let forward = SIMD3<Float>(s1.pos.x - s0.pos.x, 0, s1.pos.z - s0.pos.z)
-        let fwdLen = max(0.001, simd_length(forward))
-        let fwd = forward / fwdLen
-        let y = s0.pos.y + 0.115
-        let squareW: Float = 0.72
-        let depth: Float = 0.55
-        let cols = Int((halfW * 2) / squareW)
+        let fwd = simd_normalize(SIMD3<Float>(s0.tangent.x, 0, s0.tangent.z))
+        let right = s0.right
+        let yaw = atan2(fwd.x, fwd.z)
+        let yPaint = s0.pos.y + 0.118
+        let root = SCNNode()
+        root.name = "krcStartFinish"
+        parent.addChildNode(root)
+
+        addCheckeredZone(
+            into: root,
+            origin: s0.pos,
+            forward: fwd,
+            right: right,
+            halfW: halfW,
+            y: yPaint,
+            rows: 6,
+            square: 1.15
+        )
+        addFinishGroundTitle(
+            into: root,
+            origin: s0.pos,
+            forward: fwd,
+            right: right,
+            halfW: halfW,
+            y: yPaint
+        )
+        addFinishApproachChevrons(
+            into: root,
+            samples: samples,
+            halfW: halfW,
+            y: yPaint
+        )
+        addFinishSideBoards(
+            into: root,
+            origin: s0.pos,
+            forward: fwd,
+            right: right,
+            halfW: halfW,
+            y: yPaint,
+            night: night
+        )
+        addFinishGantry(
+            into: root,
+            origin: s0.pos,
+            forward: fwd,
+            right: right,
+            halfW: halfW,
+            y: yPaint,
+            yaw: yaw,
+            night: night,
+            showBanner: true
+        )
+        // Depth gate past the line — checkered only so banners don't stack/z-fight.
+        addFinishGantry(
+            into: root,
+            origin: s0.pos + fwd * 8.0,
+            forward: fwd,
+            right: right,
+            halfW: halfW,
+            y: yPaint,
+            yaw: yaw,
+            night: night,
+            showBanner: false
+        )
+        addFinishApproachGates(
+            into: root,
+            samples: samples,
+            halfW: halfW,
+            y: yPaint,
+            night: night
+        )
+    }
+
+    /// Wide multi-row checkers so the line reads from chase cam and overhead grid views.
+    private static func addCheckeredZone(
+        into parent: SCNNode,
+        origin: SIMD3<Float>,
+        forward: SIMD3<Float>,
+        right: SIMD3<Float>,
+        halfW: Float,
+        y: Float,
+        rows: Int,
+        square: Float
+    ) {
         let blackMat = SCNMaterial()
         blackMat.lightingModel = .constant
-        blackMat.diffuse.contents = UIColor(white: 0.06, alpha: 1)
+        blackMat.diffuse.contents = UIColor(white: 0.05, alpha: 1)
+        blackMat.emission.contents = UIColor(white: 0.04, alpha: 1)
         let whiteMat = SCNMaterial()
         whiteMat.lightingModel = .constant
-        whiteMat.diffuse.contents = UIColor(white: 0.58, alpha: 1)
+        whiteMat.diffuse.contents = UIColor(white: 0.98, alpha: 1)
+        whiteMat.emission.contents = UIColor(white: 0.55, alpha: 1)
 
-        var blackVerts: [SCNVector3] = []
-        var blackIdx: [Int32] = []
-        var whiteVerts: [SCNVector3] = []
-        var whiteIdx: [Int32] = []
-
-        for col in 0..<cols {
-            let lat = Float(col) * squareW - halfW + squareW * 0.5
-            let center = SIMD3<Float>(
-                s0.pos.x + s0.right.x * lat,
-                y,
-                s0.pos.z + s0.right.z * lat
-            )
-            let r = s0.right
-            let halfD = depth * 0.5
-            let tl = SCNVector3(center.x - fwd.x * halfD + r.x * squareW * 0.5, y, center.z - fwd.z * halfD + r.z * squareW * 0.5)
-            let tr = SCNVector3(center.x + fwd.x * halfD + r.x * squareW * 0.5, y, center.z + fwd.z * halfD + r.z * squareW * 0.5)
-            let bl = SCNVector3(center.x - fwd.x * halfD - r.x * squareW * 0.5, y, center.z - fwd.z * halfD - r.z * squareW * 0.5)
-            let br = SCNVector3(center.x + fwd.x * halfD - r.x * squareW * 0.5, y, center.z + fwd.z * halfD - r.z * squareW * 0.5)
-            if col % 2 == 0 {
-                let base = Int32(blackVerts.count)
-                blackVerts.append(contentsOf: [tl, tr, bl, br])
-                blackIdx.append(contentsOf: [base, base + 1, base + 2, base + 1, base + 3, base + 2])
-            } else {
-                let base = Int32(whiteVerts.count)
-                whiteVerts.append(contentsOf: [tl, tr, bl, br])
-                whiteIdx.append(contentsOf: [base, base + 1, base + 2, base + 1, base + 3, base + 2])
+        let cols = max(10, Int((halfW * 2) / square))
+        let yaw = atan2(forward.x, forward.z)
+        // Raised tiles — flat paint z-fights asphalt and vanishes in chase cam.
+        for row in 0..<rows {
+            let along = (Float(row) - Float(rows - 1) * 0.5) * square
+            for col in 0..<cols {
+                let lat = Float(col) * square - halfW + square * 0.5
+                let center = origin + forward * along + right * lat
+                let isBlack = (row + col) % 2 == 0
+                let tile = SCNBox(
+                    width: CGFloat(square * 0.96),
+                    height: 0.08,
+                    length: CGFloat(square * 0.96),
+                    chamferRadius: 0
+                )
+                tile.materials = [isBlack ? blackMat : whiteMat]
+                let node = SCNNode(geometry: tile)
+                node.position = SCNVector3(center.x, y + 0.04, center.z)
+                node.eulerAngles.y = yaw
+                node.name = "sfCheckTile"
+                parent.addChildNode(node)
             }
         }
-        addMesh(to: parent, vertices: blackVerts, indices: blackIdx, material: blackMat, name: "startBlack")
-        addMesh(to: parent, vertices: whiteVerts, indices: whiteIdx, material: whiteMat, name: "startWhite")
 
+        // Bright yellow lead-in stripe immediately before the checkers.
+        let stripeMat = SCNMaterial()
+        stripeMat.lightingModel = .constant
+        stripeMat.diffuse.contents = UIColor(red: 1.0, green: 0.82, blue: 0.12, alpha: 1)
+        stripeMat.emission.contents = UIColor(red: 1.0, green: 0.78, blue: 0.1, alpha: 0.7)
+        let stripeDepth: Float = 1.1
+        let stripeAlong = -Float(rows) * 0.5 * square - stripeDepth * 0.7
+        let stripe = SCNBox(
+            width: CGFloat(halfW * 2 - 0.2),
+            height: 0.1,
+            length: CGFloat(stripeDepth),
+            chamferRadius: 0
+        )
+        stripe.materials = [stripeMat]
+        let stripeNode = SCNNode(geometry: stripe)
+        let stripePos = origin + forward * stripeAlong
+        stripeNode.position = SCNVector3(stripePos.x, y + 0.05, stripePos.z)
+        stripeNode.eulerAngles.y = yaw
+        stripeNode.name = "sfLeadStripe"
+        parent.addChildNode(stripeNode)
+
+        // Fat white crossing bar — impossible to miss under the gantry.
+        let barMat = SCNMaterial()
+        barMat.lightingModel = .constant
+        barMat.diffuse.contents = UIColor.white
+        barMat.emission.contents = UIColor(white: 0.65, alpha: 1)
+        let bar = SCNBox(width: CGFloat(halfW * 2), height: 0.12, length: 2.4, chamferRadius: 0)
+        bar.materials = [barMat]
+        let barNode = SCNNode(geometry: bar)
+        barNode.position = SCNVector3(origin.x, y + 0.06, origin.z)
+        barNode.eulerAngles.y = yaw
+        barNode.name = "sfCrossBar"
+        parent.addChildNode(barNode)
+    }
+
+    /// Giant flat FINISH word on the asphalt — readable from the overhead grid camera.
+    private static func addFinishGroundTitle(
+        into parent: SCNNode,
+        origin: SIMD3<Float>,
+        forward: SIMD3<Float>,
+        right: SIMD3<Float>,
+        halfW: Float,
+        y: Float
+    ) {
+        let plane = SCNPlane(width: CGFloat(min(halfW * 1.6, 18)), height: 4.2)
+        let mat = SCNMaterial()
+        mat.lightingModel = .constant
+        let tex = groundTitleTexture(title: StartFinishSignPhase.start.title)
+        mat.diffuse.contents = tex
+        mat.emission.contents = tex
+        mat.isDoubleSided = true
+        mat.writesToDepthBuffer = false
+        plane.materials = [mat]
+        let node = SCNNode(geometry: plane)
+        // Sit just past the checkers so cars don't spawn on the letters.
+        let pos = origin + forward * 5.5
+        node.position = SCNVector3(pos.x, y + 0.04, pos.z)
+        node.eulerAngles.x = -.pi / 2
+        node.eulerAngles.y = atan2(forward.x, forward.z)
+        node.renderingOrder = 4
+        node.name = "sfGroundFinish"
+        parent.addChildNode(node)
+        _ = right
+    }
+
+    /// Painted chevrons on the approach so drivers see the line coming.
+    private static func addFinishApproachChevrons(
+        into parent: SCNNode,
+        samples: [Sample],
+        halfW: Float,
+        y: Float
+    ) {
+        let mat = SCNMaterial()
+        mat.lightingModel = .constant
+        mat.diffuse.contents = UIColor(red: 1.0, green: 0.78, blue: 0.08, alpha: 1)
+        mat.emission.contents = UIColor(red: 0.95, green: 0.7, blue: 0.05, alpha: 0.22)
+        mat.isDoubleSided = true
+
+        // Place chevrons on samples behind the line (negative lap progress ≈ last sector).
+        let count = samples.count
+        let steps = [12, 22, 34, 48]
+        for step in steps {
+            let idx = (count - step) % count
+            let s = samples[idx]
+            let fwd = simd_normalize(SIMD3<Float>(s.tangent.x, 0, s.tangent.z))
+            let yaw = atan2(fwd.x, fwd.z)
+            for lane: Float in [-0.55, 0, 0.55] {
+                let lat = lane * (halfW * 0.42)
+                let pos = s.pos + s.right * lat + fwd * 0.2
+                let chevron = makeChevronPlane(width: 2.4, depth: 1.55)
+                chevron.materials = [mat]
+                let node = SCNNode(geometry: chevron)
+                node.position = SCNVector3(pos.x, y + 0.012, pos.z)
+                // Geometry is already on the XZ plane — yaw only to face travel direction.
+                node.eulerAngles.y = yaw
+                node.name = "sfChevron"
+                parent.addChildNode(node)
+            }
+        }
+    }
+
+    private static func makeChevronPlane(width: Float, depth: Float) -> SCNGeometry {
+        // V pointing along +Z (travel direction when plane is laid flat via −90° pitch).
+        let hw = width * 0.5
+        let hd = depth * 0.5
+        let verts: [SCNVector3] = [
+            SCNVector3(0, 0, hd),
+            SCNVector3(hw, 0, -hd),
+            SCNVector3(hw * 0.35, 0, -hd),
+            SCNVector3(0, 0, hd * 0.15),
+            SCNVector3(-hw * 0.35, 0, -hd),
+            SCNVector3(-hw, 0, -hd),
+        ]
+        let indices: [Int32] = [0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5]
+        let src = SCNGeometrySource(vertices: verts)
+        let elem = SCNGeometryElement(indices: indices, primitiveType: .triangles)
+        return SCNGeometry(sources: [src], elements: [elem])
+    }
+
+    /// Tall red/white boards at both shoulders — finish wall cue from the side.
+    private static func addFinishSideBoards(
+        into parent: SCNNode,
+        origin: SIMD3<Float>,
+        forward: SIMD3<Float>,
+        right: SIMD3<Float>,
+        halfW: Float,
+        y: Float,
+        night: Bool
+    ) {
+        let boardH: Float = 3.2
+        let boardL: Float = 5.2
+        for side: Float in [-1, 1] {
+            let base = origin + right * ((halfW + 1.55) * side)
+            for i in 0..<8 {
+                let along = (Float(i) - 3.5) * 0.95
+                let red = (i % 2 == 0)
+                let mat = SCNMaterial()
+                mat.lightingModel = .constant
+                if red {
+                    mat.diffuse.contents = UIColor(red: 0.92, green: 0.08, blue: 0.08, alpha: 1)
+                    mat.emission.contents = night
+                        ? UIColor(red: 1.0, green: 0.18, blue: 0.12, alpha: 0.45)
+                        : UIColor(red: 0.85, green: 0.1, blue: 0.08, alpha: 0.2)
+                } else {
+                    mat.diffuse.contents = UIColor(white: 0.97, alpha: 1)
+                    mat.emission.contents = UIColor(white: night ? 0.35 : 0.15, alpha: 1)
+                }
+                let panel = SCNBox(width: 0.14, height: CGFloat(boardH), length: 0.9, chamferRadius: 0.02)
+                panel.materials = [mat]
+                let node = SCNNode(geometry: panel)
+                let p = base + forward * along
+                node.position = SCNVector3(p.x, y + boardH * 0.5, p.z)
+                node.eulerAngles.y = atan2(forward.x, forward.z)
+                node.castsShadow = true
+                node.name = "sfSideBoard"
+                parent.addChildNode(node)
+            }
+            // Tall checkered pillar — reads from overhead when the banner is edge-on.
+            let pillar = SCNBox(width: 1.1, height: 6.5, length: 1.1, chamferRadius: 0.08)
+            let pillarMat = SCNMaterial()
+            pillarMat.lightingModel = .constant
+            pillarMat.diffuse.contents = finishCheckeredTexture()
+            pillarMat.emission.contents = UIColor(white: night ? 0.3 : 0.15, alpha: 1)
+            pillar.materials = [pillarMat]
+            let pillarNode = SCNNode(geometry: pillar)
+            let pp = base - forward * 1.2
+            pillarNode.position = SCNVector3(pp.x, y + 3.25, pp.z)
+            pillarNode.castsShadow = true
+            pillarNode.name = "sfPillar"
+            parent.addChildNode(pillarNode)
+
+            let flag = SCNPlane(width: 2.2, height: 1.5)
+            let flagMat = SCNMaterial()
+            flagMat.lightingModel = .constant
+            flagMat.diffuse.contents = finishCheckeredTexture()
+            flagMat.emission.contents = finishCheckeredTexture()
+            flagMat.isDoubleSided = true
+            flag.materials = [flagMat]
+            let flagNode = SCNNode(geometry: flag)
+            flagNode.position = SCNVector3(pp.x, y + 7.0, pp.z)
+            flagNode.eulerAngles.y = atan2(forward.x, forward.z) + (side > 0 ? 0.4 : -0.4)
+            flagNode.name = "sfSideFlag"
+            parent.addChildNode(flagNode)
+            _ = boardL
+        }
+    }
+
+    /// Neon/orange portal rings on the final approach so the finish sector is obvious at speed.
+    private static func addFinishApproachGates(
+        into parent: SCNNode,
+        samples: [Sample],
+        halfW: Float,
+        y: Float,
+        night: Bool
+    ) {
+        let mat = SCNMaterial()
+        mat.lightingModel = .constant
+        mat.diffuse.contents = UIColor(red: 1.0, green: 0.45, blue: 0.05, alpha: 1)
+        mat.emission.contents = UIColor(red: 1.0, green: 0.5, blue: 0.08, alpha: night ? 0.85 : 0.55)
+
+        let count = samples.count
+        for step in [18, 30, 42] {
+            let idx = (count - step) % count
+            let s = samples[idx]
+            let fwd = simd_normalize(SIMD3<Float>(s.tangent.x, 0, s.tangent.z))
+            let yaw = atan2(fwd.x, fwd.z)
+            let span = halfW * 2 + 1.5
+            let archH: Float = 5.2
+
+            for side: Float in [-1, 1] {
+                let post = SCNBox(width: 0.35, height: CGFloat(archH), length: 0.35, chamferRadius: 0.04)
+                post.materials = [mat]
+                let postNode = SCNNode(geometry: post)
+                let off = s.right * ((halfW + 0.6) * side)
+                postNode.position = SCNVector3(s.pos.x + off.x, y + archH * 0.5, s.pos.z + off.z)
+                postNode.name = "sfApproachPost"
+                parent.addChildNode(postNode)
+            }
+            let top = SCNBox(width: CGFloat(span), height: 0.35, length: 0.35, chamferRadius: 0.04)
+            top.materials = [mat]
+            let topNode = SCNNode(geometry: top)
+            topNode.position = SCNVector3(s.pos.x, y + archH, s.pos.z)
+            topNode.eulerAngles.y = yaw
+            topNode.name = "sfApproachTop"
+            parent.addChildNode(topNode)
+        }
+    }
+
+    /// Overhead gantry with a large FINISH banner facing oncoming traffic.
+    private static func addFinishGantry(
+        into parent: SCNNode,
+        origin: SIMD3<Float>,
+        forward: SIMD3<Float>,
+        right: SIMD3<Float>,
+        halfW: Float,
+        y: Float,
+        yaw: Float,
+        night: Bool,
+        showBanner: Bool
+    ) {
         let postMat = SCNMaterial()
         postMat.lightingModel = .physicallyBased
-        postMat.diffuse.contents = UIColor(white: 0.58, alpha: 1)
-        postMat.metalness.contents = 0.45
-        postMat.roughness.contents = 0.45
+        postMat.diffuse.contents = UIColor(white: night ? 0.28 : 0.42, alpha: 1)
+        postMat.metalness.contents = 0.62
+        postMat.roughness.contents = 0.38
+
+        let span = halfW * 2 + 4.5
+        let postH: Float = 10.5
         for side: Float in [-1, 1] {
-            let postOff = s0.right * (halfW + 1.1) * side
-            let post = SCNBox(width: 0.22, height: 2.8, length: 0.22, chamferRadius: 0.04)
+            let postOff = right * ((halfW + 2.0) * side)
+            let post = SCNBox(width: 0.95, height: CGFloat(postH), length: 0.95, chamferRadius: 0.08)
             post.materials = [postMat]
             let postNode = SCNNode(geometry: post)
-            postNode.position = SCNVector3(s0.pos.x + postOff.x, y + 1.4, s0.pos.z + postOff.z)
+            postNode.position = SCNVector3(origin.x + postOff.x, y + postH * 0.5, origin.z + postOff.z)
             postNode.castsShadow = true
+            postNode.name = "sfGantryPost"
             parent.addChildNode(postNode)
+
+            // Fat checkered sleeve on each post — readable when the banner is edge-on.
+            let sleeve = SCNBox(width: 1.25, height: CGFloat(postH * 0.72), length: 1.25, chamferRadius: 0.06)
+            let sleeveMat = SCNMaterial()
+            sleeveMat.lightingModel = .constant
+            sleeveMat.diffuse.contents = finishCheckeredTexture()
+            sleeveMat.emission.contents = UIColor(white: night ? 0.4 : 0.22, alpha: 1)
+            sleeve.materials = [sleeveMat]
+            let sleeveNode = SCNNode(geometry: sleeve)
+            sleeveNode.position = SCNVector3(origin.x + postOff.x, y + postH * 0.42, origin.z + postOff.z)
+            sleeveNode.name = "sfGantrySleeve"
+            parent.addChildNode(sleeveNode)
+        }
+
+        let beam = SCNBox(width: CGFloat(span), height: 1.15, length: 0.9, chamferRadius: 0.06)
+        beam.materials = [postMat]
+        let beamNode = SCNNode(geometry: beam)
+        beamNode.position = SCNVector3(origin.x, y + postH - 0.35, origin.z)
+        beamNode.eulerAngles.y = yaw
+        beamNode.castsShadow = true
+        beamNode.name = "sfGantryBeam"
+        parent.addChildNode(beamNode)
+
+        // Checkered fringe under the beam.
+        let fringe = SCNBox(width: CGFloat(span - 0.3), height: 1.8, length: 0.18, chamferRadius: 0)
+        let fringeMat = SCNMaterial()
+        fringeMat.lightingModel = .constant
+        fringeMat.diffuse.contents = finishCheckeredTexture()
+        fringeMat.emission.contents = UIColor(white: night ? 0.4 : 0.25, alpha: 1)
+        fringeMat.isDoubleSided = true
+        fringe.materials = [fringeMat]
+        let fringeNode = SCNNode(geometry: fringe)
+        fringeNode.position = SCNVector3(origin.x, y + postH - 1.55, origin.z)
+        fringeNode.eulerAngles.y = yaw
+        fringeNode.name = "sfGantryFringe"
+        parent.addChildNode(fringeNode)
+
+        guard showBanner else { return }
+
+        // Two offset boards (grid side + approach side) so neither face reads mirrored.
+        // Start as START — NativeRaceEngine flips to FINISH when the green flag drops.
+        let bannerW = min(span - 0.5, 28)
+        let bannerH: Float = 3.6
+        let tex = bannerTexture(title: StartFinishSignPhase.start.title)
+        for facingTraffic in [true, false] {
+            let plane = SCNPlane(width: CGFloat(bannerW), height: CGFloat(bannerH))
+            let mat = SCNMaterial()
+            mat.lightingModel = .constant
+            mat.diffuse.contents = tex
+            mat.emission.contents = tex
+            mat.isDoubleSided = false
+            plane.materials = [mat]
+            let node = SCNNode(geometry: plane)
+            let along = facingTraffic ? -forward * 0.45 : forward * 0.45
+            let p = origin + along
+            node.position = SCNVector3(p.x, y + postH - 3.7, p.z)
+            node.eulerAngles.y = facingTraffic ? (yaw + .pi) : yaw
+            node.name = facingTraffic ? "sfFinishBannerApproach" : "sfFinishBannerGrid"
+            parent.addChildNode(node)
+        }
+
+        if night {
+            let light = SCNNode()
+            light.light = SCNLight()
+            light.light?.type = .spot
+            light.light?.intensity = 900
+            light.light?.color = UIColor(red: 1, green: 0.92, blue: 0.75, alpha: 1)
+            light.light?.spotInnerAngle = 40
+            light.light?.spotOuterAngle = 70
+            light.light?.attenuationEndDistance = 28
+            light.position = SCNVector3(origin.x, y + postH - 0.6, origin.z)
+            light.eulerAngles.x = -.pi / 2
+            light.name = "sfGantryLight"
+            parent.addChildNode(light)
+        }
+    }
+
+    private static func groundTitleTexture(title: String) -> UIImage {
+        if let cached = cachedGroundTextures[title] { return cached }
+        let size = CGSize(width: 1024, height: 280)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { ctx in
+            UIColor.clear.setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.alignment = .center
+            let stroke: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 168, weight: .black),
+                .foregroundColor: UIColor.black,
+                .strokeColor: UIColor.black,
+                .strokeWidth: -12,
+                .paragraphStyle: paragraph,
+                .kern: 14,
+            ]
+            let fill: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 168, weight: .black),
+                .foregroundColor: UIColor(red: 1, green: 0.85, blue: 0.1, alpha: 1),
+                .paragraphStyle: paragraph,
+                .kern: 14,
+            ]
+            let text = title as NSString
+            let textRect = CGRect(x: 20, y: 40, width: size.width - 40, height: 200)
+            text.draw(in: textRect, withAttributes: stroke)
+            text.draw(in: textRect, withAttributes: fill)
+        }
+        cachedGroundTextures[title] = image
+        return image
+    }
+
+    private static func bannerTexture(title: String) -> UIImage {
+        if let cached = cachedBannerTextures[title] { return cached }
+        let size = CGSize(width: 1024, height: 256)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let accent: UIColor = title == "START"
+            ? UIColor(red: 0.2, green: 0.95, blue: 0.45, alpha: 1)
+            : UIColor(red: 1, green: 0.82, blue: 0.1, alpha: 1)
+        let image = renderer.image { ctx in
+            let rect = CGRect(origin: .zero, size: size)
+            UIColor(red: 0.06, green: 0.07, blue: 0.09, alpha: 1).setFill()
+            ctx.fill(rect)
+
+            // Checkered end caps.
+            let cell: CGFloat = 32
+            for row in 0..<Int(size.height / cell) {
+                for col in 0..<4 {
+                    if (row + col) % 2 == 0 {
+                        UIColor.white.setFill()
+                    } else {
+                        UIColor.black.setFill()
+                    }
+                    ctx.fill(CGRect(x: CGFloat(col) * cell, y: CGFloat(row) * cell, width: cell, height: cell))
+                    ctx.fill(CGRect(
+                        x: size.width - CGFloat(col + 1) * cell,
+                        y: CGFloat(row) * cell,
+                        width: cell,
+                        height: cell
+                    ))
+                }
+            }
+
+            accent.setFill()
+            ctx.fill(CGRect(x: 140, y: 18, width: size.width - 280, height: 10))
+            ctx.fill(CGRect(x: 140, y: size.height - 28, width: size.width - 280, height: 10))
+
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.alignment = .center
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 128, weight: .black),
+                .foregroundColor: UIColor.white,
+                .paragraphStyle: paragraph,
+                .kern: 10,
+            ]
+            let text = title as NSString
+            let textRect = CGRect(x: 160, y: 48, width: size.width - 320, height: 160)
+            text.draw(in: textRect, withAttributes: attrs)
+        }
+        cachedBannerTextures[title] = image
+        return image
+    }
+
+    private static func finishCheckeredTexture() -> UIImage {
+        let size = CGSize(width: 256, height: 160)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { ctx in
+            let cell: CGFloat = 32
+            for row in 0..<Int(ceil(size.height / cell)) {
+                for col in 0..<Int(ceil(size.width / cell)) {
+                    ((row + col) % 2 == 0 ? UIColor.white : UIColor.black).setFill()
+                    ctx.fill(CGRect(x: CGFloat(col) * cell, y: CGFloat(row) * cell, width: cell, height: cell))
+                }
+            }
         }
     }
 
@@ -578,63 +1102,7 @@ enum RaceTrackMesh {
     }
 
     private static func addStartFinish(parent: SCNNode, samples: [Sample], halfW: Float, night: Bool) {
-        guard samples.count >= 2 else { return }
-        let s0 = samples[0]
-        let yaw = atan2(s0.tangent.x, s0.tangent.z)
-        let y = s0.pos.y + 0.085
-        let squareW: CGFloat = 0.85
-        let cols = Int((halfW * 2) / Float(squareW))
-        for col in 0..<cols {
-            let mat = SCNMaterial()
-            mat.lightingModel = .physicallyBased
-            mat.diffuse.contents = col % 2 == 0 ? UIColor.black : UIColor.white
-            mat.roughness.contents = 0.45
-            let sq = SCNBox(width: squareW, height: 0.025, length: squareW, chamferRadius: 0)
-            sq.materials = [mat]
-            let node = SCNNode(geometry: sq)
-            let lat = Float(col) * Float(squareW) - halfW + Float(squareW) * 0.5
-            node.position = SCNVector3(
-                s0.pos.x + s0.right.x * lat,
-                y,
-                s0.pos.z + s0.right.z * lat
-            )
-            node.eulerAngles.y = yaw
-            parent.addChildNode(node)
-        }
-
-        // Start/finish gantry
-        let postMat = SCNMaterial()
-        postMat.lightingModel = .physicallyBased
-        postMat.diffuse.contents = UIColor(white: night ? 0.45 : 0.62, alpha: 1)
-        postMat.metalness.contents = 0.55
-        postMat.roughness.contents = 0.42
-        let bannerMat = SCNMaterial()
-        bannerMat.lightingModel = .physicallyBased
-        // Dark carbon gantry — bright red read as a HUD strip under the status bar at spawn.
-        bannerMat.diffuse.contents = UIColor(red: 0.12, green: 0.13, blue: 0.15, alpha: 1)
-        bannerMat.metalness.contents = 0.72
-        bannerMat.roughness.contents = 0.38
-        bannerMat.emission.contents = night
-            ? UIColor(red: 0.95, green: 0.45, blue: 0.08, alpha: 0.22)
-            : UIColor(red: 1, green: 0.55, blue: 0.12, alpha: 0.08)
-
-        for side: Float in [-1, 1] {
-            let postOff = s0.right * (halfW + 1.4) * side
-            let post = SCNBox(width: 0.32, height: 5.6, length: 0.32, chamferRadius: 0.06)
-            post.materials = [postMat]
-            let postNode = SCNNode(geometry: post)
-            postNode.position = SCNVector3(s0.pos.x + postOff.x, y + 2.8, s0.pos.z + postOff.z)
-            postNode.castsShadow = true
-            parent.addChildNode(postNode)
-        }
-        let banner = SCNBox(width: CGFloat(halfW * 2 + 2.8), height: 0.42, length: 0.2, chamferRadius: 0.04)
-        banner.materials = [bannerMat]
-        let bannerNode = SCNNode(geometry: banner)
-        // Place ahead of the start line so chase cam at spawn doesn't frame it as a red HUD bar.
-        let ahead = s0.pos + s0.tangent * 6.5
-        bannerNode.position = SCNVector3(ahead.x, y + 5.35, ahead.z)
-        bannerNode.eulerAngles.y = yaw
-        parent.addChildNode(bannerNode)
+        addStartFinishComplex(parent: parent, samples: samples, halfW: halfW, night: night)
     }
 
     private static func duplicateMaterial(_ m: SCNMaterial) -> SCNMaterial {

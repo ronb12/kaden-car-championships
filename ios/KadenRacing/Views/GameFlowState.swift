@@ -90,6 +90,7 @@ final class GameFlowState: ObservableObject {
 
     /// One-tap Play — career prize if the ladder is open, otherwise a short circuit.
     func beginKidPlay(progress: PlayerProgressStore) {
+        difficultyIndex = 0
         if progress.careerComplete {
             beginQuickRace()
         } else {
@@ -108,7 +109,8 @@ final class GameFlowState: ObservableObject {
         lapCount = 3
         selectedCarIndex = 0
         let daySeed = PlayerProgressStore.todayDayKey()
-        selectedTrackIndex = daySeed % GameCatalog.activeTracks.count
+        let pool = usesKidFriendlyTracks ? GameCatalog.kidPickableTrackIndices : Array(GameCatalog.activeTracks.indices)
+        selectedTrackIndex = pool.isEmpty ? 0 : pool[daySeed % pool.count]
         syncLapsToSelectedTrack()
         openCarSelect(returningTo: .mainMenu)
     }
@@ -248,7 +250,8 @@ final class GameFlowState: ObservableObject {
         if mission.id == "c09-daily" {
             dailyChallengeActive = true
             let daySeed = PlayerProgressStore.todayDayKey()
-            selectedTrackIndex = daySeed % GameCatalog.activeTracks.count
+            let pool = usesKidFriendlyTracks ? GameCatalog.kidPickableTrackIndices : Array(GameCatalog.activeTracks.indices)
+            selectedTrackIndex = pool.isEmpty ? 0 : pool[daySeed % pool.count]
             syncLapsToSelectedTrack()
         }
         if let override = mission.modeOverride {
@@ -326,12 +329,37 @@ final class GameFlowState: ObservableObject {
         return activeGameMode.defaultLaps()
     }
 
+    /// Casual (default) hides twisty technical circuits from the picker and swaps them at race time.
+    var usesKidFriendlyTracks: Bool { difficultyIndex == 0 }
+
+    func selectableTrackIndices() -> [Int] {
+        if usesKidFriendlyTracks {
+            return GameCatalog.kidPickableTrackIndices
+        }
+        return Array(GameCatalog.activeTracks.indices)
+    }
+
+    func clampSelectedTrackForDifficulty() {
+        let pickable = selectableTrackIndices()
+        guard !pickable.isEmpty else { return }
+        if !pickable.contains(selectedTrackIndex) {
+            selectedTrackIndex = pickable[0]
+            syncLapsToSelectedTrack()
+        }
+    }
+
     func trackIndexForCurrentRace() -> Int {
+        let raw: Int
         if activeGameMode == .championshipSerie {
             let round = min(champRoundsCompleted, GameCatalog.activeChampionshipRounds.count - 1)
-            return min(GameCatalog.activeChampionshipRounds[round].trackIndex, GameCatalog.activeTracks.count - 1)
+            raw = min(GameCatalog.activeChampionshipRounds[round].trackIndex, GameCatalog.activeTracks.count - 1)
+        } else {
+            raw = min(max(selectedTrackIndex, 0), GameCatalog.activeTracks.count - 1)
         }
-        return min(max(selectedTrackIndex, 0), GameCatalog.activeTracks.count - 1)
+        if usesKidFriendlyTracks {
+            return GameCatalog.kidFriendlyTrackIndex(for: raw)
+        }
+        return raw
     }
 
     func currentTrack() -> TrackChoice {

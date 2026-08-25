@@ -109,6 +109,7 @@ enum VehicleRenderer {
         }
         // Orient shell before lighting so lamps / hit-tests match the final pose.
         alignVehicleForward(on: root)
+        flattenUprightShell(on: root)
         seatOnContactPlane(root)
         VehicleLighting.install(on: root, isPlayer: request.isPlayer, allowFallbackLensGeometry: !usedBundled)
         VehicleLighting.installFillLighting(on: root, lod: request.lod)
@@ -165,6 +166,50 @@ enum VehicleRenderer {
         NSLog("[VehicleRenderer] alignVehicleForward yawπ car facing was −Z")
     }
 
+    /// Last-chance fix when a USDZ still stands on its bumper after GLBCarLoader.layFlat.
+    /// Pitches mesh children (SceneKit bbox ignores a node's own eulerAngles).
+    private static func flattenUprightShell(on root: SCNNode) {
+        let bodyContainer = root.childNode(withName: "krcVehicleRoot", recursively: false)
+            ?? root.childNodes.first
+        guard let bodyContainer else { return }
+        let shell = findCarMeshNode(in: bodyContainer) ?? bodyContainer
+        let (minV, maxV) = shell.boundingBox
+        let sx = maxV.x - minV.x
+        let sy = maxV.y - minV.y
+        let sz = maxV.z - minV.z
+        guard sy > 0.05, sy > max(sx, sz) * 1.08 else { return }
+
+        let targets = shell.childNodes.isEmpty ? [shell] : shell.childNodes
+        let saved = targets.map(\.transform)
+        var bestPitch: Float = -.pi / 2
+        var bestHeight = Float.greatestFiniteMagnitude
+        for pitch: Float in [-.pi / 2, .pi / 2] {
+            let rot = SCNMatrix4MakeRotation(pitch, 1, 0, 0)
+            for (i, node) in targets.enumerated() {
+                node.transform = SCNMatrix4Mult(rot, saved[i])
+            }
+            let (mn, mx) = shell.boundingBox
+            let height = mx.y - mn.y
+            if height < bestHeight {
+                bestHeight = height
+                bestPitch = pitch
+            }
+        }
+        let rot = SCNMatrix4MakeRotation(bestPitch, 1, 0, 0)
+        for (i, node) in targets.enumerated() {
+            node.transform = SCNMatrix4Mult(rot, saved[i])
+        }
+        let (mn, mx) = shell.boundingBox
+        shell.position.x -= (mn.x + mx.x) * 0.5
+        shell.position.z -= (mn.z + mx.z) * 0.5
+        bodyContainer.eulerAngles.x = 0
+        bodyContainer.eulerAngles.z = 0
+        NSLog(
+            "[VehicleRenderer] flattenUprightShell was (%.2f,%.2f,%.2f) → pitch=%.0f° flatH=%.2f",
+            sx, sy, sz, bestPitch * 180 / .pi, bestHeight
+        )
+    }
+
     /// Solid chase-cam-readable body — black privacy glass on sides/rear, lighter front windshield.
     private static func forceVisibleRaceShell(
         on root: SCNNode,
@@ -219,6 +264,7 @@ enum VehicleRenderer {
                 || name.contains("krcexhaust")
                 || nodeHasAncestorNamed(node, names: [
                     "krcPoliceKit", "krcLicensePlate", "krcClassKit", "krcPoliceMarkings", "krcExhaustKit",
+                    "krcExhaustKitV3", "krcExhaustKitV4", "krcExhaustKitV5",
                     "krcKidToyKit", "krcStickerHood", "krcStickerDoor", "krcDriverHat",
                 ]) {
                 return
@@ -328,7 +374,9 @@ enum VehicleRenderer {
             ?? root.childNodes.first
         guard let body else { return }
         body.pivot = SCNMatrix4Identity
-        body.eulerAngles = SCNVector3Zero
+        // Keep yaw from alignVehicleForward — only reset pitch/roll so tires sit flat.
+        body.eulerAngles.x = 0
+        body.eulerAngles.z = 0
         body.scale = SCNVector3(1, 1, 1)
         body.position = SCNVector3(body.position.x, 0, body.position.z)
 

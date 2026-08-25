@@ -13,6 +13,11 @@ enum GameCenterConfig {
     static let achievementFirstFinish = "com.kaden.racing.championships.achievement.first_finish"
     static let achievementChampion = "com.kaden.racing.championships.achievement.champion"
     static let achievementDriftMaster = "com.kaden.racing.championships.achievement.drift_master"
+
+    static let challengeLapTime = "com.kaden.racing.championships.challenge.laptime"
+    static let challengeDrift = "com.kaden.racing.championships.challenge.drift"
+    static let activityRace = "com.kaden.racing.championships.activity.race"
+    static let activityOnline = "com.kaden.racing.championships.activity.online"
 }
 
 enum GameCenterSheetRequest: Identifiable {
@@ -56,6 +61,8 @@ final class GameCenterService: NSObject, ObservableObject, GKGameCenterControlle
     @Published var signInAlertMessage: String?
     /// Incoming Game Center invite was accepted — start an online race.
     @Published var pendingInviteRace = false
+    /// Games app Activity / Challenge “Play” — start a solo circuit.
+    @Published var pendingSoloActivityRace = false
     /// Live peer match (other humans). Nil when racing CPU / Neon lobby only.
     private(set) var raceMatch: GKMatch?
 
@@ -444,6 +451,20 @@ extension GameCenterService: GKLocalPlayerListener {
             controller.matchmakerDelegate = self
             controller.isHosted = false
             UIApplication.shared.topViewController?.present(controller, animated: true)
+        }
+    }
+
+    @available(iOS 26.0, *)
+    nonisolated func player(_ player: GKPlayer, wantsToPlay activity: GKGameActivity, completionHandler: @escaping @Sendable (Bool) -> Void) {
+        Task { @MainActor in
+            let id = activity.activityDefinition.identifier
+            activity.start()
+            if id == GameCenterConfig.activityOnline {
+                pendingInviteRace = true
+            } else {
+                pendingSoloActivityRace = true
+            }
+            completionHandler(true)
         }
     }
 }

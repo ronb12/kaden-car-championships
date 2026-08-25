@@ -548,7 +548,13 @@ final class KRCOnlineService: ObservableObject {
                     applyLivery: true
                 )
                 carRoot.scale = SCNVector3(0.96, 0.96, 0.96)
+                carRoot.eulerAngles = SCNVector3(0, angle, 0)
+                if let body = carRoot.childNode(withName: "krcVehicleRoot", recursively: false) {
+                    body.eulerAngles.x = 0
+                    body.eulerAngles.z = 0
+                }
                 configureAsHumanRacer(carRoot, driverName: driverName)
+                carRoot.position = SCNVector3(x, y, z)
                 root.addChildNode(carRoot)
                 var spawned = RemoteEntry(
                     node: carRoot,
