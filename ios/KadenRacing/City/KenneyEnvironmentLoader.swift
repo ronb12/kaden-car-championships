@@ -137,10 +137,11 @@ enum KenneyEnvironmentLoader {
     }
 
     static func loadRoadBarrier() -> SCNNode? {
+        // Prefer hard barriers — construction cones look like poles when a bad pivot lands them on asphalt.
         loadRoadProp(
             preferred: [
-                "construction-barrier", "construction-cone",
-                "road-barrier", "road-bend-barrier", "road-crossroad-barrier"
+                "road-barrier", "road-bend-barrier", "road-crossroad-barrier",
+                "construction-barrier"
             ],
             targetHeight: 1.1,
             night: false,

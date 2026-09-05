@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9015B38813334EC18321D4C4 /* TrackArcadeDressing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6B5387CDDA34598923B811A /* TrackArcadeDressing.swift */; };
 		KRCCAREER000000000002 /* CareerMissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCCAREER000000000001 /* CareerMissions.swift */; };
 		COUR1ERCARR000000000001 /* CourierCareer.swift in Sources */ = {isa = PBXBuildFile; fileRef = COUR1ERCARR000000000002 /* CourierCareer.swift */; };
 		KRCTUTORIAL0000000002 /* KRCTutorial.swift in Sources */ = {isa = PBXBuildFile; fileRef = KRCTUTORIAL0000000001 /* KRCTutorial.swift */; };
@@ -176,6 +177,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A6B5387CDDA34598923B811A /* TrackArcadeDressing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackArcadeDressing.swift; sourceTree = "<group>"; };
 		KRCCAREER000000000001 /* CareerMissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerMissions.swift; sourceTree = "<group>"; };
 		COUR1ERCARR000000000002 /* CourierCareer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourierCareer.swift; sourceTree = "<group>"; };
 		KRCTUTORIAL0000000001 /* KRCTutorial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRCTutorial.swift; sourceTree = "<group>"; };
@@ -586,7 +588,8 @@
 		};
 		E4NV1R0NM3NTGRP01 /* Environment */ = {
 			isa = PBXGroup;
-			children = (
+			children = (				A6B5387CDDA34598923B811A /* TrackArcadeDressing.swift */,
+
 				CEDD76F671C342AEB10B0267 /* EnvironmentTrackProfile.swift */,
 				34C485985EA54159AE1F75E9 /* EnvironmentGraphicsSettings.swift */,
 				953E11D29E0E475EBA5A012F /* EnvironmentMaterialLibrary.swift */,
@@ -760,6 +763,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9015B38813334EC18321D4C4 /* TrackArcadeDressing.swift in Sources */,
 				2DA9BEFB5AAAAFA8EC16FEDE /* AppLegalLinks.swift in Sources */,
 				A1B2C3D4E5F60101A0C10001 /* AppOrientationController.swift in Sources */,
 				33F5C8FD5139F941F1A864B2 /* ArcadeKit.swift in Sources */,

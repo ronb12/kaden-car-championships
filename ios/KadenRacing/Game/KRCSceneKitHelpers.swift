@@ -152,4 +152,42 @@ enum KRCSceneKitHelpers {
 
         return podium
     }
+
+            // Soft elliptical ground plate for menu / hero car staging (works over a clear UI background).
+    static func menuHeroGroundPlate(width: CGFloat = 3.4, depth: CGFloat = 1.35) -> SCNNode {
+        let plate = SCNNode()
+        plate.name = "menuHeroGround"
+
+        let shadow = SCNPlane(width: width, height: depth)
+        let shadowMat = SCNMaterial()
+        shadowMat.lightingModel = .constant
+        shadowMat.diffuse.contents = UIColor(white: 0, alpha: 0.38)
+        shadowMat.transparency = 0.62
+        shadowMat.isDoubleSided = true
+        shadowMat.writesToDepthBuffer = false
+        shadowMat.blendMode = .alpha
+        shadow.materials = [shadowMat]
+        let shadowNode = SCNNode(geometry: shadow)
+        shadowNode.eulerAngles.x = -.pi / 2
+        shadowNode.position.y = 0.002
+        shadowNode.renderingOrder = -2
+        plate.addChildNode(shadowNode)
+
+        let sheen = SCNPlane(width: width * 0.78, height: depth * 0.55)
+        let sheenMat = SCNMaterial()
+        sheenMat.lightingModel = .physicallyBased
+        sheenMat.diffuse.contents = UIColor(red: 0.07, green: 0.08, blue: 0.11, alpha: 0.4)
+        sheenMat.metalness.contents = 0.88
+        sheenMat.roughness.contents = 0.22
+        sheenMat.isDoubleSided = true
+        sheenMat.writesToDepthBuffer = false
+        sheen.materials = [sheenMat]
+        let sheenNode = SCNNode(geometry: sheen)
+        sheenNode.eulerAngles.x = -.pi / 2
+        sheenNode.position.y = 0.005
+        sheenNode.renderingOrder = -1
+        plate.addChildNode(sheenNode)
+
+        return plate
+    }
 }

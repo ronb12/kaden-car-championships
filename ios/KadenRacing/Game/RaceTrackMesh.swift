@@ -34,13 +34,15 @@ enum RaceTrackMesh {
         let ground = groundTitleTexture(title: phase.title)
         root.enumerateChildNodes { node, _ in
             let name = node.name ?? ""
-            guard let mat = node.geometry?.firstMaterial else { return }
+            guard let geometry = node.geometry else { return }
             if name == "sfFinishBannerApproach" || name == "sfFinishBannerGrid" {
+                guard let mat = geometry.firstMaterial else { return }
                 mat.diffuse.contents = banner
                 mat.emission.contents = banner
             } else if name == "sfGroundFinish" {
+                guard let mat = geometry.firstMaterial else { return }
                 mat.diffuse.contents = ground
-                mat.emission.contents = ground
+                mat.emission.contents = UIColor(white: 0.22, alpha: 1)
             }
         }
     }
@@ -185,7 +187,7 @@ enum RaceTrackMesh {
         _ = rumbleWhiteIndices
         addMesh(to: parent, vertices: grassVerts, indices: grassIndices, material: grassMaterial, name: "grassShoulder")
         addStartFinishComplex(parent: parent, samples: samples, halfW: halfW, night: night)
-        addMinimalEdgeRails(parent: parent, samples: samples, halfW: halfW)
+        // Soft grey rails removed — candy stripe jersey walls come from TrackArcadeDressing.
     }
 
     /// Low edge rails at the asphalt boundary — gameplay read without city clutter.
@@ -280,18 +282,6 @@ enum RaceTrackMesh {
             night: night,
             showBanner: true
         )
-        // Depth gate past the line — checkered only so banners don't stack/z-fight.
-        addFinishGantry(
-            into: root,
-            origin: s0.pos + fwd * 8.0,
-            forward: fwd,
-            right: right,
-            halfW: halfW,
-            y: yPaint,
-            yaw: yaw,
-            night: night,
-            showBanner: false
-        )
         addFinishApproachGates(
             into: root,
             samples: samples,
@@ -301,7 +291,7 @@ enum RaceTrackMesh {
         )
     }
 
-    /// Wide multi-row checkers so the line reads from chase cam and overhead grid views.
+    /// Thin checkered start/finish band — single slab, yaw-aligned (no plane-axis glitches).
     private static func addCheckeredZone(
         into parent: SCNNode,
         origin: SIMD3<Float>,
@@ -312,49 +302,48 @@ enum RaceTrackMesh {
         rows: Int,
         square: Float
     ) {
-        let blackMat = SCNMaterial()
-        blackMat.lightingModel = .constant
-        blackMat.diffuse.contents = UIColor(white: 0.05, alpha: 1)
-        blackMat.emission.contents = UIColor(white: 0.04, alpha: 1)
-        let whiteMat = SCNMaterial()
-        whiteMat.lightingModel = .constant
-        whiteMat.diffuse.contents = UIColor(white: 0.98, alpha: 1)
-        whiteMat.emission.contents = UIColor(white: 0.55, alpha: 1)
-
-        let cols = max(10, Int((halfW * 2) / square))
         let yaw = atan2(forward.x, forward.z)
-        // Raised tiles — flat paint z-fights asphalt and vanishes in chase cam.
-        for row in 0..<rows {
-            let along = (Float(row) - Float(rows - 1) * 0.5) * square
-            for col in 0..<cols {
-                let lat = Float(col) * square - halfW + square * 0.5
-                let center = origin + forward * along + right * lat
-                let isBlack = (row + col) % 2 == 0
-                let tile = SCNBox(
-                    width: CGFloat(square * 0.96),
-                    height: 0.08,
-                    length: CGFloat(square * 0.96),
-                    chamferRadius: 0
-                )
-                tile.materials = [isBlack ? blackMat : whiteMat]
-                let node = SCNNode(geometry: tile)
-                node.position = SCNVector3(center.x, y + 0.04, center.z)
-                node.eulerAngles.y = yaw
-                node.name = "sfCheckTile"
-                parent.addChildNode(node)
-            }
-        }
+        // Keep this a *line*, not a runway.
+        let depth: Float = 2.0
+        let width = halfW * 2 - 0.5
+
+        let deckMat = SCNMaterial()
+        deckMat.lightingModel = .constant
+        deckMat.diffuse.contents = finishCheckeredTexture()
+        deckMat.emission.contents = UIColor(white: 0.08, alpha: 1)
+        deckMat.writesToDepthBuffer = true
+        deckMat.readsFromDepthBuffer = true
+
+        let blank = SCNMaterial()
+        blank.lightingModel = .constant
+        blank.diffuse.contents = UIColor(white: 0.08, alpha: 1)
+        blank.writesToDepthBuffer = true
+        blank.readsFromDepthBuffer = true
+
+        // Box + yaw only. SCNBox material order: front, right, back, left, top, bottom —
+        // checkered on top only so side faces don't read as a second line down the road.
+        let deck = SCNBox(width: CGFloat(width), height: 0.05, length: CGFloat(depth), chamferRadius: 0)
+        deck.materials = [blank, blank, blank, blank, deckMat, blank]
+        let deckNode = SCNNode(geometry: deck)
+        deckNode.position = SCNVector3(origin.x, y + 0.06, origin.z)
+        deckNode.eulerAngles.y = yaw
+        deckNode.renderingOrder = 3
+        deckNode.castsShadow = false
+        deckNode.name = "sfCheckDeck"
+        parent.addChildNode(deckNode)
 
         // Bright yellow lead-in stripe immediately before the checkers.
         let stripeMat = SCNMaterial()
         stripeMat.lightingModel = .constant
         stripeMat.diffuse.contents = UIColor(red: 1.0, green: 0.82, blue: 0.12, alpha: 1)
-        stripeMat.emission.contents = UIColor(red: 1.0, green: 0.78, blue: 0.1, alpha: 0.7)
-        let stripeDepth: Float = 1.1
-        let stripeAlong = -Float(rows) * 0.5 * square - stripeDepth * 0.7
+        stripeMat.emission.contents = UIColor(red: 0.45, green: 0.32, blue: 0.04, alpha: 1)
+        stripeMat.writesToDepthBuffer = true
+        stripeMat.readsFromDepthBuffer = true
+        let stripeDepth: Float = 0.8
+        let stripeAlong = -(depth * 0.5 + stripeDepth * 0.7)
         let stripe = SCNBox(
-            width: CGFloat(halfW * 2 - 0.2),
-            height: 0.1,
+            width: CGFloat(width - 0.2),
+            height: 0.04,
             length: CGFloat(stripeDepth),
             chamferRadius: 0
         )
@@ -363,24 +352,17 @@ enum RaceTrackMesh {
         let stripePos = origin + forward * stripeAlong
         stripeNode.position = SCNVector3(stripePos.x, y + 0.05, stripePos.z)
         stripeNode.eulerAngles.y = yaw
+        stripeNode.renderingOrder = 3
+        stripeNode.castsShadow = false
         stripeNode.name = "sfLeadStripe"
         parent.addChildNode(stripeNode)
 
-        // Fat white crossing bar — impossible to miss under the gantry.
-        let barMat = SCNMaterial()
-        barMat.lightingModel = .constant
-        barMat.diffuse.contents = UIColor.white
-        barMat.emission.contents = UIColor(white: 0.65, alpha: 1)
-        let bar = SCNBox(width: CGFloat(halfW * 2), height: 0.12, length: 2.4, chamferRadius: 0)
-        bar.materials = [barMat]
-        let barNode = SCNNode(geometry: bar)
-        barNode.position = SCNVector3(origin.x, y + 0.06, origin.z)
-        barNode.eulerAngles.y = yaw
-        barNode.name = "sfCrossBar"
-        parent.addChildNode(barNode)
+        _ = right
+        _ = rows
+        _ = square
     }
 
-    /// Giant flat FINISH word on the asphalt — readable from the overhead grid camera.
+    /// Giant flat START/FINISH word on the asphalt — readable from chase cam looking forward.
     private static func addFinishGroundTitle(
         into parent: SCNNode,
         origin: SIMD3<Float>,
@@ -389,24 +371,36 @@ enum RaceTrackMesh {
         halfW: Float,
         y: Float
     ) {
-        let plane = SCNPlane(width: CGFloat(min(halfW * 1.6, 18)), height: 4.2)
+        let yaw = atan2(forward.x, forward.z)
+        let textW = min(halfW * 1.6, 18)
+        let textDepth: Float = 4.0
+
         let mat = SCNMaterial()
         mat.lightingModel = .constant
         let tex = groundTitleTexture(title: StartFinishSignPhase.start.title)
         mat.diffuse.contents = tex
-        mat.emission.contents = tex
+        mat.emission.contents = UIColor(white: 0.22, alpha: 1)
         mat.isDoubleSided = true
-        mat.writesToDepthBuffer = false
+        mat.writesToDepthBuffer = true
+        mat.readsFromDepthBuffer = true
+
+        let plane = SCNPlane(width: CGFloat(textW), height: CGFloat(textDepth))
         plane.materials = [mat]
+
+        let holder = SCNNode()
+        let pos = origin + forward * 4.2
+        holder.position = SCNVector3(pos.x, y + 0.095, pos.z)
+        holder.eulerAngles.y = yaw
+        holder.name = "sfGroundFinishHolder"
+
         let node = SCNNode(geometry: plane)
-        // Sit just past the checkers so cars don't spawn on the letters.
-        let pos = origin + forward * 5.5
-        node.position = SCNVector3(pos.x, y + 0.04, pos.z)
         node.eulerAngles.x = -.pi / 2
-        node.eulerAngles.y = atan2(forward.x, forward.z)
+        node.eulerAngles.z = .pi
         node.renderingOrder = 4
         node.name = "sfGroundFinish"
-        parent.addChildNode(node)
+        node.castsShadow = false
+        holder.addChildNode(node)
+        parent.addChildNode(holder)
         _ = right
     }
 
@@ -438,8 +432,8 @@ enum RaceTrackMesh {
                 chevron.materials = [mat]
                 let node = SCNNode(geometry: chevron)
                 node.position = SCNVector3(pos.x, y + 0.012, pos.z)
-                // Geometry is already on the XZ plane — yaw only to face travel direction.
-                node.eulerAngles.y = yaw
+                // Geometry is already on the XZ plane — point the V along travel (+forward).
+                node.eulerAngles.y = yaw + .pi
                 node.name = "sfChevron"
                 parent.addChildNode(node)
             }
@@ -515,19 +509,7 @@ enum RaceTrackMesh {
             pillarNode.castsShadow = true
             pillarNode.name = "sfPillar"
             parent.addChildNode(pillarNode)
-
-            let flag = SCNPlane(width: 2.2, height: 1.5)
-            let flagMat = SCNMaterial()
-            flagMat.lightingModel = .constant
-            flagMat.diffuse.contents = finishCheckeredTexture()
-            flagMat.emission.contents = finishCheckeredTexture()
-            flagMat.isDoubleSided = true
-            flag.materials = [flagMat]
-            let flagNode = SCNNode(geometry: flag)
-            flagNode.position = SCNVector3(pp.x, y + 7.0, pp.z)
-            flagNode.eulerAngles.y = atan2(forward.x, forward.z) + (side > 0 ? 0.4 : -0.4)
-            flagNode.name = "sfSideFlag"
-            parent.addChildNode(flagNode)
+            // Skip floating checkered flag planes — they billboard / clip and read as a HUD glitch.
             _ = boardL
         }
     }
@@ -558,7 +540,7 @@ enum RaceTrackMesh {
                 let post = SCNBox(width: 0.35, height: CGFloat(archH), length: 0.35, chamferRadius: 0.04)
                 post.materials = [mat]
                 let postNode = SCNNode(geometry: post)
-                let off = s.right * ((halfW + 0.6) * side)
+                let off = s.right * ((halfW + 4.0) * side)
                 postNode.position = SCNVector3(s.pos.x + off.x, y + archH * 0.5, s.pos.z + off.z)
                 postNode.name = "sfApproachPost"
                 parent.addChildNode(postNode)
@@ -680,10 +662,11 @@ enum RaceTrackMesh {
     }
 
     private static func groundTitleTexture(title: String) -> UIImage {
-        if let cached = cachedGroundTextures[title] { return cached }
+        let cacheKey = "\(title)-trackFacing-v16"
+        if let cached = cachedGroundTextures[cacheKey] { return cached }
         let size = CGSize(width: 1024, height: 280)
         let renderer = UIGraphicsImageRenderer(size: size)
-        let image = renderer.image { ctx in
+        let upright = renderer.image { ctx in
             UIColor.clear.setFill()
             ctx.fill(CGRect(origin: .zero, size: size))
             let paragraph = NSMutableParagraphStyle()
@@ -707,7 +690,14 @@ enum RaceTrackMesh {
             text.draw(in: textRect, withAttributes: stroke)
             text.draw(in: textRect, withAttributes: fill)
         }
-        cachedGroundTextures[title] = image
+        // Bake 180°: SCNPlane + pitch maps image-top toward chase cam and mirrors U.
+        let image = renderer.image { ctx in
+            let cg = ctx.cgContext
+            cg.translateBy(x: size.width, y: size.height)
+            cg.scaleBy(x: -1, y: -1)
+            upright.draw(in: CGRect(origin: .zero, size: size))
+        }
+        cachedGroundTextures[cacheKey] = image
         return image
     }
 
@@ -763,7 +753,7 @@ enum RaceTrackMesh {
     }
 
     private static func finishCheckeredTexture() -> UIImage {
-        let size = CGSize(width: 256, height: 160)
+        let size = CGSize(width: 512, height: 256)
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { ctx in
             let cell: CGFloat = 32
@@ -958,7 +948,7 @@ enum RaceTrackMesh {
                 let yr0 = s0.pos.y + 0.13
                 let yr1 = s1.pos.y + 0.13
                 let rw: Float = 0.32
-                let rumbleOff = halfW - 0.35
+                let rumbleOff = halfW + 0.45
                 let redRumble = (i / 2) % 2 == 0
                 for off: Float in [rumbleOff, -rumbleOff] {
                     let r0a = SCNVector3(s0.pos.x + s0.right.x * (off - rw), yr0, s0.pos.z + s0.right.z * (off - rw))
@@ -1196,13 +1186,13 @@ enum RaceTrackMesh {
 
 enum TrackRoadsideClearance {
     /// Trunk / pole center — just outside drivable asphalt + narrow shoulder.
-    static let treeMinLateral: Float = RaceTrackMesh.halfWidth + 10
+    static let treeMinLateral: Float = RaceTrackMesh.halfWidth + 12
     /// Palms — fronds hang wide; match building setback.
     static let palmMinLateral: Float = RaceTrackMesh.buildingSetback
     /// Opaque race buildings — well clear of the racing line.
     static let buildingMinLateral: Float = RaceTrackMesh.buildingSetback + 4
     /// Lamp poles — keep the whole mesh (arms included) off asphalt.
-    static let poleMinLateral: Float = RaceTrackMesh.halfWidth + 8
+    static let poleMinLateral: Float = RaceTrackMesh.halfWidth + 11
 
     static func footprintRadius(_ node: SCNNode) -> Float {
         let (minB, maxB) = node.boundingBox

@@ -334,7 +334,8 @@ enum RaceParticles {
 
         let fx = SCNNode()
         fx.name = brakeGlowName
-        fx.position = SCNVector3(0, 0.2, 2.05)
+        // Rear bumper — was z=+2.05 (nose), which read as junk stuck out the front.
+        fx.position = SCNVector3(0, 0.25, -1.85)
         fx.addParticleSystem(ps)
         node.addChildNode(fx)
     }

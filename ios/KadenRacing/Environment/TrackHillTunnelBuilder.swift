@@ -113,12 +113,12 @@ enum TrackHillTunnelBuilder {
             root.addChildNode(roofNode)
 
             if i % 3 == 0 {
-                addCeilingLight(into: root, at: mid, y: mid.y + clearHeight - 0.35, yaw: yaw, night: night)
+                addCeilingLight(into: root, at: mid, y: mid.y + clearHeight - 0.35, yaw: yaw, night: night, alwaysOn: true)
             }
         }
 
-        addPortal(into: root, track: track, t: wrap01(span.start), wallCenter: wallCenter, clearHeight: clearHeight, concrete: concrete)
-        addPortal(into: root, track: track, t: wrap01(span.end), wallCenter: wallCenter, clearHeight: clearHeight, concrete: concrete)
+        addPortal(into: root, track: track, t: wrap01(span.start), wallCenter: wallCenter, clearHeight: clearHeight, concrete: concrete, night: night, entrance: true)
+        addPortal(into: root, track: track, t: wrap01(span.end), wallCenter: wallCenter, clearHeight: clearHeight, concrete: concrete, night: night, entrance: false)
 
         parent.addChildNode(root)
     }
@@ -129,7 +129,9 @@ enum TrackHillTunnelBuilder {
         t: Float,
         wallCenter: Float,
         clearHeight: Float,
-        concrete: SCNMaterial
+        concrete: SCNMaterial,
+        night: Bool,
+        entrance: Bool
     ) {
         let p = track.position(at: t)
         let right = track.right(at: t)
@@ -142,6 +144,22 @@ enum TrackHillTunnelBuilder {
         lintelNode.eulerAngles.y = yaw
         parent.addChildNode(lintelNode)
 
+        // Bright candy stripe portal ring — reads as a tunnel entrance from chase cam.
+        let stripe = SCNBox(width: CGFloat(wallCenter * 2 + 2.6), height: 0.55, length: 0.35, chamferRadius: 0.04)
+        let stripeMat = SCNMaterial()
+        stripeMat.lightingModel = .constant
+        stripeMat.diffuse.contents = entrance
+            ? UIColor(red: 1, green: 0.55, blue: 0.08, alpha: 1)
+            : UIColor(red: 0.15, green: 0.85, blue: 1.0, alpha: 1)
+        stripeMat.emission.contents = entrance
+            ? UIColor(red: night ? 0.9 : 0.45, green: night ? 0.4 : 0.2, blue: 0.05, alpha: 1)
+            : UIColor(red: 0.05, green: night ? 0.7 : 0.35, blue: night ? 0.9 : 0.45, alpha: 1)
+        stripe.materials = [stripeMat]
+        let stripeNode = SCNNode(geometry: stripe)
+        stripeNode.position = SCNVector3(p.x, p.y + clearHeight + 0.85, p.z)
+        stripeNode.eulerAngles.y = yaw
+        parent.addChildNode(stripeNode)
+
         for side: Float in [-1, 1] {
             let pillar = SCNBox(width: 1.8, height: CGFloat(clearHeight + 0.4), length: 2.2, chamferRadius: 0.1)
             pillar.materials = [concrete]
@@ -150,7 +168,31 @@ enum TrackHillTunnelBuilder {
             node.position = SCNVector3(p.x + off.x, p.y + (clearHeight + 0.4) * 0.5, p.z + off.z)
             node.eulerAngles.y = yaw
             parent.addChildNode(node)
+
+            // Side glow strips on pillars.
+            let glow = SCNBox(width: 0.22, height: CGFloat(clearHeight * 0.85), length: 0.18, chamferRadius: 0.03)
+            let gMat = SCNMaterial()
+            gMat.lightingModel = .constant
+            gMat.diffuse.contents = stripeMat.diffuse.contents
+            gMat.emission.contents = stripeMat.emission.contents
+            glow.materials = [gMat]
+            let glowNode = SCNNode(geometry: glow)
+            glowNode.position = SCNVector3(p.x + off.x * 0.92, p.y + clearHeight * 0.45, p.z)
+            glowNode.eulerAngles.y = yaw
+            parent.addChildNode(glowNode)
         }
+
+        // Always-on portal lights (day and night) so tunnels never look like dark holes.
+        let light = SCNLight()
+        light.type = .omni
+        light.intensity = night ? 720 : 420
+        light.color = UIColor(red: 1, green: 0.95, blue: 0.85, alpha: 1)
+        light.attenuationStartDistance = 2
+        light.attenuationEndDistance = 22
+        let lamp = SCNNode()
+        lamp.light = light
+        lamp.position = SCNVector3(p.x, p.y + clearHeight * 0.7, p.z)
+        parent.addChildNode(lamp)
     }
 
     private static func addCeilingLight(
@@ -158,7 +200,8 @@ enum TrackHillTunnelBuilder {
         at mid: SIMD3<Float>,
         y: Float,
         yaw: Float,
-        night: Bool
+        night: Bool,
+        alwaysOn: Bool = false
     ) {
         let lamp = SCNBox(width: 2.4, height: 0.12, length: 0.45, chamferRadius: 0.02)
         let mat = SCNMaterial()
@@ -171,10 +214,10 @@ enum TrackHillTunnelBuilder {
         node.position = SCNVector3(mid.x, y, mid.z)
         node.eulerAngles.y = yaw
         parent.addChildNode(node)
-        if night {
+        if night || alwaysOn {
             let light = SCNLight()
             light.type = .omni
-            light.intensity = 420
+            light.intensity = night ? 420 : 260
             light.attenuationStartDistance = 2
             light.attenuationEndDistance = 18
             light.color = glow

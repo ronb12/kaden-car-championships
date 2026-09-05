@@ -15,6 +15,7 @@ enum VehicleLighting {
         stripSpotNodes(from: body)
         stripBrakeGlowNodes(from: body)
         stripProtrudingFallbackLenses(from: body)
+        stripUnderbodyGroundSlabs(from: body)
         tagLikelyBundledHeadlightMeshes(in: body, frame: frame)
         if allowFallbackLensGeometry, !hasHeadlightLens(in: body) {
             attachFallbackLensGeometry(to: body, frame: frame)
@@ -83,6 +84,11 @@ enum VehicleLighting {
                     }
                 }
             } else if node.name == "krcHeadlightSpot", let light = node.light {
+                #if targetEnvironment(simulator)
+                // Simulator Metal paints spot cones as opaque cyan slabs on the asphalt.
+                light.intensity = 0
+                node.isHidden = true
+                #else
                 let spotBase: CGFloat = isPlayer ? 2400 : 1200
                 light.intensity = on ? spotBase * CGFloat(max(0.25, p)) : 0
                 node.isHidden = !on
@@ -90,6 +96,7 @@ enum VehicleLighting {
                     let side = headlightSideSign(for: node, body: body)
                     alignHeadlightSpot(node, frame: frame, sideSign: side)
                 }
+                #endif
             }
         }
         if on {
@@ -420,10 +427,15 @@ enum VehicleLighting {
             guard frame.isNearFront(z: center.z) else { return }
             guard abs(center.x) > frame.width * 0.12 else { return }
             let (mn, mx) = node.boundingBox
-            let size = max(mx.x - mn.x, mx.y - mn.y, mx.z - mn.z)
+            let h = max(0, mx.y - mn.y)
+            let footprint = max(mx.x - mn.x, mx.z - mn.z)
+            let size = max(footprint, h)
             guard size > 0.02, size < frame.width * 0.45 else { return }
+            // Skip "cristal"/crystal mats and flat underbody plates — they become nose slabs.
+            if n.contains("cristal") || n.contains("crystal") { return }
+            if footprint > frame.width * 0.35, h < footprint * 0.15 { return }
             let looksLikeLamp = n.contains("lamp") || n.contains("light") || n.contains("lens")
-                || n.contains("glass") || n.contains("cristal") || n.contains("faro")
+                || n.contains("glass") || n.contains("faro")
                 || n.contains("beam") || n.contains("hl") || n.contains("schein")
             if looksLikeLamp {
                 candidates.append(node)
@@ -432,6 +444,30 @@ enum VehicleLighting {
         for node in candidates {
             node.name = "krcHeadlightLens"
             node.renderingOrder = 6
+        }
+    }
+
+    /// Remove USDZ shadow/contact planes that sit under the hull and light up as
+    /// cyan/white slabs past the bumper on Simulator Metal.
+    private static func stripUnderbodyGroundSlabs(from body: SCNNode) {
+        guard let frame = VehicleAxes.frame(in: body) else { return }
+        var remove: [SCNNode] = []
+        body.enumerateHierarchy { node, _ in
+            guard node.geometry != nil, !node.isHidden else { return }
+            let n = ((node.name ?? "") + " " + (node.geometry?.materials.first?.name ?? "")).lowercased()
+            if n.hasPrefix("krc") { return }
+            if n.contains("wheel") || n.contains("tire") || n.contains("rubber") || n.contains("rim") { return }
+            let center = VehicleAxes.meshCenter(in: node, relativeTo: body)
+            // Only underbody — keep real bumper / splitter geometry.
+            guard center.y <= frame.baseY + frame.height * 0.12 else { return }
+            let (mn, mx) = node.boundingBox
+            let h = max(0, mx.y - mn.y)
+            let footprint = max(mx.x - mn.x, mx.z - mn.z)
+            guard footprint > frame.width * 0.35, h < footprint * 0.12 else { return }
+            remove.append(node)
+        }
+        for node in remove where node.parent != nil {
+            node.removeFromParentNode()
         }
     }
 

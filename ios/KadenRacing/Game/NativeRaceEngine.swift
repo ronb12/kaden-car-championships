@@ -1360,7 +1360,7 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         houseGhostDelta = ghostController.lastHouseDelta
         hadHouseGhost = ghostController.racedHouseGhost
         let aiPosition = opponents?.playerPosition(playerLap: _lapIndex, playerTrackT: openWorld.trackT) ?? 1
-        let aiRacerCount = opponents?.activeRacerCount ?? 1
+        let aiRacerCount = opponents?.fieldSize ?? 1
         let finalDrift = _driftAccumulator
         Task { @MainActor in
             self.driftScore = finalDrift

@@ -56,7 +56,8 @@ enum VehicleEnvironmentEffects {
 
         let fx = SCNNode()
         fx.name = dustName
-        fx.position = SCNVector3(0, 0.1, 2.4)
+        // Behind the rear axle — was z=+2.4 on the nose.
+        fx.position = SCNVector3(0, 0.1, -1.6)
         fx.addParticleSystem(ps)
         node.addChildNode(fx)
     }

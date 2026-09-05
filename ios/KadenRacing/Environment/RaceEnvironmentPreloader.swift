@@ -24,7 +24,8 @@ enum RaceEnvironmentPreloader {
     static func cacheKey(city: CityRuntimeConfig, nightOverride: Bool) -> String {
         let night = nightOverride || city.visualNight
         let idx = city.catalogTrackIndex ?? -1
-        return "\(city.themeId.rawValue)-\(idx)-\(city.seed)-\(night ? 1 : 0)"
+        // Bump epoch when roadside / arcade placement changes so warm caches don't keep poles on asphalt.
+        return "v5-\(city.themeId.rawValue)-\(idx)-\(city.seed)-\(night ? 1 : 0)"
     }
 
     static func prepared(for key: String) -> Prepared? { cache[key] }

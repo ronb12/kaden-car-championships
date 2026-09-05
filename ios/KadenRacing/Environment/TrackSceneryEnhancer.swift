@@ -44,13 +44,14 @@ enum TrackSceneryEnhancer {
     }
 
     private static func densitySteps(for profile: EnvironmentTrackProfile, preset: EnvironmentGraphicsSettings.Preset) -> Int {
-        let base = preset.decorStepDivisor
+        // Moderate roadside density — readable from chase cam without crowding the view.
+        let base = max(32, Int(Float(preset.decorStepDivisor) * 0.75))
         switch profile {
-        case .coastalCityCircuit: return max(48, base / 2)
-        case .coastalOpen, .stormHarbor, .urbanNight: return max(56, Int(Float(base) / 1.7))
-        case .desertHighway, .alpineRidge: return max(64, Int(Float(base) / 1.5))
-        case .standard, .technicalCircuit: return max(64, Int(Float(base) / 1.55))
-        default: return max(72, Int(Float(base) / 1.35))
+        case .coastalCityCircuit: return max(40, base / 2)
+        case .coastalOpen, .stormHarbor, .urbanNight: return max(48, Int(Float(base) / 1.7))
+        case .desertHighway, .alpineRidge: return max(56, Int(Float(base) / 1.5))
+        case .standard, .technicalCircuit: return max(56, Int(Float(base) / 1.55))
+        default: return max(64, Int(Float(base) / 1.35))
         }
     }
 
@@ -68,7 +69,7 @@ enum TrackSceneryEnhancer {
     ) {
         if art.prefersPalms, rng.unitFloat() < 0.72 {
             placeTree(into: parent, track: track, base: base, right: right, yaw: yaw, coastal: true, rng: &rng, lateral: TrackRoadsideClearance.palmMinLateral + rng.float(in: 2...12))
-            if rng.unitFloat() < 0.45 {
+            if rng.unitFloat() < 0.28 {
                 placeTree(
                     into: parent, track: track, base: base, right: right, yaw: yaw,
                     coastal: true, rng: &rng,
@@ -76,7 +77,7 @@ enum TrackSceneryEnhancer {
                 )
             }
         }
-        if rng.unitFloat() < 0.28 {
+        if rng.unitFloat() < 0.18 {
             placeSandBerms(into: parent, base: base, right: right, yaw: yaw, rng: &rng)
         }
         if rng.unitFloat() < 0.18 {
@@ -170,6 +171,9 @@ enum TrackSceneryEnhancer {
             )
             parent.addChildNode(light)
         }
+        if rng.unitFloat() < 0.16 {
+            placeBillboard(into: parent, track: track, base: base, right: right, yaw: yaw, night: night, rng: &rng)
+        }
     }
 
     private static func placeStandardProps(
@@ -184,6 +188,9 @@ enum TrackSceneryEnhancer {
     ) {
         if rng.unitFloat() < 0.32 {
             placeTree(into: parent, track: track, base: base, right: right, yaw: yaw, coastal: art.prefersPalms, rng: &rng, lateral: TrackRoadsideClearance.treeMinLateral + rng.float(in: 2...10))
+        }
+        if rng.unitFloat() < 0.14 {
+            placeBillboard(into: parent, track: track, base: base, right: right, yaw: yaw, night: night, rng: &rng)
         }
         if rng.unitFloat() < 0.14, let light = KenneyEnvironmentLoader.loadStreetLight(night: night) {
             let side: Float = rng.unitFloat() > 0.5 ? 1 : -1
@@ -359,6 +366,48 @@ enum TrackSceneryEnhancer {
         node.position = SCNVector3(base.x + off.x, base.y + 0.55, base.z + off.z)
         node.eulerAngles.y = yaw
         TrackRoadsideClearance.pushOutsideRoad(node, track: track, minLateral: RaceTrackMesh.halfWidth + 6.5)
+        parent.addChildNode(node)
+    }
+
+    private static func placeBillboard(
+        into parent: SCNNode,
+        track: ClosedTrackSpline,
+        base: SIMD3<Float>,
+        right: SIMD3<Float>,
+        yaw: Float,
+        night: Bool,
+        rng: inout SeededRandom
+    ) {
+        let side: Float = rng.unitFloat() > 0.5 ? 1 : -1
+        let colors: [UIColor] = [
+            UIColor(red: 1, green: 0.35, blue: 0.05, alpha: 1),
+            UIColor(red: 0.1, green: 0.75, blue: 1, alpha: 1),
+            UIColor(red: 0.95, green: 0.2, blue: 0.55, alpha: 1),
+            UIColor(red: 0.25, green: 0.9, blue: 0.4, alpha: 1),
+            UIColor(red: 1, green: 0.85, blue: 0.1, alpha: 1),
+        ]
+        let board = SCNBox(width: 5.5, height: 2.8, length: 0.22, chamferRadius: 0.05)
+        let mat = SCNMaterial()
+        mat.lightingModel = .constant
+        let c = colors[rng.int(in: 0...(colors.count - 1))]
+        mat.diffuse.contents = c
+        mat.emission.contents = night ? c.withAlphaComponent(0.55) : c.withAlphaComponent(0.15)
+        board.materials = [mat]
+        let node = SCNNode(geometry: board)
+        let off = right * ((TrackRoadsideClearance.treeMinLateral + rng.float(in: 4...10)) * side)
+        node.position = SCNVector3(base.x + off.x, base.y + 3.2, base.z + off.z)
+        node.eulerAngles.y = yaw + (side > 0 ? 0.15 : -0.15)
+
+        let pole = SCNCylinder(radius: 0.12, height: 3.2)
+        let poleMat = SCNMaterial()
+        poleMat.lightingModel = .physicallyBased
+        poleMat.diffuse.contents = UIColor(white: 0.3, alpha: 1)
+        pole.materials = [poleMat]
+        let poleNode = SCNNode(geometry: pole)
+        poleNode.position = SCNVector3(0, -2.0, 0)
+        node.addChildNode(poleNode)
+
+        TrackRoadsideClearance.pushOutsideRoad(node, track: track, minLateral: TrackRoadsideClearance.treeMinLateral + 2)
         parent.addChildNode(node)
     }
 }

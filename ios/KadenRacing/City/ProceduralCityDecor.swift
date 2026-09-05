@@ -426,6 +426,11 @@ enum ProceduralCityDecor {
                 barrier.position = SCNVector3(base.x, base.y, base.z)
                 KenneyEnvironmentLoader.alignBuildingToGround(barrier, groundY: base.y)
                 barrier.eulerAngles.y = yaw + (side < 0 ? Float.pi * 0.5 : -Float.pi * 0.5)
+                TrackRoadsideClearance.secure(
+                    barrier, track: track,
+                    minLateral: RaceTrackMesh.halfWidth + 5.5,
+                    extraFootprint: 0.8
+                )
                 parent.addChildNode(barrier)
             }
         }

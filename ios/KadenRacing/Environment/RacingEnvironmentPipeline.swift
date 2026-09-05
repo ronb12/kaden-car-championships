@@ -90,6 +90,14 @@ enum RacingEnvironmentPipeline {
             night: night,
             quality: quality
         )
+        // Arcade dressing owns edge barriers / S-F props. Skip WorldPropsPlacer here —
+        // it doubles lights, palms, billboards, and Kenney barriers on the minimal path.
+        TrackArcadeDressing.dressTrack(
+            into: trackRoot,
+            track: city.track,
+            city: city,
+            night: night
+        )
         let cityArt = CityEnvironmentArt.profile(for: city)
         if preset.oceanEnabled, cityArt.prefersOcean || city.trackProfile.prefersOcean {
             OceanEnvironmentBuilder.build(

@@ -189,24 +189,32 @@ final class RaceArcadeFunSystem {
 
     private func spawnCrystals(rng: inout SeededRandom) {
         let count = 14
+        let halfW = RaceTrackMesh.halfWidth
+        let start = track.sample(0)
         for i in 0..<count {
             let t = (Float(i) + 0.35) / Float(count)
+            if isStartFinishSector(t, start: start, clearRadius: 70) { continue }
             let side: Float = i % 2 == 0 ? -1 : 1
-            let lat = side * (RaceTrackMesh.halfWidth * (0.22 + rng.float(in: 0...0.15)))
+            // Outer thirds only — never on the dashed racing line.
+            let lat = side * (halfW * (0.62 + rng.float(in: 0...0.12)))
             let node = makeCrystalNode()
-            // Root on asphalt; gem + badge float clear of the ribbon.
             place(node, trackT: t, lateral: lat, yOffset: 0.04)
             root?.addChildNode(node)
             pickups.append(Pickup(kind: .crystal, node: node, trackT: t, lateral: lat))
         }
-        snapshot.crystalsTotal = count
+        snapshot.crystalsTotal = pickups.filter { $0.kind == .crystal }.count
     }
 
     private func spawnNitroPads(rng: inout SeededRandom) {
         let count = 6
+        let halfW = RaceTrackMesh.halfWidth
+        let start = track.sample(0)
         for i in 0..<count {
             let t = (Float(i) + 0.5) / Float(count)
-            let lat = rng.float(in: -1.6...1.6)
+            if isStartFinishSector(t, start: start, clearRadius: 80) { continue }
+            // Shoulder pads only — centerline discs sat under the car at green.
+            let side: Float = i % 2 == 0 ? -1 : 1
+            let lat = side * (halfW * (0.55 + rng.float(in: 0...0.12)))
             let node = makeNitroPadNode()
             place(node, trackT: t, lateral: lat, yOffset: 0.06)
             root?.addChildNode(node)
@@ -214,11 +222,21 @@ final class RaceArcadeFunSystem {
         }
     }
 
+    /// Grid / S-F stay clear so pickups never read as junk on the nose.
+    private func isStartFinishSector(_ t: Float, start: SIMD3<Float>, clearRadius: Float) -> Bool {
+        if t < 0.22 || t > 0.78 { return true }
+        let p = track.sample(t)
+        let d = simd_distance(SIMD2(p.x, p.z), SIMD2(start.x, start.z))
+        return d < clearRadius
+    }
+
     private func spawnDriftZones(rng: inout SeededRandom) {
         let count = 3
         for i in 0..<count {
-            let start = (Float(i) + 0.2) / Float(count)
-            let end = start + 0.07
+            // Mid-lap only — early ribbon sat under the grid and read as junk on the nose.
+            let start = 0.18 + (Float(i) + 0.15) / Float(count) * 0.58
+            let end = min(0.86, start + 0.07)
+            if start < 0.15 || end > 0.88 { continue }
             let node = makeDriftZoneRibbon(from: start, to: end)
             root?.addChildNode(node)
             driftZones.append(Zone(startT: start, endT: end, node: node))
@@ -230,7 +248,9 @@ final class RaceArcadeFunSystem {
         let count = 3
         for i in 0..<count {
             let t = (Float(i) + 0.65) / Float(count)
-            let lat = (i % 2 == 0 ? 1 : -1) * (RaceTrackMesh.halfWidth - 2.2)
+            if t < 0.1 || t > 0.9 { continue }
+            // Outside curb — was halfW-2.2 (in-lane poles).
+            let lat = (i % 2 == 0 ? 1 : -1) * (RaceTrackMesh.halfWidth + 3.8)
             let node = makeShortcutGateNode()
             place(node, trackT: t, lateral: lat, yOffset: 1.1)
             // Face along track
@@ -243,7 +263,7 @@ final class RaceArcadeFunSystem {
     }
 
     private func spawnApexMarkers(rng: inout SeededRandom) {
-        // Sample curvature and drop neon chevrons on sharper bends.
+        // Sample curvature and drop neon chevrons on the *inside* shoulder of sharper bends.
         var placed = 0
         var t: Float = 0
         while t < 1 && placed < 10 {
@@ -251,10 +271,15 @@ final class RaceArcadeFunSystem {
             let t1 = (t + 0.03).truncatingRemainder(dividingBy: 1)
             let a = simd_normalize(track.tangent(t0))
             let b = simd_normalize(track.tangent(t1))
-            let bend = max(0, 1 - simd_dot(SIMD3<Float>(a.x, 0, a.z), SIMD3<Float>(b.x, 0, b.z)))
-            if bend > 0.08 {
+            let a2 = SIMD2(a.x, a.z)
+            let b2 = SIMD2(b.x, b.z)
+            let bend = max(0, 1 - simd_dot(a2, b2))
+            if bend > 0.08, t0 > 0.08, t0 < 0.92 {
+                // Cross product sign → inside of the bend (keep off the racing line).
+                let cross = a2.x * b2.y - a2.y * b2.x
+                let inside: Float = cross >= 0 ? -1 : 1
                 let node = makeApexMarkerNode()
-                place(node, trackT: t0, lateral: 0, yOffset: 0.35)
+                place(node, trackT: t0, lateral: inside * (RaceTrackMesh.halfWidth + 3.4), yOffset: 0.2)
                 let tan = track.tangent(t0)
                 node.eulerAngles.y = atan2(tan.x, tan.z)
                 root?.addChildNode(node)
@@ -349,7 +374,7 @@ final class RaceArcadeFunSystem {
         for i in gates.indices {
             guard !gates[i].broken else { continue }
             let p = SIMD2<Float>(gates[i].node.position.x, gates[i].node.position.z)
-            if simd_distance(player, p) < 3.5 {
+            if simd_distance(player, p) < 5.5 {
                 gates[i].broken = true
                 shatter(gates[i].node)
                 shortcuts += 1
@@ -533,7 +558,12 @@ final class RaceArcadeFunSystem {
         let light = SCNNode()
         light.light = SCNLight()
         light.light?.type = .omni
+        #if targetEnvironment(simulator)
+        // Omni cones paint as thin cyan/white poles on Simulator Metal.
+        light.light?.intensity = 0
+        #else
         light.light?.intensity = 520
+        #endif
         light.light?.color = gold
         light.light?.attenuationStartDistance = 0.5
         light.light?.attenuationEndDistance = 14
@@ -543,18 +573,9 @@ final class RaceArcadeFunSystem {
         gem.addChildNode(bottomNode)
         gem.addChildNode(light)
 
-        // Camera-facing badge: same language as HUD (diamond = KR crystal).
-        let badge = makePickupBadge(
-            systemName: "diamond.fill",
-            caption: "KR",
-            tint: gold,
-            disc: amber
-        )
-        badge.position = SCNVector3(0, 3.15, 0)
-
+        // Gem only in chase cam — billboard badges read as junk stuck to the nose.
         root.addChildNode(auraNode)
         root.addChildNode(gem)
-        root.addChildNode(badge)
 
         let spin = SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 2.6))
         let bob = SCNAction.repeatForever(SCNAction.sequence([
@@ -578,64 +599,48 @@ final class RaceArcadeFunSystem {
         let deep = UIColor(red: 0.05, green: 0.35, blue: 0.85, alpha: 1)
         let white = UIColor.white
 
-        let disc = SCNCylinder(radius: 1.45, height: 0.1)
-        let discMat = SCNMaterial()
-        discMat.lightingModel = .constant
-        discMat.diffuse.contents = deep
-        discMat.emission.contents = cyan.withAlphaComponent(0.9)
-        disc.materials = [discMat]
-        let discNode = SCNNode(geometry: disc)
-        discNode.position = SCNVector3(0, 0.08, 0)
+        // Flat asphalt paint only — SCNCylinder/Torus + omni lights paint as
+        // vertical cyan poles on Simulator Metal.
+        let pad = SCNBox(width: 2.2, height: 0.03, length: 2.2, chamferRadius: 0.02)
+        let padMat = SCNMaterial()
+        padMat.lightingModel = .constant
+        padMat.diffuse.contents = deep
+        padMat.emission.contents = cyan.withAlphaComponent(0.7)
+        padMat.writesToDepthBuffer = false
+        pad.materials = [padMat]
+        let padNode = SCNNode(geometry: pad)
+        padNode.position = SCNVector3(0, 0.04, 0)
+        padNode.castsShadow = false
 
-        let ring = SCNTorus(ringRadius: 1.5, pipeRadius: 0.07)
-        let ringMat = SCNMaterial()
-        ringMat.lightingModel = .constant
-        ringMat.diffuse.contents = white
-        ringMat.emission.contents = cyan
-        ring.materials = [ringMat]
-        let ringNode = SCNNode(geometry: ring)
-        ringNode.eulerAngles.x = Float.pi * 0.5
-        ringNode.position = SCNVector3(0, 0.16, 0)
+        let rim = SCNBox(width: 2.35, height: 0.02, length: 2.35, chamferRadius: 0.02)
+        let rimMat = SCNMaterial()
+        rimMat.lightingModel = .constant
+        rimMat.diffuse.contents = white
+        rimMat.emission.contents = cyan
+        rimMat.writesToDepthBuffer = false
+        rim.materials = [rimMat]
+        let rimNode = SCNNode(geometry: rim)
+        rimNode.position = SCNVector3(0, 0.03, 0)
+        rimNode.castsShadow = false
 
-        let bolt = SCNCone(topRadius: 0, bottomRadius: 0.38, height: 0.95)
+        let chevron = SCNBox(width: 0.7, height: 0.035, length: 0.95, chamferRadius: 0.02)
         let boltMat = SCNMaterial()
         boltMat.lightingModel = .constant
         boltMat.diffuse.contents = white
         boltMat.emission.contents = cyan
-        bolt.materials = [boltMat]
-        let boltNode = SCNNode(geometry: bolt)
-        boltNode.position = SCNVector3(0, 0.85, 0)
+        boltMat.writesToDepthBuffer = false
+        chevron.materials = [boltMat]
+        let boltNode = SCNNode(geometry: chevron)
+        boltNode.position = SCNVector3(0, 0.06, 0)
+        boltNode.castsShadow = false
 
-        let light = SCNNode()
-        light.light = SCNLight()
-        light.light?.type = .omni
-        light.light?.intensity = 420
-        light.light?.color = cyan
-        light.light?.attenuationEndDistance = 10
-        light.position = SCNVector3(0, 0.7, 0)
-
-        let badge = makePickupBadge(
-            systemName: "bolt.fill",
-            caption: "N2O",
-            tint: cyan,
-            disc: deep
-        )
-        badge.position = SCNVector3(0, 2.55, 0)
-
-        root.addChildNode(discNode)
-        root.addChildNode(ringNode)
+        root.addChildNode(rimNode)
+        root.addChildNode(padNode)
         root.addChildNode(boltNode)
-        root.addChildNode(light)
-        root.addChildNode(badge)
 
-        ringNode.runAction(SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: 0, z: CGFloat.pi * 2, duration: 2.0)))
-        boltNode.runAction(SCNAction.repeatForever(SCNAction.sequence([
-            SCNAction.moveBy(x: 0, y: 0.12, z: 0, duration: 0.45),
-            SCNAction.moveBy(x: 0, y: -0.12, z: 0, duration: 0.45)
-        ])))
-        discNode.runAction(SCNAction.repeatForever(SCNAction.sequence([
-            SCNAction.fadeOpacity(to: 0.75, duration: 0.6),
-            SCNAction.fadeOpacity(to: 1.0, duration: 0.6)
+        padNode.runAction(SCNAction.repeatForever(SCNAction.sequence([
+            SCNAction.fadeOpacity(to: 0.72, duration: 0.55),
+            SCNAction.fadeOpacity(to: 1.0, duration: 0.55)
         ])))
         return root
     }
@@ -716,29 +721,19 @@ final class RaceArcadeFunSystem {
         for i in 0..<steps {
             let u = Float(i) / Float(steps)
             let t = start + (end - start) * u
-            let strip = SCNBox(width: CGFloat(RaceTrackMesh.halfWidth * 1.6), height: 0.05, length: 2.2, chamferRadius: 0.02)
+            // Narrow center wash — full-width boxes + torus posts looked like poles in-lane.
+            let strip = SCNBox(width: CGFloat(RaceTrackMesh.halfWidth * 0.85), height: 0.03, length: 2.0, chamferRadius: 0.02)
             let mat = SCNMaterial()
             mat.lightingModel = .constant
-            mat.diffuse.contents = UIColor(red: 1, green: 0.28, blue: 0.78, alpha: 0.75)
-            mat.emission.contents = UIColor(red: 1, green: 0.2, blue: 0.7, alpha: 0.65)
-            mat.transparency = 0.4
+            mat.diffuse.contents = UIColor(red: 1, green: 0.28, blue: 0.78, alpha: 0.55)
+            mat.emission.contents = UIColor(red: 1, green: 0.2, blue: 0.7, alpha: 0.45)
+            mat.transparency = 0.55
             strip.materials = [mat]
             let node = SCNNode(geometry: strip)
-            place(node, trackT: t, lateral: 0, yOffset: 0.04)
+            place(node, trackT: t, lateral: 0, yOffset: 0.03)
             let tan = track.tangent(t)
             node.eulerAngles.y = atan2(tan.x, tan.z)
             container.addChildNode(node)
-
-            let edge = SCNTorus(ringRadius: 0.55, pipeRadius: 0.035)
-            let edgeMat = SCNMaterial()
-            edgeMat.lightingModel = .constant
-            edgeMat.diffuse.contents = UIColor.white
-            edgeMat.emission.contents = UIColor(red: 1, green: 0.55, blue: 0.9, alpha: 1)
-            edge.materials = [edgeMat]
-            let edgeNode = SCNNode(geometry: edge)
-            edgeNode.eulerAngles.x = Float.pi * 0.5
-            edgeNode.position.y = 0.12
-            node.addChildNode(edgeNode)
         }
         container.opacity = 0.55
         return container
@@ -771,7 +766,11 @@ final class RaceArcadeFunSystem {
         let light = SCNNode()
         light.light = SCNLight()
         light.light?.type = .omni
+        #if targetEnvironment(simulator)
+        light.light?.intensity = 0
+        #else
         light.light?.intensity = 280
+        #endif
         light.light?.color = UIColor(red: 1, green: 0.55, blue: 0.1, alpha: 1)
         light.light?.attenuationEndDistance = 8
         light.position = SCNVector3(0, 1.0, 0)

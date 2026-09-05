@@ -157,7 +157,7 @@ struct MainMenuScreen: View {
                                 car: GameCatalog.cars[flow.selectedCarIndex],
                                 introNonce: carIntroNonce
                             )
-                            .frame(width: min(280, geo.size.width * 0.42), height: 88)
+                            .frame(width: min(300, geo.size.width * 0.45), height: 102)
                             .zIndex(2)
                         }
                         .padding(.horizontal, 16)
@@ -181,7 +181,7 @@ struct MainMenuScreen: View {
                                 car: GameCatalog.cars[flow.selectedCarIndex],
                                 introNonce: carIntroNonce
                             )
-                            .frame(width: min(380, geo.size.width * 0.88), height: 128)
+                            .frame(width: min(400, geo.size.width * 0.92), height: 148)
                             .zIndex(2)
                         }
                         .padding(.horizontal, 8)
@@ -2249,17 +2249,76 @@ struct RaceFinishedScreen: View {
     let lastTime: TimeInterval
     @ObservedObject private var online = KRCOnlineService.shared
     @State private var appear = false
+    @State private var showRewards = false
+    @State private var displayedCredits: Int64 = 0
+
+    private var place: Int { max(1, flow.lastFinishPlace) }
+    private var field: Int { max(place, flow.lastRacerCount) }
+    private var isWin: Bool { place == 1 }
+    private var isPodium: Bool { place <= 3 && flow.activeGameMode != .courier }
 
     private var finishGrade: String {
         if let g = flow.lastRaceReward?.courierGrade, !g.isEmpty { return g }
-        let pos = max(1, flow.lastFinishPlace)
-        switch pos {
+        switch place {
         case 1: return "S"
         case 2: return "A"
         case 3: return "B"
         case 4: return "C"
         default: return "D"
         }
+    }
+
+    private var heroTitle: String {
+        if flow.activeGameMode == .courier {
+            return finishGrade == "S" || finishGrade == "A" ? "SHIFT CLEAR" : "SHIFT DONE"
+        }
+        if flow.activeGameMode == .policeChase {
+            return isWin ? "ALL BUSTED" : "SHIFT OVER"
+        }
+        switch place {
+        case 1: return "YOU WIN"
+        case 2: return "PODIUM"
+        case 3: return "ON THE BOX"
+        default: return "FINISH"
+        }
+    }
+
+    private var heroSubtitle: String {
+        if flow.activeGameMode == .courier {
+            return flow.venueDisplayName()
+        }
+        switch place {
+        case 1: return "First across the line · \(flow.venueDisplayName())"
+        case 2: return "Silver run · \(flow.venueDisplayName())"
+        case 3: return "Bronze run · \(flow.venueDisplayName())"
+        default: return "P\(place) of \(field) · \(flow.venueDisplayName())"
+        }
+    }
+
+    private var heroAccent: Color {
+        switch place {
+        case 1: return KRCDesign.gold
+        case 2: return Color(white: 0.86)
+        case 3: return Color(red: 0.86, green: 0.52, blue: 0.22)
+        default: return KRCDesign.neonCyan
+        }
+    }
+
+    private var heroSymbol: String {
+        if flow.activeGameMode == .courier { return "shippingbox.fill" }
+        if flow.activeGameMode == .policeChase { return "shield.fill" }
+        switch place {
+        case 1: return "trophy.fill"
+        case 2, 3: return "medal.fill"
+        default: return "flag.checkered.circle.fill"
+        }
+    }
+
+    private var carName: String {
+        guard flow.selectedCarIndex >= 0, flow.selectedCarIndex < GameCatalog.cars.count else {
+            return "YOUR CAR"
+        }
+        return GameCatalog.cars[flow.selectedCarIndex].name
     }
 
     private var nextUnlockTeaser: String? {
@@ -2271,248 +2330,347 @@ struct RaceFinishedScreen: View {
     var body: some View {
         ZStack {
             KRCDesign.MenuBackdrop()
-            Color.black.opacity(0.62).ignoresSafeArea()
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.35),
+                    Color.black.opacity(0.72),
+                    Color.black.opacity(0.88)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            // Soft win glow behind the hero.
+            RadialGradient(
+                colors: [
+                    heroAccent.opacity(isWin ? 0.28 : 0.12),
+                    .clear
+                ],
+                center: .top,
+                startRadius: 20,
+                endRadius: 320
+            )
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
             ScrollView {
-                VStack(spacing: 20) {
-                    ZStack {
-                        if flow.lastRaceReward?.celebratePodium == true {
-                            KidPodiumBurst(active: appear && !KRCAccessibility.reduceMotion)
-                        }
-                        Image(systemName: flow.activeGameMode == .courier
-                              ? "shippingbox.fill"
-                              : (flow.lastFinishPlace == 1 ? "trophy.fill" : "flag.checkered.circle.fill"))
-                            .font(.system(size: 52))
-                            .foregroundStyle(KRCDesign.gold)
-                            .shadow(color: KRCDesign.gold.opacity(0.45), radius: 12)
-                            .scaleEffect((appear || KRCAccessibility.reduceMotion) ? 1 : 0.55)
-                            .opacity((appear || KRCAccessibility.reduceMotion) ? 1 : 0)
-                    }
-                    .frame(height: 72)
-                    KRCDesign.ScreenHeader(
-                        title: flow.lastFinishPlace == 1 ? "YOU WIN" : "FINISH",
-                        subtitle: flow.venueDisplayName()
-                    )
-                    KRCDesign.ModeBadge(text: flow.activeGameMode.displayTitle)
-                    Text(finishGrade)
-                        .font(.system(size: 56, weight: .black, design: .rounded))
-                        .foregroundStyle(KRCDesign.gold)
-                        .shadow(color: KRCDesign.gold.opacity(0.35), radius: 10)
+                VStack(spacing: 18) {
+                    FinishCheckeredRibbon()
                         .opacity(appear ? 1 : 0)
-                    KRCDesign.HighlightStatCard(
-                        label: flow.activeGameMode == .courier ? "ROUTE TIME" : "LAP TIME",
-                        value: formatRaceTime(lastTime)
-                    )
-                    .padding(.horizontal, 24)
+                        .offset(y: appear ? 0 : -12)
+
+                    ZStack {
+                        if isPodium {
+                            KidPodiumBurst(active: appear && !KRCAccessibility.reduceMotion, accent: heroAccent)
+                        }
+                        FinishPlaceMedal(
+                            place: place,
+                            symbol: heroSymbol,
+                            accent: heroAccent,
+                            appear: appear || KRCAccessibility.reduceMotion
+                        )
+                    }
+                    .frame(height: 118)
+                    .padding(.top, 4)
+
+                    VStack(spacing: 8) {
+                        Text(heroTitle)
+                            .font(.system(size: 34, weight: .black, design: .rounded))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.white, heroAccent],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .shadow(color: heroAccent.opacity(0.45), radius: 14)
+                            .multilineTextAlignment(.center)
+                            .minimumScaleFactor(0.7)
+                            .lineLimit(1)
+                        Text(heroSubtitle)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(KRCDesign.subtitleGold)
+                            .multilineTextAlignment(.center)
+                        KRCDesign.ModeBadge(text: flow.activeGameMode.displayTitle)
+                        Text(carName)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.white.opacity(0.72))
+                    }
                     .opacity(appear ? 1 : 0)
-                    .offset(y: appear ? 0 : 18)
+                    .offset(y: appear ? 0 : 16)
+
+                    FinishStatStrip(
+                        placeLabel: "P\(place)/\(field)",
+                        timeLabel: formatRaceTime(lastTime),
+                        timeCaption: flow.activeGameMode == .courier ? "ROUTE" : "TIME",
+                        grade: finishGrade,
+                        accent: heroAccent
+                    )
+                    .padding(.horizontal, 18)
+                    .opacity(appear ? 1 : 0)
+                    .offset(y: appear ? 0 : 22)
+
                     if let reward = flow.lastRaceReward {
-                        KRCDesign.Panel {
-                            VStack(spacing: 8) {
-                                KRCDesign.SectionLabel(text: "REWARDS")
-                                Text("+\(reward.total) CR")
-                                    .font(.system(size: 30, weight: .black, design: .rounded))
-                                    .foregroundStyle(KRCDesign.gold)
-                                VStack(spacing: 4) {
-                                    rewardLine(
-                                        flow.activeGameMode == .courier ? "Shift pay" : "Race purse",
-                                        reward.base
-                                    )
-                                    if reward.position > 0 { rewardLine("Position", reward.position) }
-                                    if reward.heatBonus > 0 {
-                                        rewardLine(
-                                            flow.activeGameMode == .policeChase
-                                                ? "Busts"
-                                                : (flow.activeGameMode == .courier ? "Deliveries" : "Heat survival"),
-                                            reward.heatBonus
-                                        )
-                                    }
-                                    if reward.daily > 0 { rewardLine("Daily challenge", reward.daily) }
-                                    if reward.ticketFines > 0 {
-                                        rewardLine("Speeding tickets", reward.ticketFines)
-                                    }
-                                    if reward.arcade > 0 {
-                                        rewardLine(
-                                            flow.activeGameMode == .courier ? "Courier bonus" : "Arcade bonus",
-                                            reward.arcade
-                                        )
-                                    }
-                                    if reward.damagePenalty > 0 {
-                                        rewardLine("Damage", -reward.damagePenalty)
-                                    }
-                                    if reward.career > 0 { rewardLine("Career mission", reward.career) }
-                                }
-                                if !reward.ticketLines.isEmpty {
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        KRCDesign.SectionLabel(text: "CITATIONS")
-                                        ForEach(reward.ticketLines, id: \.self) { line in
-                                            Text(line)
-                                                .font(.caption2.weight(.semibold).monospacedDigit())
-                                                .foregroundStyle(.white.opacity(0.88))
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.top, 6)
-                                }
-                                if let unlocked = reward.unlockedCarName {
-                                    Text("Unlocked \(unlocked)")
-                                        .font(.caption.weight(.bold))
-                                        .foregroundStyle(KRCDesign.neonCyan)
-                                        .padding(.top, 4)
-                                }
-                                if let symbol = reward.stickerSymbol, let title = reward.stickerTitle {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: symbol)
-                                            .foregroundStyle(KRCDesign.gold)
-                                        Text(reward.lootHeadline ?? "New sticker: \(title)")
-                                            .font(.caption.weight(.bold))
-                                            .foregroundStyle(.white)
-                                    }
-                                    .padding(.top, 6)
-                                }
-                                if let ghost = reward.houseGhostLine {
-                                    Text(ghost)
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(KRCDesign.neonCyan)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.top, 2)
-                                }
-                                HStack(spacing: 10) {
-                                    Label("\(progress.lifetimeCrystals)", systemImage: "diamond.fill")
-                                    Label("\(progress.trophyWins)", systemImage: "trophy.fill")
-                                }
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(KRCDesign.gold)
-                                .padding(.top, 4)
-                                if !progress.trophyStickers.isEmpty {
-                                    HStack(spacing: 6) {
-                                        ForEach(progress.trophyStickers) { sticker in
-                                            Image(systemName: sticker.symbolName)
-                                                .font(.system(size: 12, weight: .bold))
-                                                .foregroundStyle(Color(uiColor: sticker.tint))
-                                        }
-                                    }
-                                    .padding(.top, 4)
-                                }
-                                if let teaser = nextUnlockTeaser {
-                                    Text(teaser)
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(.white.opacity(0.8))
-                                        .padding(.top, 2)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 24)
+                        finishRewardsPanel(reward)
+                            .padding(.horizontal, 18)
+                            .opacity(showRewards ? 1 : 0)
+                            .offset(y: showRewards ? 0 : 24)
                     }
+
                     if KRCPlayerProfile.onlinePlayEnabled {
-                        if let live = online.lastLiveResult, live.humanCount > 1 {
-                            KRCDesign.Panel {
-                                VStack(spacing: 6) {
-                                    KRCDesign.SectionLabel(text: "LIVE LOBBY")
-                                    Text("P\(live.humanPosition)/\(live.humanCount)")
-                                        .font(.system(size: 32, weight: .black, design: .rounded))
-                                        .foregroundStyle(KRCDesign.neonCyan)
-                                    Text(live.players.map(\.name).joined(separator: " · "))
-                                        .font(.caption2.weight(.semibold))
-                                        .foregroundStyle(.white.opacity(0.75))
-                                        .multilineTextAlignment(.center)
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
-                            .padding(.horizontal, 24)
-                        }
-                        if let rank = online.lastSubmittedRank {
-                            KRCDesign.Panel {
-                                VStack(spacing: 6) {
-                                    KRCDesign.SectionLabel(text: "GLOBAL TRACK RANK")
-                                    Text("P\(rank)")
-                                        .font(.system(size: 32, weight: .black, design: .rounded))
-                                        .foregroundStyle(KRCDesign.gold)
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
-                            .padding(.horizontal, 24)
-                        }
-                        if !online.scoreboardMessage.isEmpty {
-                            Text(online.scoreboardMessage)
-                                .font(.caption)
-                                .foregroundStyle(KRCDesign.mutedText)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 28)
-                        }
-                        GlobalLeaderboardView()
-                            .padding(.horizontal, 20)
+                        onlineBlocks
                     }
-                    if GameCenterService.shared.canRematchFriends {
-                        KRCDesign.PrimaryButton(title: "RACE FRIENDS AGAIN") {
-                            flow.beginQuickRace()
-                        }
-                        .padding(.horizontal, 32)
-                    }
-                    if flow.activeGameMode == .championshipSerie,
-                       flow.champRoundsCompleted < GameCatalog.activeChampionshipRounds.count {
-                        let next = GameCatalog.activeChampionshipRounds[flow.champRoundsCompleted]
-                        KRCDesign.Panel {
-                            VStack(spacing: 8) {
-                                KRCDesign.SectionLabel(text: "NEXT ROUND")
-                                Text("\(next.name) · \(GameCatalog.activeTracks[next.trackIndex].name)")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.white)
-                                    .multilineTextAlignment(.center)
-                                Text("\(next.laps) laps")
-                                    .font(.caption)
-                                    .foregroundStyle(KRCDesign.mutedText)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 24)
-                        KRCDesign.PrimaryButton(title: "NEXT ROUND") {
-                            flow.continueChampionship()
-                        }
-                        .padding(.horizontal, 32)
-                    } else if !progress.careerComplete {
-                        KRCDesign.PrimaryButton(title: "CONTINUE CAREER") {
-                            flow.beginCareerMode(progress: progress)
-                        }
-                        .padding(.horizontal, 32)
-                        KRCDesign.SecondaryButton(title: "MAIN MENU") {
-                            flow.openMainMenu()
-                        }
-                        .padding(.top, 4)
-                    } else if !GameCenterService.shared.canRematchFriends {
-                        KRCDesign.PrimaryButton(title: "RACE AGAIN") {
-                            flow.beginQuickRace()
-                        }
-                        .padding(.horizontal, 32)
-                        KRCDesign.SecondaryButton(title: "MAIN MENU") {
-                            flow.openMainMenu()
-                        }
-                        .padding(.top, 4)
-                    } else {
-                        KRCDesign.SecondaryButton(title: "MAIN MENU") {
-                            flow.openMainMenu()
-                        }
-                        .padding(.top, 4)
-                    }
+
+                    finishActionButtons
+                        .padding(.top, 6)
+                        .opacity(showRewards ? 1 : 0)
                 }
-                .padding(.vertical, 32)
-                .padding(.horizontal, 16)
+                .padding(.vertical, 28)
+                .padding(.horizontal, 14)
             }
         }
         .onAppear {
             KRCTutorial.markGuidedComplete()
             KRCMusicDirector.shared.play(.victory)
-            KRCRaceAnnouncer.shared.finished(place: flow.lastFinishPlace, racerCount: max(1, flow.lastRacerCount))
+            KRCRaceAnnouncer.shared.finished(place: place, racerCount: field)
+            let total = flow.lastRaceReward?.total ?? 0
             if KRCAccessibility.reduceMotion {
                 appear = true
+                showRewards = true
+                displayedCredits = total
             } else {
-                withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
+                withAnimation(.spring(response: 0.58, dampingFraction: 0.76)) {
                     appear = true
                 }
+                withAnimation(.spring(response: 0.62, dampingFraction: 0.82).delay(0.22)) {
+                    showRewards = true
+                }
+                animateCreditCount(to: total)
             }
             if KRCAudioPreferences.hapticsEnabled {
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                let kind: UINotificationFeedbackGenerator.FeedbackType =
+                    isWin ? .success : (isPodium ? .success : .warning)
+                UINotificationFeedbackGenerator().notificationOccurred(kind)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var onlineBlocks: some View {
+        if let live = online.lastLiveResult, live.humanCount > 1 {
+            KRCDesign.Panel {
+                VStack(spacing: 6) {
+                    KRCDesign.SectionLabel(text: "LIVE LOBBY")
+                    Text("P\(live.humanPosition)/\(live.humanCount)")
+                        .font(.system(size: 32, weight: .black, design: .rounded))
+                        .foregroundStyle(KRCDesign.neonCyan)
+                    Text(live.players.map(\.name).joined(separator: " · "))
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.75))
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 4)
+        }
+        if let rank = online.lastSubmittedRank {
+            KRCDesign.Panel {
+                VStack(spacing: 6) {
+                    KRCDesign.SectionLabel(text: "GLOBAL TRACK RANK")
+                    Text("P\(rank)")
+                        .font(.system(size: 32, weight: .black, design: .rounded))
+                        .foregroundStyle(KRCDesign.gold)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 4)
+        }
+        if !online.scoreboardMessage.isEmpty {
+            Text(online.scoreboardMessage)
+                .font(.caption)
+                .foregroundStyle(KRCDesign.mutedText)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 14)
+        }
+        GlobalLeaderboardView()
+            .padding(.horizontal, 2)
+    }
+
+    @ViewBuilder
+    private var finishActionButtons: some View {
+        if GameCenterService.shared.canRematchFriends {
+            KRCDesign.PrimaryButton(title: "RACE FRIENDS AGAIN") {
+                flow.beginQuickRace()
+            }
+            .padding(.horizontal, 18)
+        }
+        if flow.activeGameMode == .championshipSerie,
+           flow.champRoundsCompleted < GameCatalog.activeChampionshipRounds.count {
+            let next = GameCatalog.activeChampionshipRounds[flow.champRoundsCompleted]
+            KRCDesign.Panel {
+                VStack(spacing: 8) {
+                    KRCDesign.SectionLabel(text: "NEXT ROUND")
+                    Text("\(next.name) · \(GameCatalog.activeTracks[next.trackIndex].name)")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                    Text("\(next.laps) laps")
+                        .font(.caption)
+                        .foregroundStyle(KRCDesign.mutedText)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 4)
+            KRCDesign.PrimaryButton(title: "NEXT ROUND") {
+                flow.continueChampionship()
+            }
+            .padding(.horizontal, 18)
+        } else if !progress.careerComplete {
+            KRCDesign.PrimaryButton(title: "CONTINUE CAREER") {
+                flow.beginCareerMode(progress: progress)
+            }
+            .padding(.horizontal, 18)
+            KRCDesign.SecondaryButton(title: "MAIN MENU") {
+                flow.openMainMenu()
+            }
+            .padding(.top, 2)
+        } else if !GameCenterService.shared.canRematchFriends {
+            KRCDesign.PrimaryButton(title: "RACE AGAIN") {
+                flow.beginQuickRace()
+            }
+            .padding(.horizontal, 18)
+            KRCDesign.SecondaryButton(title: "MAIN MENU") {
+                flow.openMainMenu()
+            }
+            .padding(.top, 2)
+        } else {
+            KRCDesign.SecondaryButton(title: "MAIN MENU") {
+                flow.openMainMenu()
+            }
+            .padding(.top, 2)
+        }
+    }
+
+    private func finishRewardsPanel(_ reward: GameFlowState.RaceRewardSummary) -> some View {
+        VStack(spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 4) {
+                    KRCDesign.SectionLabel(text: "REWARDS")
+                    Text("+\(displayedCredits) KR")
+                        .font(.system(size: 34, weight: .black, design: .rounded))
+                        .foregroundStyle(KRCDesign.gold)
+                        .shadow(color: KRCDesign.gold.opacity(0.3), radius: 8)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    Label("\(progress.lifetimeCrystals)", systemImage: "diamond.fill")
+                    Label("\(progress.trophyWins)", systemImage: "trophy.fill")
+                }
+                .font(.caption.weight(.bold))
+                .foregroundStyle(KRCDesign.gold)
+            }
+
+            VStack(spacing: 5) {
+                rewardLine(
+                    flow.activeGameMode == .courier ? "Shift pay" : "Race purse",
+                    reward.base
+                )
+                if reward.position > 0 { rewardLine("Position", reward.position) }
+                if reward.heatBonus > 0 {
+                    rewardLine(
+                        flow.activeGameMode == .policeChase
+                            ? "Busts"
+                            : (flow.activeGameMode == .courier ? "Deliveries" : "Heat survival"),
+                        reward.heatBonus
+                    )
+                }
+                if reward.daily > 0 { rewardLine("Daily challenge", reward.daily) }
+                if reward.ticketFines > 0 {
+                    rewardLine("Speeding tickets", reward.ticketFines)
+                }
+                if reward.arcade > 0 {
+                    rewardLine(
+                        flow.activeGameMode == .courier ? "Courier bonus" : "Arcade bonus",
+                        reward.arcade
+                    )
+                }
+                if reward.damagePenalty > 0 {
+                    rewardLine("Damage", -reward.damagePenalty)
+                }
+                if reward.career > 0 { rewardLine("Career mission", reward.career) }
+            }
+
+            if !reward.ticketLines.isEmpty {
+                VStack(alignment: .leading, spacing: 3) {
+                    KRCDesign.SectionLabel(text: "CITATIONS")
+                    ForEach(reward.ticketLines, id: \.self) { line in
+                        Text(line)
+                            .font(.caption2.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(.white.opacity(0.88))
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 2)
+            }
+
+            if let unlocked = reward.unlockedCarName {
+                FinishLootChip(
+                    icon: "car.fill",
+                    text: "Unlocked \(unlocked)",
+                    tint: KRCDesign.neonCyan
+                )
+            }
+            if let symbol = reward.stickerSymbol, let title = reward.stickerTitle {
+                FinishLootChip(
+                    icon: symbol,
+                    text: reward.lootHeadline ?? "New sticker: \(title)",
+                    tint: KRCDesign.gold
+                )
+            }
+            if let ghost = reward.houseGhostLine {
+                Text(ghost)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(KRCDesign.neonCyan)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+            }
+
+            if !progress.trophyStickers.isEmpty {
+                HStack(spacing: 7) {
+                    ForEach(progress.trophyStickers) { sticker in
+                        Image(systemName: sticker.symbolName)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(Color(uiColor: sticker.tint))
+                    }
+                }
+                .padding(.top, 2)
+            }
+
+            if let teaser = nextUnlockTeaser {
+                Text(teaser)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.black.opacity(0.52))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [heroAccent.opacity(0.7), KRCDesign.neonCyan.opacity(0.28)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.4
+                        )
+                )
+                .shadow(color: heroAccent.opacity(0.14), radius: 14, y: 4)
         }
     }
 
@@ -2527,46 +2685,259 @@ struct RaceFinishedScreen: View {
                 .foregroundStyle(amount >= 0 ? .white.opacity(0.9) : Color.red.opacity(0.85))
         }
     }
+
+    private func animateCreditCount(to total: Int64) {
+        displayedCredits = 0
+        guard total > 0 else { return }
+        let steps = 18
+        let stepTime = 0.028
+        for i in 1...steps {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.28 + Double(i) * stepTime) {
+                let t = Double(i) / Double(steps)
+                let eased = 1 - pow(1 - t, 3)
+                withAnimation(.easeOut(duration: 0.05)) {
+                    displayedCredits = Int64(Double(total) * eased)
+                }
+                if i == steps { displayedCredits = total }
+            }
+        }
+    }
+}
+
+private struct FinishCheckeredRibbon: View {
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<18, id: \.self) { i in
+                Rectangle()
+                    .fill(i % 2 == 0 ? Color.white.opacity(0.92) : Color.black.opacity(0.88))
+            }
+        }
+        .frame(height: 10)
+        .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .strokeBorder(KRCDesign.gold.opacity(0.55), lineWidth: 1)
+        )
+        .shadow(color: KRCDesign.gold.opacity(0.25), radius: 6)
+        .padding(.horizontal, 8)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct FinishPlaceMedal: View {
+    let place: Int
+    let symbol: String
+    let accent: Color
+    let appear: Bool
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [accent.opacity(0.35), accent.opacity(0.05), .clear],
+                        center: .center,
+                        startRadius: 8,
+                        endRadius: 70
+                    )
+                )
+                .frame(width: 140, height: 140)
+            Circle()
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [accent, accent.opacity(0.25)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 3
+                )
+                .frame(width: 88, height: 88)
+                .background(
+                    Circle()
+                        .fill(Color.black.opacity(0.55))
+                )
+            VStack(spacing: 2) {
+                Image(systemName: symbol)
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(accent)
+                    .shadow(color: accent.opacity(0.5), radius: 8)
+                Text(place == 1 ? "1ST" : (place == 2 ? "2ND" : (place == 3 ? "3RD" : "P\(place)")))
+                    .font(.system(size: 13, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+            }
+        }
+        .scaleEffect(appear ? 1 : 0.55)
+        .opacity(appear ? 1 : 0)
+        .rotation3DEffect(.degrees(appear ? 0 : -18), axis: (x: 1, y: 0, z: 0))
+    }
+}
+
+private struct FinishStatStrip: View {
+    let placeLabel: String
+    let timeLabel: String
+    let timeCaption: String
+    let grade: String
+    let accent: Color
+
+    var body: some View {
+        HStack(spacing: 0) {
+            finishStatCell(caption: "PLACE", value: placeLabel, tint: accent)
+            Rectangle()
+                .fill(Color.white.opacity(0.12))
+                .frame(width: 1, height: 44)
+            finishStatCell(caption: timeCaption, value: timeLabel, tint: .white)
+            Rectangle()
+                .fill(Color.white.opacity(0.12))
+                .frame(width: 1, height: 44)
+            finishStatCell(caption: "GRADE", value: grade, tint: KRCDesign.gold)
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 6)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.black.opacity(0.5))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [accent.opacity(0.65), KRCDesign.neonCyan.opacity(0.3)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            lineWidth: 1.3
+                        )
+                )
+        }
+    }
+
+    private func finishStatCell(caption: String, value: String, tint: Color) -> some View {
+        VStack(spacing: 5) {
+            Text(caption)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(KRCDesign.mutedText)
+            Text(value)
+                .font(.system(size: 22, weight: .black, design: .rounded))
+                .foregroundStyle(tint)
+                .minimumScaleFactor(0.65)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+private struct FinishLootChip: View {
+    let icon: String
+    let text: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .foregroundStyle(tint)
+            Text(text)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.leading)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(tint.opacity(0.12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(tint.opacity(0.35), lineWidth: 1)
+                )
+        )
+    }
 }
 
 struct ChampCompleteScreen: View {
     @ObservedObject var flow: GameFlowState
     let totalTime: TimeInterval
+    @State private var appear = false
 
     var body: some View {
         ZStack {
             KRCDesign.MenuBackdrop()
-            Color.black.opacity(0.65).ignoresSafeArea()
-            VStack(spacing: 22) {
-                Spacer(minLength: 24)
-                Image(systemName: "trophy.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [KRCDesign.gold, KRCDesign.hotOrange],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
+            LinearGradient(
+                colors: [Color.black.opacity(0.4), Color.black.opacity(0.82)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            RadialGradient(
+                colors: [KRCDesign.gold.opacity(0.22), .clear],
+                center: .top,
+                startRadius: 10,
+                endRadius: 300
+            )
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
+            VStack(spacing: 20) {
+                Spacer(minLength: 20)
+                FinishCheckeredRibbon()
+                    .padding(.horizontal, 24)
+                    .opacity(appear ? 1 : 0)
+                ZStack {
+                    KidPodiumBurst(active: appear && !KRCAccessibility.reduceMotion, accent: KRCDesign.gold)
+                    FinishPlaceMedal(
+                        place: 1,
+                        symbol: "trophy.fill",
+                        accent: KRCDesign.gold,
+                        appear: appear || KRCAccessibility.reduceMotion
                     )
-                    .shadow(color: KRCDesign.gold.opacity(0.55), radius: 16)
-                KRCDesign.ScreenHeader(
-                    title: "CHAMPIONSHIP COMPLETE",
-                    subtitle: "Total time · \(GameCatalog.activeChampionshipRounds.count) rounds"
-                )
-                KRCDesign.HighlightStatCard(
-                    label: "SERIES TIME",
-                    value: formatRaceTime(totalTime),
-                    accent: KRCDesign.neonCyan
+                }
+                .frame(height: 120)
+                VStack(spacing: 8) {
+                    Text("CHAMPION")
+                        .font(.system(size: 34, weight: .black, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.white, KRCDesign.gold, KRCDesign.hotOrange],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .shadow(color: KRCDesign.gold.opacity(0.45), radius: 14)
+                    Text("\(GameCatalog.activeChampionshipRounds.count) rounds complete")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(KRCDesign.subtitleGold)
+                }
+                .opacity(appear ? 1 : 0)
+                FinishStatStrip(
+                    placeLabel: "SERIES",
+                    timeLabel: formatRaceTime(totalTime),
+                    timeCaption: "TOTAL",
+                    grade: "S",
+                    accent: KRCDesign.gold
                 )
                 .padding(.horizontal, 28)
+                .opacity(appear ? 1 : 0)
                 Spacer()
                 KRCDesign.PrimaryButton(title: "MAIN MENU") {
                     flow.openMainMenu()
                 }
                 .padding(.horizontal, 40)
                 .padding(.bottom, 28)
+                .opacity(appear ? 1 : 0)
             }
             .padding(.bottom, 16)
+        }
+        .onAppear {
+            KRCMusicDirector.shared.play(.victory)
+            if KRCAccessibility.reduceMotion {
+                appear = true
+            } else {
+                withAnimation(.spring(response: 0.58, dampingFraction: 0.78)) {
+                    appear = true
+                }
+            }
+            if KRCAudioPreferences.hapticsEnabled {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            }
         }
     }
 }
@@ -2751,20 +3122,24 @@ private struct KidTrophyAlbumSheet: View {
 /// Quick podium sparkle burst on the results screen.
 private struct KidPodiumBurst: View {
     let active: Bool
+    var accent: Color = KRCDesign.gold
 
     var body: some View {
         ZStack {
-            ForEach(0..<10, id: \.self) { i in
-                Image(systemName: "star.fill")
-                    .font(.system(size: CGFloat(8 + (i % 4) * 3), weight: .bold))
-                    .foregroundStyle(i % 3 == 0 ? KRCDesign.gold : KRCDesign.neonCyan)
+            ForEach(0..<14, id: \.self) { i in
+                let angle = Double(i) / 14.0 * .pi * 2
+                let radius: CGFloat = active ? CGFloat(38 + (i % 4) * 10) : 0
+                Image(systemName: i % 2 == 0 ? "star.fill" : "sparkle")
+                    .font(.system(size: CGFloat(7 + (i % 4) * 3), weight: .bold))
+                    .foregroundStyle(i % 3 == 0 ? accent : KRCDesign.neonCyan)
                     .offset(
-                        x: active ? CGFloat((i % 5) * 18 - 36) : 0,
-                        y: active ? CGFloat((i % 3) * 14 - 20) : 0
+                        x: CGFloat(cos(angle)) * radius,
+                        y: CGFloat(sin(angle)) * radius - (active ? 6 : 0)
                     )
-                    .opacity(active ? 0.9 : 0)
+                    .opacity(active ? 0.95 : 0)
+                    .scaleEffect(active ? 1 : 0.2)
                     .animation(
-                        .spring(response: 0.55, dampingFraction: 0.62).delay(Double(i) * 0.03),
+                        .spring(response: 0.55, dampingFraction: 0.58).delay(Double(i) * 0.025),
                         value: active
                     )
             }

@@ -20,6 +20,8 @@ final class RaceOpponentController {
         var brakeGlow: Float = 0
         var finished = false
         var busted = false
+        /// Lower = earlier finish. nil while still racing.
+        var finishRank: Int? = nil
     }
 
     struct SpeedingTicket: Equatable, Identifiable {
@@ -377,7 +379,12 @@ final class RaceOpponentController {
             let currNorm = ai.trackT.truncatingRemainder(dividingBy: 1)
             if prevNorm > 0.88 && currNorm < 0.12 {
                 ai.lap += 1
-                if !fleeMode, ai.lap > lapGoal { ai.finished = true }
+                if !fleeMode, ai.lap > lapGoal {
+                    ai.finished = true
+                    if ai.finishRank == nil {
+                        ai.finishRank = nextFinishRank()
+                    }
+                }
             }
 
             opponents[i] = ai
@@ -531,10 +538,20 @@ final class RaceOpponentController {
         ai.trackT = t
     }
 
+    private func nextFinishRank() -> Int {
+        1 + opponents.filter { $0.finishRank != nil }.count
+    }
+
+    /// Live standings: finished cars keep their place; unfinished sort by race progress.
     func playerPosition(playerLap: Int, playerTrackT: Float) -> Int {
         let playerProg = raceProgress(lap: playerLap, t: playerTrackT.truncatingRemainder(dividingBy: 1))
         var ahead = 0
-        for ai in opponents where !ai.finished {
+        for ai in opponents where !ai.busted {
+            if ai.finished {
+                // Already took the flag — always counts as ahead of a still-racing player.
+                ahead += 1
+                continue
+            }
             if raceProgress(lap: ai.lap, t: ai.trackT.truncatingRemainder(dividingBy: 1)) > playerProg {
                 ahead += 1
             }
@@ -542,7 +559,10 @@ final class RaceOpponentController {
         return 1 + ahead
     }
 
-    var activeRacerCount: Int { 1 + opponents.filter { !$0.finished }.count }
+    /// Full grid size (player + non-busted opponents). Stays stable as cars finish.
+    var fieldSize: Int { 1 + opponents.filter { !$0.busted }.count }
+
+    var activeRacerCount: Int { fieldSize }
 
     /// True once the player and every active opponent have crossed the start line on lap 1.
     func allGridCarsPastStartLine(playerLap: Int, playerTrackT: Float) -> Bool {

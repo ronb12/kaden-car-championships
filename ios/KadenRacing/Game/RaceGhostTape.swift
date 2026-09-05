@@ -81,33 +81,47 @@ final class RaceGhostController {
         ghostNode?.removeFromParentNode()
         ghostNode = nil
         playback = tape
-        guard tape != nil else { return }
+        guard let tape else { return }
 
         let root = SCNNode()
         root.name = "krcHouseGhost"
-        root.opacity = 0.48
-        #if targetEnvironment(simulator)
-        let body = SCNBox(width: 1.7, height: 0.55, length: 3.6, chamferRadius: 0.08)
-        let mat = SCNMaterial()
-        mat.lightingModel = .constant
-        mat.diffuse.contents = bodyColor.withAlphaComponent(0.85)
-        mat.emission.contents = UIColor(red: 0.35, green: 0.85, blue: 1, alpha: 0.55)
-        body.materials = [mat]
-        root.geometry = body
-        #else
-        let shell = SCNBox(width: 1.65, height: 0.5, length: 3.5, chamferRadius: 0.1)
-        let mat = SCNMaterial()
-        mat.lightingModel = .constant
-        mat.diffuse.contents = bodyColor.withAlphaComponent(0.7)
-        mat.emission.contents = UIColor(red: 0.2, green: 0.75, blue: 1, alpha: 0.45)
-        mat.transparency = 0.55
-        shell.materials = [mat]
-        let shellNode = SCNNode(geometry: shell)
-        shellNode.position.y = 0.35
-        root.addChildNode(shellNode)
-        #endif
+        // Real car mesh — the old SCNBox read as a literal box racing the field.
+        let carId = tape.carId.isEmpty ? "f40" : tape.carId
+        let category = GameCatalog.vehicleCategory(for: carId)
+        RaceCarGeometry.build(
+            root: root,
+            bodyColor: bodyColor,
+            carId: carId,
+            scale: 0.94,
+            isPlayer: false,
+            category: category,
+            applyLivery: false,
+            lod: .opponent
+        )
+        applyGhostLook(to: root, tint: bodyColor)
         parent.addChildNode(root)
         ghostNode = root
+    }
+
+    /// Translucent cyan wash so the ghost reads as a pace car, not another solid rival.
+    private func applyGhostLook(to root: SCNNode, tint: UIColor) {
+        root.opacity = 0.52
+        root.castsShadow = false
+        root.enumerateHierarchy { node, _ in
+            node.castsShadow = false
+            node.opacity = min(node.opacity, 0.55)
+            guard let mats = node.geometry?.materials else { return }
+            for mat in mats {
+                mat.lightingModel = .constant
+                mat.transparency = 0.48
+                mat.blendMode = .alpha
+                mat.writesToDepthBuffer = false
+                if mat.diffuse.contents is UIColor || mat.diffuse.contents == nil {
+                    mat.diffuse.contents = tint.withAlphaComponent(0.72)
+                }
+                mat.emission.contents = UIColor(red: 0.25, green: 0.85, blue: 1.0, alpha: 0.4)
+            }
+        }
     }
 
     func record(
