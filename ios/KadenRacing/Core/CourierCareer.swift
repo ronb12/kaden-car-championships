@@ -138,30 +138,57 @@ enum CourierPackageKind: String, CaseIterable, Identifiable, Equatable {
     }
 }
 
-enum CourierShiftGrade: String, Equatable {
-    case s = "S"
-    case a = "A"
-    case b = "B"
-    case c = "C"
-    case d = "D"
+/// Customer-style shift rating (1–5★), like real courier apps.
+enum CourierShiftGrade: Int, Equatable, Comparable {
+    case one = 1
+    case two = 2
+    case three = 3
+    case four = 4
+    case five = 5
+
+    var stars: Int { rawValue }
 
     var bonusMul: Float {
         switch self {
-        case .s: return 1.35
-        case .a: return 1.2
-        case .b: return 1.08
-        case .c: return 1.0
-        case .d: return 0.9
+        case .five: return 1.35
+        case .four: return 1.2
+        case .three: return 1.08
+        case .two: return 1.0
+        case .one: return 0.9
         }
     }
 
-    var title: String {
+    /// Compact strip value, e.g. "★★★★☆".
+    var glyph: String {
+        String(repeating: "★", count: stars) + String(repeating: "☆", count: 5 - stars)
+    }
+
+    /// Short label for medals / toasts.
+    var shortLabel: String { "\(stars)★" }
+
+    var blurb: String {
         switch self {
-        case .s: return "S — LEGENDARY"
-        case .a: return "A — EXCELLENT"
-        case .b: return "B — SOLID"
-        case .c: return "C — OK"
-        case .d: return "D — ROUGH"
+        case .five: return "LEGENDARY"
+        case .four: return "EXCELLENT"
+        case .three: return "SOLID"
+        case .two: return "OKAY"
+        case .one: return "ROUGH"
+        }
+    }
+
+    var title: String { "\(glyph) · \(blurb)" }
+
+    static func < (lhs: CourierShiftGrade, rhs: CourierShiftGrade) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+
+    static func fromScore(_ score: Int) -> CourierShiftGrade {
+        switch score {
+        case 95...: return .five
+        case 80..<95: return .four
+        case 62..<80: return .three
+        case 45..<62: return .two
+        default: return .one
         }
     }
 }

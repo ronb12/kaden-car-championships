@@ -44,7 +44,7 @@ enum GameModeKind: String, Codable, CaseIterable, Identifiable, Hashable {
         case .timeTrial: return "Pure pace · minimal traffic"
         case .ghostDuel: return "Race your PB ghost + pace cars"
         case .career: return "Structured progression"
-        case .courier: return "2–3 packages · follow the arrow"
+        case .courier: return "3 packages · pick a job · follow the road"
         }
     }
 

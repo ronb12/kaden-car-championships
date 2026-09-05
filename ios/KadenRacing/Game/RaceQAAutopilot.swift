@@ -1,4 +1,5 @@
 import Foundation
+import SceneKit
 import simd
 
 #if DEBUG
@@ -13,6 +14,9 @@ enum RaceQAAutopilot {
     private static var raceTime: Float = 0
     /// Preferred lateral offset on the racing line (weaves / apex cuts).
     private static var lineBias: Float = 0
+    private static var tipPhase: Int = 0
+    private static var tipPhaseTimer: Float = 0
+    private static var tipLogged = false
 
     static func reset() {
         smoothedSteer = 0
@@ -20,10 +24,25 @@ enum RaceQAAutopilot {
         hasDrivenT = false
         raceTime = 0
         lineBias = 0
+        tipPhase = 0
+        tipPhaseTimer = 0
+        tipLogged = false
+    }
+
+    /// `-qaNitroTest` — drive + engage N2O for a few seconds so we can confirm boost/drain.
+    static var nitroTest: Bool {
+        ProcessInfo.processInfo.arguments.contains("-qaNitroTest")
+    }
+
+    /// `-qaCourierTip` — snap through one real pickup→drop to verify Customer Tip Moments.
+    static var tipProbe: Bool {
+        ProcessInfo.processInfo.arguments.contains("-qaCourierTip")
     }
 
     /// **Off by default.** Autopilot runs ONLY when explicitly opted in:
     /// - launch argument `-qaDrive`, or
+    /// - launch argument `-qaNitroTest`, or
+    /// - launch argument `-qaCourierTip`, or
     /// - environment `RACE_QA_DRIVE=1` (and not a sticky env on other `-qa*` launches)
     ///
     /// Normal play, Quick Race, `-qaRace`, and `-qaTapTest -qaRace` are always manual.
@@ -34,7 +53,9 @@ enum RaceQAAutopilot {
 
         let args = ProcessInfo.processInfo.arguments
         // Exact arg only — never treat `-qaRace` / `-qaTapTest` as drive.
-        if args.contains("-qaDrive") { return true }
+        if args.contains("-qaDrive") || args.contains("-qaNitroTest") || args.contains("-qaCourierTip") {
+            return true
+        }
 
         if env == "1" {
             // Sticky simctl `setenv RACE_QA_DRIVE=1` must not auto-drive `-qaRace` sessions.
@@ -99,17 +120,12 @@ enum RaceQAAutopilot {
         // Distant preview is informational only — never primary aim/brake trigger.
         let farCorner = curvature(at: tNorm, span: 0.04)
 
-        // Late turn-in: aim at *current* tangent. Only a tiny nose-ahead blend once the
-        // corner is under the car — never steer toward a bend that is still far ahead.
-        let lookaheadT = imminentCorner > 0.1
-            ? (0.003 + imminentCorner * 0.006)
-            : 0.002
+        // Aim further into bends so QA doesn't plow straight off the outside.
+        let lookaheadT = 0.008 + imminentCorner * 0.018 + entryCorner * 0.01
         let lookT = (tNorm + lookaheadT).truncatingRemainder(dividingBy: 1)
         let lookTan = track.tangent(lookT)
         let lookHeading = atan2(lookTan.x, lookTan.z)
-        let previewBlend = imminentCorner > 0.14
-            ? min(0.28, imminentCorner * 0.55)
-            : 0
+        let previewBlend = min(0.55, 0.16 + imminentCorner * 1.1 + entryCorner * 0.35)
         var aimHeading = trackHeading
         if previewBlend > 0 {
             var dh = lookHeading - trackHeading
@@ -152,22 +168,29 @@ enum RaceQAAutopilot {
             smoothedSteer = 0
         }
 
-        // Follow track heading; lane-center only when scraping. Dead-zone tiny heading errors.
-        let steerGain = 0.85 + imminentCorner * 0.7
+        // Follow track heading + lane center. Strong turn-in — Harbor Loop was running wide.
+        let steerGain = 1.55 + imminentCorner * 1.4
         var steerAim = max(-1, min(1, headingErr * steerGain))
-        if abs(headingErr) < 0.04 { steerAim = 0 }
-        let centerGain = 0.55 + wallPressure * 1.1
+        if abs(headingErr) < 0.015 { steerAim = 0 }
+        let centerGain = 1.05 + wallPressure * 1.2
         let steerCenter = max(-1, min(1, -latErr * centerGain))
-        let centerBlend = wallPressure > 0.05
-            ? min(0.75, 0.25 + wallPressure * 0.55)
-            : (imminentCorner > 0.18 ? 0.15 : 0.08)
+        let centerBlend = wallPressure > 0.04
+            ? min(0.85, 0.32 + wallPressure * 0.55)
+            : (imminentCorner > 0.1 ? 0.34 : 0.16)
         var steerTarget = max(-1, min(1, steerAim * (1 - centerBlend) + steerCenter * centerBlend))
-        // Hard gate: on a straight with a corner still ahead, keep hands nearly straight.
-        if imminentCorner < 0.1 && entryCorner < 0.16 {
-            steerTarget *= 0.2
-            if abs(latErr) < 0.4 { steerTarget = max(-0.15, min(0.15, steerTarget)) }
+        // Bias toward the inside of the bend (cross of forward × look).
+        if imminentCorner > 0.08 || entryCorner > 0.12 {
+            let a = trackForward
+            let b = simd_normalize(SIMD2<Float>(lookTan.x, lookTan.z))
+            let cross = a.x * b.y - a.y * b.x
+            let insideSign: Float = cross >= 0 ? -1 : 1
+            steerTarget = max(-1, min(1, steerTarget + insideSign * min(0.35, imminentCorner * 0.9 + entryCorner * 0.45)))
         }
-        let steerAlpha = min(1, dt * (3.6 + imminentCorner * 3))
+        // Only freeze hands on a true straight — never into an approaching bend.
+        if imminentCorner < 0.045, entryCorner < 0.08, abs(latErr) < 0.2 {
+            steerTarget = max(-0.1, min(0.1, steerTarget * 0.3))
+        }
+        let steerAlpha = min(1, dt * (6.5 + imminentCorner * 5.5))
         smoothedSteer += (steerTarget - smoothedSteer) * steerAlpha
         input.steer = smoothedSteer
         input.left = false
@@ -216,13 +239,214 @@ enum RaceQAAutopilot {
         }
         input.handbrake = false
         input.handbrakeAmount = 0
-        input.nitro = false
+        // Nitro probe: keep road steering (above). Hold N2O; trail-brake into real corners.
+        if nitroTest, raceTime > 2.0, raceTime < 7.0 {
+            input.nitro = true
+            if brakeForCorner {
+                input.gas = imminentCorner < 0.22
+                input.throttle = imminentCorner < 0.22 ? 0.45 : 0
+            } else {
+                input.gas = true
+                input.throttle = 1
+                input.brake = false
+                input.brakeAmount = 0
+            }
+            if state.speed < maxSpeed * 0.4 {
+                state.speed = max(state.speed, maxSpeed * 0.42)
+            }
+        } else {
+            input.nitro = false
+        }
         _ = farCorner
 
         if state.speed < maxSpeed * 0.12 {
             let crawl = maxSpeed * 0.22
             if state.speed < crawl {
                 state.speed += (crawl - state.speed) * min(1, dt * 1.8)
+            }
+        }
+    }
+
+    /// Pull toward the active courier pad / dwell when `-qaDrive` is running a courier shift.
+    static func applyCourierSeek(
+        input: RaceInput,
+        state: inout OpenWorldDrivingSimulation.State,
+        bearing: Float,
+        distance: Float,
+        inZone: Bool,
+        carrying: Bool,
+        reverseHint: Bool,
+        dt: Float
+    ) {
+        guard distance > 0.5 || inZone else { return }
+
+        if inZone {
+            // Stop in the bay; reverse briefly for reverse-park bonus when dropping.
+            input.gas = false
+            input.throttle = 0
+            input.brake = true
+            input.brakeAmount = 0.95
+            input.nitro = false
+            if reverseHint, carrying {
+                input.reverse = true
+                input.brake = false
+                input.brakeAmount = 0
+                input.gas = true
+                input.throttle = 0.35
+                state.speed = min(state.speed, 4)
+            } else {
+                input.reverse = false
+                state.speed *= max(0, 1 - dt * 4)
+            }
+            return
+        }
+
+        // Blend toward pad when off the racing line (pads sit outside the apron).
+        var headingErr = bearing
+        let pi = Float.pi
+        while headingErr > pi { headingErr -= 2 * pi }
+        while headingErr < -pi { headingErr += 2 * pi }
+        let pull: Float
+        if distance < 55 {
+            pull = 0.85
+        } else if distance < 120 {
+            pull = 0.55
+        } else {
+            pull = 0.28
+        }
+        let padSteer = max(Float(-1), min(Float(1), headingErr * 1.35))
+        let steerBlend = min(Float(1), dt * (4 + pull * 4))
+        smoothedSteer += (padSteer - smoothedSteer) * steerBlend
+        let mixed = input.steer * (1 - pull) + smoothedSteer * pull
+        input.steer = max(Float(-1), min(Float(1), mixed))
+
+        if distance < 28 {
+            input.gas = true
+            input.throttle = 0.42
+            let slowing = state.speed > 14
+            input.brake = slowing
+            input.brakeAmount = slowing ? 0.45 : 0
+            input.nitro = false
+        } else if distance < 70 {
+            input.gas = true
+            input.throttle = 0.7
+            input.brake = false
+            input.brakeAmount = 0
+        }
+    }
+
+    /// Teleport / drive inputs for the tip probe (call BEFORE courier.update).
+    static func applyCourierTipProbe(
+        input: RaceInput,
+        state: inout OpenWorldDrivingSimulation.State,
+        carNode: SCNNode?,
+        pad: (x: Float, z: Float, y: Float)?,
+        carrying: Bool,
+        deliveries: Int,
+        tipsEarned: Int64,
+        lastTip: Int64,
+        tipFlash: Float,
+        inZone: Bool,
+        dt: Float
+    ) {
+        guard tipProbe else { return }
+        tipPhaseTimer += dt
+        input.nitro = false
+        input.steer = 0
+        input.left = false
+        input.right = false
+        _ = carrying
+        _ = deliveries
+        _ = tipsEarned
+        _ = lastTip
+        _ = tipFlash
+        _ = inZone
+
+        if tipPhase == 0 {
+            guard let pad else { return }
+            state.worldX = pad.x
+            state.worldZ = pad.z
+            state.speed = 0
+            input.gas = false
+            input.throttle = 0
+            input.brake = true
+            input.brakeAmount = 1
+            input.reverse = false
+            carNode?.position.y = pad.y + 0.35
+            return
+        }
+
+        if tipPhase == 1 {
+            state.worldX += 28 * dt
+            state.worldZ += 18 * dt
+            state.speed = 10
+            input.gas = true
+            input.throttle = 0.5
+            input.brake = false
+            input.brakeAmount = 0
+            input.reverse = false
+            return
+        }
+
+        if tipPhase == 2 {
+            guard let pad else { return }
+            state.worldX = pad.x
+            state.worldZ = pad.z
+            state.speed = -2.2
+            input.gas = true
+            input.throttle = 0.35
+            input.brake = false
+            input.brakeAmount = 0
+            input.reverse = true
+            carNode?.position.y = pad.y + 0.35
+            return
+        }
+
+        // tipPhase 3 — hold for screenshot
+        state.speed = 0
+        input.gas = false
+        input.throttle = 0
+        input.brake = true
+        input.brakeAmount = 1
+        input.reverse = false
+    }
+
+    /// Advance tip-probe phases using the snapshot AFTER courier.update.
+    static func advanceCourierTipProbe(
+        carrying: Bool,
+        deliveries: Int,
+        tipsEarned: Int64,
+        lastTip: Int64,
+        tipFlash: Float,
+        dt: Float
+    ) {
+        guard tipProbe else { return }
+        if tipPhase == 0, carrying {
+            tipPhase = 1
+            tipPhaseTimer = 0
+            print("[QATip] loaded — clearing grace")
+            return
+        }
+        if tipPhase == 1, tipPhaseTimer >= 1.2 {
+            tipPhase = 2
+            tipPhaseTimer = 0
+            print("[QATip] rolling to drop")
+            return
+        }
+        if tipPhase == 2, deliveries >= 1 || (lastTip > 0 && tipFlash > 0.2) {
+            tipPhase = 3
+            tipPhaseTimer = 0
+            print("[QATip] drop complete tipsEarned=\(tipsEarned) lastTip=\(lastTip) flash=\(tipFlash)")
+            return
+        }
+        if tipPhase == 3 {
+            tipPhaseTimer += dt
+            if !tipLogged, tipsEarned > 0, lastTip > 0 {
+                tipLogged = true
+                print("[QATip] PASS customer tip moment tipsTotal=\(tipsEarned) last=+\(lastTip)")
+            } else if !tipLogged, tipPhaseTimer > 4, tipsEarned == 0 {
+                tipLogged = true
+                print("[QATip] FAIL no tip credited after drop")
             }
         }
     }

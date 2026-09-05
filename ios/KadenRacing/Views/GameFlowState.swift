@@ -26,6 +26,18 @@ final class GameFlowState: ObservableObject {
         var ticketLines: [String]
         var unlockedCarName: String?
         var courierGrade: String?
+        /// Filled stars 1–5 for courier rating UI.
+        var courierStars: Int?
+        /// Compact glyph e.g. "★★★★☆".
+        var courierGradeGlyph: String?
+        var courierDeliveries: Int?
+        var courierGoal: Int?
+        var courierSuccess: Bool?
+        var courierLadderLine: String?
+        var courierMaxStreak: Int?
+        var courierRivalSteals: Int?
+        var courierTimeLeft: TimeInterval?
+        var courierTipsEarned: Int64?
         var lootHeadline: String?
         var stickerSymbol: String?
         var stickerTitle: String?
@@ -217,8 +229,7 @@ final class GameFlowState: ObservableObject {
         champRoundsCompleted = 0
         champAccumulatedTime = 0
         lapCount = GameModeKind.courier.defaultLaps()
-        selectedCarIndex = 0
-        selectedTrackIndex = 0
+        // Keep player's garage/track choice — don't force starter car/track.
         // Night license ranks get night suggested for premium rates.
         if let progress, progress.courierRank.nightLicense {
             nightRace = true
@@ -385,6 +396,14 @@ final class GameFlowState: ObservableObject {
         ticketLines: [String] = [],
         crystalsCollected: Int = 0,
         courierGrade: String? = nil,
+        courierStars: Int? = nil,
+        courierGradeGlyph: String? = nil,
+        courierGoal: Int? = nil,
+        courierSuccess: Bool? = nil,
+        courierMaxStreak: Int? = nil,
+        courierRivalSteals: Int? = nil,
+        courierTimeLeft: TimeInterval? = nil,
+        courierTipsEarned: Int64? = nil,
         houseGhostDelta: TimeInterval? = nil,
         hadHouseGhost: Bool = false,
         progress: PlayerProgressStore
@@ -442,9 +461,13 @@ final class GameFlowState: ObservableObject {
             }
         }
 
+        var courierLadderLine: String?
         if activeGameMode == .courier {
             if let van = progress.registerCourierShift(deliveries: pursuitBusts) {
                 unlockedName = unlockedName ?? van
+                courierLadderLine = "Unlocked \(van)"
+            } else {
+                courierLadderLine = progress.courierRankSubtitle
             }
         }
 
@@ -477,6 +500,16 @@ final class GameFlowState: ObservableObject {
             ticketLines: activeGameMode == .policeChase ? ticketLines : [],
             unlockedCarName: unlockedName,
             courierGrade: activeGameMode == .courier ? courierGrade : nil,
+            courierStars: activeGameMode == .courier ? courierStars : nil,
+            courierGradeGlyph: activeGameMode == .courier ? courierGradeGlyph : nil,
+            courierDeliveries: activeGameMode == .courier ? pursuitBusts : nil,
+            courierGoal: activeGameMode == .courier ? courierGoal : nil,
+            courierSuccess: activeGameMode == .courier ? courierSuccess : nil,
+            courierLadderLine: courierLadderLine,
+            courierMaxStreak: activeGameMode == .courier ? courierMaxStreak : nil,
+            courierRivalSteals: activeGameMode == .courier ? courierRivalSteals : nil,
+            courierTimeLeft: activeGameMode == .courier ? courierTimeLeft : nil,
+            courierTipsEarned: activeGameMode == .courier ? courierTipsEarned : nil,
             lootHeadline: loot.headline,
             stickerSymbol: loot.sticker.symbolName,
             stickerTitle: loot.sticker.title,
@@ -586,6 +619,50 @@ final class GameFlowState: ObservableObject {
         if args.contains("-qaPolice") {
             beginPoliceChase()
             screen = .racing
+            return
+        }
+        if args.contains("-qaCourier") || args.contains("-qaCourierTip") {
+            beginCourier(progress: progress)
+            if args.contains("-qaNight") {
+                nightRace = true
+            }
+            screen = .racing
+            return
+        }
+        if args.contains("-qaCourierFinish") {
+            beginCourier(progress: progress)
+            lastFinishPlace = 1
+            lastRacerCount = 1
+            lastRaceReward = RaceRewardSummary(
+                base: 420,
+                position: 0,
+                heatBonus: 160,
+                daily: 0,
+                arcade: 90,
+                career: 0,
+                ticketFines: 0,
+                damagePenalty: 0,
+                grantedPurse: 670,
+                ticketLines: [],
+                unlockedCarName: nil,
+                courierGrade: "★★★★☆ · EXCELLENT",
+                courierStars: 4,
+                courierGradeGlyph: "★★★★☆",
+                courierDeliveries: 2,
+                courierGoal: 3,
+                courierSuccess: false,
+                courierLadderLine: progress.courierRankSubtitle,
+                courierMaxStreak: 2,
+                courierRivalSteals: 0,
+                courierTimeLeft: 18,
+                courierTipsEarned: 214,
+                lootHeadline: nil,
+                stickerSymbol: nil,
+                stickerTitle: nil,
+                houseGhostLine: nil,
+                celebratePodium: false
+            )
+            screen = .raceFinished(elapsed: 101.4)
             return
         }
         if args.contains("-qaEndless") {

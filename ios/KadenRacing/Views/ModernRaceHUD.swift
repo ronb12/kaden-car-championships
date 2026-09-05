@@ -54,6 +54,12 @@ struct ModernRaceHUD: View {
     var courierCargoHeld: Int = 0
     var courierCargoCapacity: Int = 1
     var courierNightPremium: Bool = false
+    var courierCoachHint: String = ""
+    var courierReverseParkHint: Bool = false
+    var courierTipsEarned: Int64 = 0
+    var courierLastTipAmount: Int64 = 0
+    var courierLastTipStars: Int = 0
+    var courierTipFlash: Float = 0
     /// First-race declutter — hide arcade chip clutter so core meters read instantly.
     var decluttered: Bool = false
     @ViewBuilder var pauseControl: () -> AnyView
@@ -289,7 +295,28 @@ struct ModernRaceHUD: View {
                             }
                     }
                 }
-                if !objectiveLabel.isEmpty {
+                if courierTipFlash > 0.05, courierLastTipAmount > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(Color(red: 1, green: 0.35, blue: 0.55))
+                        Text("TIP +\(courierLastTipAmount)")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .foregroundStyle(KRCDesign.gold)
+                        Text(String(repeating: "★", count: max(1, min(5, courierLastTipStars))))
+                            .font(.system(size: 9, weight: .heavy))
+                            .foregroundStyle(KRCDesign.gold)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(Color.black.opacity(0.5)))
+                    .opacity(Double(min(1, courierTipFlash)))
+                } else if !courierCoachHint.isEmpty {
+                    Text(courierCoachHint)
+                        .font(.system(size: 9, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(courierReverseParkHint ? KRCDesign.neonCyan : KRCDesign.gold)
+                        .lineLimit(1)
+                } else if !objectiveLabel.isEmpty {
                     Text(objectiveLabel)
                         .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.9))
@@ -297,7 +324,9 @@ struct ModernRaceHUD: View {
                 }
                 if courierInZone {
                     HStack(spacing: 4) {
-                        Text(courierCarrying ? "HOLD TO DROP" : "HOLD TO LOAD")
+                        Text(courierCarrying
+                             ? (courierReverseParkHint ? "REVERSE + HOLD" : "HOLD TO DROP")
+                             : "HOLD TO LOAD")
                             .font(.system(size: 8, weight: .heavy, design: .monospaced))
                             .foregroundStyle(KRCDesign.gold)
                         Capsule()
@@ -314,23 +343,48 @@ struct ModernRaceHUD: View {
 
             Spacer(minLength: 0)
 
-            VStack(alignment: .trailing, spacing: 2) {
-                Text("+\(courierEarned)")
-                    .font(.system(size: 12, weight: .black, design: .rounded))
-                    .foregroundStyle(KRCDesign.gold)
-                if courierNextPayout > 0 {
-                    Text("NEXT \(courierNextPayout)")
-                        .font(.system(size: 8, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.7))
+            // Demote earnings while driving; promote dwell / next stop in the strip.
+            if courierInZone || courierAwaitingBoard {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("+\(courierEarned)")
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .foregroundStyle(KRCDesign.gold)
+                    if courierTipsEarned > 0 {
+                        Text("TIPS \(courierTipsEarned)")
+                            .font(.system(size: 8, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color(red: 1, green: 0.45, blue: 0.65))
+                    } else if courierNextPayout > 0 {
+                        Text("NEXT \(courierNextPayout)")
+                            .font(.system(size: 8, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
                 }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.42)))
+            } else if courierTipFlash > 0.05, courierLastTipAmount > 0 {
+                Text("+\(courierLastTipAmount) tip")
+                    .font(.system(size: 11, weight: .black, design: .rounded))
+                    .foregroundStyle(KRCDesign.gold)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.5)))
+            } else if courierNextPayout > 0 {
+                Text("→\(courierNextPayout)")
+                    .font(.system(size: 10, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.42)))
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
         .background(RoundedRectangle(cornerRadius: 12).fill(Color.black.opacity(0.32)))
+    }
+
+    /// Board open / not mid-route — show full earnings chip.
+    private var courierAwaitingBoard: Bool {
+        !courierCarrying && courierCargoHeld == 0 && courierDistance < 0.5
     }
 
     private func chip(icon: String, text: String, color: Color) -> some View {

@@ -1722,6 +1722,30 @@ struct ActiveRaceScreen: View {
                                 courierGrade: session.engine.isCourierRun()
                                     ? session.engine.courierShiftGrade
                                     : nil,
+                                courierStars: session.engine.isCourierRun()
+                                    ? session.engine.courierGradeStars
+                                    : nil,
+                                courierGradeGlyph: session.engine.isCourierRun()
+                                    ? session.engine.courierGradeGlyph
+                                    : nil,
+                                courierGoal: session.engine.isCourierRun()
+                                    ? session.engine.courierGoal
+                                    : nil,
+                                courierSuccess: session.engine.isCourierRun()
+                                    ? session.engine.courierShiftSuccess
+                                    : nil,
+                                courierMaxStreak: session.engine.isCourierRun()
+                                    ? session.engine.courierMaxStreak
+                                    : nil,
+                                courierRivalSteals: session.engine.isCourierRun()
+                                    ? session.engine.courierRivalSteals
+                                    : nil,
+                                courierTimeLeft: session.engine.isCourierRun()
+                                    ? session.engine.courierTimeRemaining
+                                    : nil,
+                                courierTipsEarned: session.engine.isCourierRun()
+                                    ? session.engine.courierTipsEarned
+                                    : nil,
                                 houseGhostDelta: session.engine.houseGhostDelta,
                                 hadHouseGhost: session.engine.hadHouseGhost,
                                 progress: progress
@@ -1905,11 +1929,13 @@ struct ActiveRaceScreen: View {
                         .frame(width: geo.size.width, height: geo.size.height)
                         .ignoresSafeArea()
                         .zIndex(10)
-                        .allowsHitTesting(true)
+                        // Full-screen pedals steal taps from the dispatch board — disable while choosing.
+                        .allowsHitTesting(!session.engine.courierAwaitingJobChoice)
                     if ControlPreferences.scheme == .wheel {
                         SteeringWheelControl(input: session.input)
                             .frame(width: geo.size.width, height: geo.size.height)
                             .ignoresSafeArea()
+                            .allowsHitTesting(!session.engine.courierAwaitingJobChoice)
                     }
                 }
                 if VehicleDrivingPreferences.isManualTransmission {
@@ -1921,14 +1947,16 @@ struct ActiveRaceScreen: View {
                     .frame(width: geo.size.width, height: geo.size.height)
                     .ignoresSafeArea()
                     .zIndex(11)
-                    .allowsHitTesting(true)
+                    .allowsHitTesting(!session.engine.courierAwaitingJobChoice)
                 }
                 if session.engine.isCourierRun(),
                    session.engine.courierAwaitingJobChoice,
                    !session.engine.courierCarrying,
-                   session.engine.courierCargoHeld == 0 {
+                   session.engine.courierCargoHeld == 0,
+                   !session.engine.courierJobOffers.isEmpty {
                     courierJobPicker
                         .zIndex(40)
+                        .allowsHitTesting(true)
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
@@ -2143,6 +2171,12 @@ struct ActiveRaceScreen: View {
                 courierCargoHeld: session.engine.courierCargoHeld,
                 courierCargoCapacity: session.engine.courierCargoCapacity,
                 courierNightPremium: session.engine.courierNightPremium,
+                courierCoachHint: session.engine.courierCoachHint,
+                courierReverseParkHint: session.engine.courierReverseParkHint,
+                courierTipsEarned: session.engine.courierTipsEarned,
+                courierLastTipAmount: session.engine.courierLastTipAmount,
+                courierLastTipStars: session.engine.courierLastTipStars,
+                courierTipFlash: session.engine.courierTipFlash,
                 decluttered: KRCTutorial.shouldDeclutterHUD
             ) {
                 AnyView(Group {
@@ -2258,7 +2292,15 @@ struct RaceFinishedScreen: View {
     private var isPodium: Bool { place <= 3 && flow.activeGameMode != .courier }
 
     private var finishGrade: String {
-        if let g = flow.lastRaceReward?.courierGrade, !g.isEmpty { return g }
+        if flow.activeGameMode == .courier {
+            if let glyph = flow.lastRaceReward?.courierGradeGlyph, !glyph.isEmpty {
+                return glyph
+            }
+            if let stars = flow.lastRaceReward?.courierStars, (1...5).contains(stars) {
+                return String(repeating: "★", count: stars) + String(repeating: "☆", count: 5 - stars)
+            }
+            return "★★☆☆☆"
+        }
         switch place {
         case 1: return "S"
         case 2: return "A"
@@ -2268,9 +2310,34 @@ struct RaceFinishedScreen: View {
         }
     }
 
+    private var courierStarCount: Int {
+        if let stars = flow.lastRaceReward?.courierStars, (1...5).contains(stars) {
+            return stars
+        }
+        // Fallback: count filled stars in glyph.
+        let glyph = flow.lastRaceReward?.courierGradeGlyph ?? finishGrade
+        return max(1, min(5, glyph.filter { $0 == "★" }.count))
+    }
+
+    private var courierDeliveriesLabel: String {
+        let done = flow.lastRaceReward?.courierDeliveries ?? 0
+        let goal = flow.lastRaceReward?.courierGoal ?? 3
+        return "\(done)/\(goal)"
+    }
+
+    private var isCourierClear: Bool {
+        guard flow.activeGameMode == .courier else { return false }
+        if let ok = flow.lastRaceReward?.courierSuccess { return ok }
+        return courierStarCount >= 4
+    }
+
     private var heroTitle: String {
         if flow.activeGameMode == .courier {
-            return finishGrade == "S" || finishGrade == "A" ? "SHIFT CLEAR" : "SHIFT DONE"
+            if isCourierClear { return "SHIFT CLEAR" }
+            let done = flow.lastRaceReward?.courierDeliveries ?? 0
+            let goal = flow.lastRaceReward?.courierGoal ?? 3
+            if done > 0 && done < goal { return "SHIFT CUT SHORT" }
+            return "SHIFT DONE"
         }
         if flow.activeGameMode == .policeChase {
             return isWin ? "ALL BUSTED" : "SHIFT OVER"
@@ -2285,7 +2352,16 @@ struct RaceFinishedScreen: View {
 
     private var heroSubtitle: String {
         if flow.activeGameMode == .courier {
-            return flow.venueDisplayName()
+            let done = flow.lastRaceReward?.courierDeliveries ?? 0
+            let goal = flow.lastRaceReward?.courierGoal ?? 3
+            let gradeTitle = flow.lastRaceReward?.courierGrade ?? finishGrade
+            if isCourierClear {
+                return "\(done)/\(goal) delivered · \(gradeTitle)"
+            }
+            if done > 0 {
+                return "\(done)/\(goal) packages · \(gradeTitle)"
+            }
+            return "No drops · \(gradeTitle) · \(flow.venueDisplayName())"
         }
         switch place {
         case 1: return "First across the line · \(flow.venueDisplayName())"
@@ -2296,6 +2372,15 @@ struct RaceFinishedScreen: View {
     }
 
     private var heroAccent: Color {
+        if flow.activeGameMode == .courier {
+            switch courierStarCount {
+            case 5: return KRCDesign.gold
+            case 4: return Color(red: 0.45, green: 0.95, blue: 0.55)
+            case 3: return KRCDesign.neonCyan
+            case 2: return Color(white: 0.78)
+            default: return Color(red: 0.95, green: 0.45, blue: 0.35)
+            }
+        }
         switch place {
         case 1: return KRCDesign.gold
         case 2: return Color(white: 0.86)
@@ -2368,7 +2453,10 @@ struct RaceFinishedScreen: View {
                             place: place,
                             symbol: heroSymbol,
                             accent: heroAccent,
-                            appear: appear || KRCAccessibility.reduceMotion
+                            appear: appear || KRCAccessibility.reduceMotion,
+                            captionOverride: flow.activeGameMode == .courier
+                                ? "\(courierStarCount)★"
+                                : nil
                         )
                     }
                     .frame(height: 118)
@@ -2401,15 +2489,25 @@ struct RaceFinishedScreen: View {
                     .offset(y: appear ? 0 : 16)
 
                     FinishStatStrip(
-                        placeLabel: "P\(place)/\(field)",
+                        placeLabel: flow.activeGameMode == .courier
+                            ? courierDeliveriesLabel
+                            : "P\(place)/\(field)",
+                        placeCaption: flow.activeGameMode == .courier ? "DROPS" : "PLACE",
                         timeLabel: formatRaceTime(lastTime),
                         timeCaption: flow.activeGameMode == .courier ? "ROUTE" : "TIME",
                         grade: finishGrade,
+                        gradeCaption: flow.activeGameMode == .courier ? "RATING" : "GRADE",
                         accent: heroAccent
                     )
                     .padding(.horizontal, 18)
                     .opacity(appear ? 1 : 0)
                     .offset(y: appear ? 0 : 22)
+
+                    if flow.activeGameMode == .courier, let reward = flow.lastRaceReward {
+                        courierShiftExtras(reward)
+                            .padding(.horizontal, 18)
+                            .opacity(appear ? 1 : 0)
+                    }
 
                     if let reward = flow.lastRaceReward {
                         finishRewardsPanel(reward)
@@ -2550,6 +2648,44 @@ struct RaceFinishedScreen: View {
             }
             .padding(.top, 2)
         }
+    }
+
+    private func courierShiftExtras(_ reward: GameFlowState.RaceRewardSummary) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            KRCDesign.SectionLabel(text: "CUSTOMER RATING")
+            CourierStarRatingRow(stars: courierStarCount, accent: heroAccent)
+            if let blurb = reward.courierGrade?.components(separatedBy: " · ").last, !blurb.isEmpty {
+                Text(blurb)
+                    .font(.caption.weight(.heavy))
+                    .foregroundStyle(heroAccent)
+            }
+            if let tips = reward.courierTipsEarned, tips > 0 {
+                FinishLootChip(
+                    icon: "heart.fill",
+                    text: "Customer tips +\(tips) KR",
+                    tint: Color(red: 1, green: 0.4, blue: 0.55)
+                )
+            }
+            HStack(spacing: 10) {
+                if let streak = reward.courierMaxStreak, streak > 1 {
+                    FinishLootChip(icon: "flame.fill", text: "Streak \(streak)×", tint: KRCDesign.hotOrange)
+                }
+                if let steals = reward.courierRivalSteals, steals > 0 {
+                    FinishLootChip(icon: "exclamationmark.triangle.fill", text: "\(steals) stolen", tint: .red)
+                }
+                if let left = reward.courierTimeLeft, left > 0.5 {
+                    FinishLootChip(
+                        icon: "timer",
+                        text: "+\(Int(left.rounded()))s left",
+                        tint: KRCDesign.neonCyan
+                    )
+                }
+            }
+            if let ladder = reward.courierLadderLine, !ladder.isEmpty {
+                FinishLootChip(icon: "arrow.up.forward.circle.fill", text: ladder, tint: KRCDesign.gold)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func finishRewardsPanel(_ reward: GameFlowState.RaceRewardSummary) -> some View {
@@ -2729,6 +2865,7 @@ private struct FinishPlaceMedal: View {
     let symbol: String
     let accent: Color
     let appear: Bool
+    var captionOverride: String? = nil
 
     var body: some View {
         ZStack {
@@ -2761,7 +2898,7 @@ private struct FinishPlaceMedal: View {
                     .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(accent)
                     .shadow(color: accent.opacity(0.5), radius: 8)
-                Text(place == 1 ? "1ST" : (place == 2 ? "2ND" : (place == 3 ? "3RD" : "P\(place)")))
+                Text(captionOverride ?? (place == 1 ? "1ST" : (place == 2 ? "2ND" : (place == 3 ? "3RD" : "P\(place)"))))
                     .font(.system(size: 13, weight: .black, design: .rounded))
                     .foregroundStyle(.white)
             }
@@ -2774,14 +2911,16 @@ private struct FinishPlaceMedal: View {
 
 private struct FinishStatStrip: View {
     let placeLabel: String
+    var placeCaption: String = "PLACE"
     let timeLabel: String
     let timeCaption: String
     let grade: String
+    var gradeCaption: String = "GRADE"
     let accent: Color
 
     var body: some View {
         HStack(spacing: 0) {
-            finishStatCell(caption: "PLACE", value: placeLabel, tint: accent)
+            finishStatCell(caption: placeCaption, value: placeLabel, tint: accent)
             Rectangle()
                 .fill(Color.white.opacity(0.12))
                 .frame(width: 1, height: 44)
@@ -2789,7 +2928,7 @@ private struct FinishStatStrip: View {
             Rectangle()
                 .fill(Color.white.opacity(0.12))
                 .frame(width: 1, height: 44)
-            finishStatCell(caption: "GRADE", value: grade, tint: KRCDesign.gold)
+            finishStatCell(caption: gradeCaption, value: grade, tint: KRCDesign.gold)
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 6)
@@ -2816,12 +2955,34 @@ private struct FinishStatStrip: View {
                 .font(.system(size: 10, weight: .bold, design: .rounded))
                 .foregroundStyle(KRCDesign.mutedText)
             Text(value)
-                .font(.system(size: 22, weight: .black, design: .rounded))
+                .font(.system(size: caption == "RATING" ? 15 : 22, weight: .black, design: .rounded))
                 .foregroundStyle(tint)
-                .minimumScaleFactor(0.65)
+                .minimumScaleFactor(0.55)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+private struct CourierStarRatingRow: View {
+    let stars: Int
+    let accent: Color
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(1...5, id: \.self) { i in
+                Image(systemName: i <= stars ? "star.fill" : "star")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(i <= stars ? accent : Color.white.opacity(0.28))
+                    .shadow(color: i <= stars ? accent.opacity(0.45) : .clear, radius: 6)
+            }
+            Text("\(max(1, min(5, stars)))/5")
+                .font(.system(size: 16, weight: .black, design: .rounded))
+                .foregroundStyle(.white.opacity(0.9))
+                .padding(.leading, 4)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Customer rating \(max(1, min(5, stars))) out of 5 stars")
     }
 }
 

@@ -17,14 +17,14 @@ final class CourierDeliverySystem {
 
     struct Snapshot {
         var deliveriesComplete: Int = 0
-        var deliveryGoal: Int = 6
+        var deliveryGoal: Int = 3
         var carryingPackage: Bool = false
         var cargoHeld: Int = 0
         var cargoCapacity: Int = 1
         var objectiveLabel: String = ""
         var objectiveProgress: Float = 0
         var objectiveComplete: Bool = false
-        var timeRemaining: TimeInterval = 210
+        var timeRemaining: TimeInterval = 120
         var earnedCredits: Int64 = 0
         var nextPayout: Int64 = 0
         var streak: Int = 0
@@ -43,11 +43,28 @@ final class CourierDeliverySystem {
         /// True while a pickup/drop route is locked — UI must never show the board.
         var routeLocked: Bool = false
         var jobOffers: [JobOffer] = []
-        var shiftGrade: CourierShiftGrade = .c
+        var shiftGrade: CourierShiftGrade = .two
         var gradeLabel: String = ""
+        /// Filled stars 1–5 for finish UI / rating checks.
+        var gradeStars: Int = 2
+        /// Compact glyph e.g. "★★☆☆☆".
+        var gradeGlyph: String = "★★☆☆☆"
         var toast: String?
         var sessionFinished: Bool = false
         var success: Bool = false
+        var rivalApproaching: Bool = false
+        var coachHint: String = ""
+        var maxStreak: Int = 0
+        var rivalSteals: Int = 0
+        var perfectStops: Int = 0
+        /// Tips earned this shift (separate from base payout — the real-app dopamine loop).
+        var tipsEarned: Int64 = 0
+        /// Most recent customer tip amount (0 when idle).
+        var lastTipAmount: Int64 = 0
+        /// Stars the last customer left (1–5).
+        var lastTipStars: Int = 0
+        /// Seconds remaining to show the tip flash on the HUD.
+        var tipFlashRemaining: Float = 0
     }
 
     private struct Zone {
@@ -69,6 +86,10 @@ final class CourierDeliverySystem {
         var basePayout: Int64
         var kind: CourierPackageKind
         var completed: Bool = false
+        /// Shift clock when the package was loaded (for tip speed scoring).
+        var pickedAt: TimeInterval = 0
+        /// Crashes while this package was aboard.
+        var carryImpacts: Int = 0
     }
 
     /// Hard route phases — dispatch board is only legal in `choosing`.
@@ -93,10 +114,10 @@ final class CourierDeliverySystem {
     private var lastDeliveryElapsed: TimeInterval = -999
     private var toast: String?
     private var toastTimer: Float = 0
-    private var timeLimit: TimeInterval = 210
+    private var timeLimit: TimeInterval = 120
     private var elapsed: TimeInterval = 0
     private var finished = false
-    private var goal = 6
+    private var goal = 3
     private var packageNode: SCNNode?
     private var navArrow: SCNNode?
     private var gpsRoot: SCNNode?
@@ -104,6 +125,7 @@ final class CourierDeliverySystem {
     private var rivalProgress: Float = 0
     private var approachAnnounced = false
     private var zoneEnterAnnounced = false
+    private var rivalWarned = false
     private var animTime: Float = 0
     private var perfectStop = false
     private var reversePark = false
@@ -112,12 +134,18 @@ final class CourierDeliverySystem {
     private var perfectStops = 0
     private var reverseParks = 0
     private var rivalSteals = 0
+    private var tipsEarned: Int64 = 0
+    private var lastTipAmount: Int64 = 0
+    private var lastTipStars: Int = 0
+    private var tipFlashRemaining: Float = 0
     private var offers: [JobOffer] = []
     private var offerPoolIndex: [Int: Int] = [:]
     private var nextOfferId = 1
     private var nextJobId = 1
     private var careerMul: Float = 1
     private var cargoCapacity = 1
+    /// FIFO stack of loaded job ids — capacity > 1 can hold several packages.
+    private var heldJobIds: [Int] = []
     private var nightPremium = false
     private var nightMul: Float = 1
     private var rng = SeededRandom(seed: 0xC0DE51)
@@ -130,9 +158,19 @@ final class CourierDeliverySystem {
     /// Asphalt ribbon sits ~0.12 above the spline — same offset as race collectibles.
     private static let roadSurfaceY: Float = 0.12
     /// No rival / damage / drop until the van has been rolling with cargo this long.
-    private static let carryGrace: Float = 4.0
+    private static var carryGrace: Float {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-qaCourierTip") { return 0.35 }
+        #endif
+        return 4.0
+    }
     /// Drop pad must be this far from the pickup pad center to count.
-    private static let minDropSeparation: Float = 28
+    private static var minDropSeparation: Float {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-qaCourierTip") { return 12 }
+        #endif
+        return 28
+    }
 
     private var activeJobId: Int? {
         switch phase {
@@ -142,13 +180,33 @@ final class CourierDeliverySystem {
     }
 
     private var carrying: Bool {
-        if cargoHeld > 0 { return true }
-        if case .toDrop = phase { return true }
-        return false
+        !heldJobIds.isEmpty || cargoHeld > 0
     }
 
+    #if DEBUG
+    /// Pad the QA tip probe should sit on right now.
+    func debugActivePadWorld() -> (x: Float, z: Float, y: Float)? {
+        lock.lock()
+        defer { lock.unlock() }
+        switch phase {
+        case .toPickup(let id):
+            guard let job = job(id: id) else { return nil }
+            // Tip probe phase 0 needs the pickup; once cargo is aboard prefer the drop.
+            if carrying, let held = primaryHeldJob {
+                return (held.dropoff.worldX, held.dropoff.worldZ, held.dropoff.worldY)
+            }
+            return (job.pickup.worldX, job.pickup.worldZ, job.pickup.worldY)
+        case .toDrop(let id):
+            let j = primaryHeldJob ?? job(id: id)
+            guard let drop = j?.dropoff else { return nil }
+            return (drop.worldX, drop.worldZ, drop.worldY)
+        default:
+            return nil
+        }
+    }
+    #endif
+
     private var routeLocked: Bool {
-        if cargoHeld > 0 { return true }
         switch phase {
         case .toPickup, .toDrop: return true
         case .choosing, .finished: return false
@@ -156,8 +214,8 @@ final class CourierDeliverySystem {
     }
 
     private var awaitingChoice: Bool {
-        if routeLocked { return false }
-        if case .choosing = phase { return !finished }
+        if finished { return false }
+        if case .choosing = phase { return true }
         return false
     }
 
@@ -167,6 +225,12 @@ final class CourierDeliverySystem {
 
     private var activeJob: Job? {
         guard let id = activeJobId else { return nil }
+        return job(id: id)
+    }
+
+    /// Drop target when cargo is aboard — first loaded package (FIFO).
+    private var primaryHeldJob: Job? {
+        guard let id = heldJobIds.first else { return nil }
         return job(id: id)
     }
 
@@ -186,7 +250,7 @@ final class CourierDeliverySystem {
         cargoCapacity: Int = 1,
         nightPremium: Bool = false,
         timeBonus: TimeInterval = 0,
-        autoPickFirst: Bool = true
+        autoPickFirst: Bool = false
     ) {
         detach()
         self.track = track
@@ -201,6 +265,7 @@ final class CourierDeliverySystem {
         self.finished = false
         self.phase = .choosing
         self.cargoHeld = 0
+        self.heldJobIds = []
         self.dwell = 0
         self.dropArmed = false
         self.carryElapsed = 0
@@ -213,10 +278,15 @@ final class CourierDeliverySystem {
         self.perfectStops = 0
         self.reverseParks = 0
         self.rivalSteals = 0
+        self.tipsEarned = 0
+        self.lastTipAmount = 0
+        self.lastTipStars = 0
+        self.tipFlashRemaining = 0
         self.offers = []
         self.offerPoolIndex = [:]
         self.nextJobId = 1
         self.rivalProgress = 0
+        self.rivalWarned = false
         self.rng = SeededRandom(seed: seed == 0 ? 0xC0DE51 : seed)
 
         let root = SCNNode()
@@ -237,6 +307,7 @@ final class CourierDeliverySystem {
                 lateral: pickSide * (RaceTrackMesh.halfWidth + 9 + rng.float(in: 0...7)),
                 color: kind.accentUIColor,
                 label: "PICKUP",
+                kind: kind,
                 active: false
             )
             let dropoff = makeZone(
@@ -244,6 +315,7 @@ final class CourierDeliverySystem {
                 lateral: dropSide * (RaceTrackMesh.halfWidth + 11 + rng.float(in: 0...9)),
                 color: UIColor(red: 0.15, green: 0.95, blue: 0.55, alpha: 1),
                 label: "DROP",
+                kind: kind,
                 active: false
             )
             let dist = hypot(dropoff.worldX - pickup.worldX, dropoff.worldZ - pickup.worldZ)
@@ -270,6 +342,7 @@ final class CourierDeliverySystem {
                 lateral: pickSide * (RaceTrackMesh.halfWidth + 10 + rng.float(in: 0...6)),
                 color: kind.accentUIColor,
                 label: "PICKUP",
+                kind: kind,
                 active: false
             )
             let dropoff = makeZone(
@@ -277,6 +350,7 @@ final class CourierDeliverySystem {
                 lateral: -pickSide * (RaceTrackMesh.halfWidth + 12 + rng.float(in: 0...8)),
                 color: UIColor(red: 0.15, green: 0.95, blue: 0.55, alpha: 1),
                 label: "DROP",
+                kind: kind,
                 active: false
             )
             let dist = hypot(dropoff.worldX - pickup.worldX, dropoff.worldZ - pickup.worldZ)
@@ -313,8 +387,6 @@ final class CourierDeliverySystem {
         if autoPickFirst, let first = offers.first {
             showToast("COURIER\(nightTag) — FOLLOW THE ARROW", duration: 2.0)
             selectOffer(id: first.id)
-        } else {
-            showToast("COURIER DISPATCH\(nightTag) — PICK A JOB", duration: 2.4)
         }
         refreshSnapshot(worldX: 0, worldZ: 0, heading: 0)
     }
@@ -344,6 +416,7 @@ final class CourierDeliverySystem {
         dropArmed = false
         carryElapsed = 0
         cargoHeld = 0
+        heldJobIds = []
     }
 
     /// Player picks a dispatch offer while the shift is paused for choice.
@@ -384,6 +457,11 @@ final class CourierDeliverySystem {
         if case .choosing = phase {
             toastTimer = max(0, toastTimer - dt)
             if toastTimer <= 0 { toast = nil }
+            tipFlashRemaining = max(0, tipFlashRemaining - dt)
+            if tipFlashRemaining <= 0 {
+                lastTipAmount = 0
+                lastTipStars = 0
+            }
             animTime += dt
             pulseActiveZones(dt: dt)
             refreshSnapshot(worldX: worldX, worldZ: worldZ, heading: heading)
@@ -395,6 +473,11 @@ final class CourierDeliverySystem {
         damageCooldown = max(0, damageCooldown - dt)
         toastTimer = max(0, toastTimer - dt)
         if toastTimer <= 0 { toast = nil }
+        tipFlashRemaining = max(0, tipFlashRemaining - dt)
+        if tipFlashRemaining <= 0 {
+            lastTipAmount = 0
+            lastTipStars = 0
+        }
 
         if timeLimit - elapsed <= 0 {
             finishSession(success: false)
@@ -417,6 +500,7 @@ final class CourierDeliverySystem {
                 return
             }
             cargoHeld = 0
+            heldJobIds = []
             detachPackageFromCar()
             dropArmed = false
             presentJobOffers(count: 3, first: false)
@@ -432,8 +516,45 @@ final class CourierDeliverySystem {
         }
         let graceDone = carryElapsed >= Self.carryGrace
 
-        // One job at a time: empty → pickup only; loaded → dropoff only.
-        let target = isCarrying ? job.dropoff : job.pickup
+        // Resolve nav / interaction target. Chain mode (toPickup while carrying) allows
+        // either loading the next pickup or dropping the primary held package.
+        let interactingPickup: Bool
+        let interactJob: Job
+        let target: Zone
+        if case .toPickup = phase {
+            if isCarrying, let held = primaryHeldJob {
+                let pickDist = hypot(job.pickup.worldX - worldX, job.pickup.worldZ - worldZ)
+                let dropDist = hypot(held.dropoff.worldX - worldX, held.dropoff.worldZ - worldZ)
+                let inPick = pickDist < job.pickup.radius
+                let inDrop = dropDist < held.dropoff.radius
+                if inDrop && !inPick {
+                    interactingPickup = false
+                    interactJob = held
+                    target = held.dropoff
+                } else if inPick {
+                    interactingPickup = true
+                    interactJob = job
+                    target = job.pickup
+                } else if dropDist < pickDist {
+                    interactingPickup = false
+                    interactJob = held
+                    target = held.dropoff
+                } else {
+                    interactingPickup = true
+                    interactJob = job
+                    target = job.pickup
+                }
+            } else {
+                interactingPickup = true
+                interactJob = job
+                target = job.pickup
+            }
+        } else {
+            interactingPickup = false
+            interactJob = primaryHeldJob ?? job
+            target = interactJob.dropoff
+        }
+
         let dx = target.worldX - worldX
         let dz = target.worldZ - worldZ
         let dist = hypot(dx, dz)
@@ -442,24 +563,27 @@ final class CourierDeliverySystem {
         while relative > Float.pi { relative -= 2 * Float.pi }
         while relative < -Float.pi { relative += 2 * Float.pi }
 
-        // Arm drop only after leaving the pickup pad (prevents instant "delivered").
-        let distFromPickup = hypot(job.pickup.worldX - worldX, job.pickup.worldZ - worldZ)
-        if isCarrying, !dropArmed {
-            if distFromPickup > job.pickup.radius + 8 {
+        // Arm drop only after leaving the last loaded pickup pad.
+        if isCarrying, !dropArmed, let lastId = heldJobIds.last, let lastJob = self.job(id: lastId) {
+            let distFromLastPickup = hypot(lastJob.pickup.worldX - worldX, lastJob.pickup.worldZ - worldZ)
+            if distFromLastPickup > lastJob.pickup.radius + 8 {
                 dropArmed = true
             }
         }
 
-        let farEnoughFromPickup = distFromPickup > Self.minDropSeparation
-        let inZone = dist < target.radius
-            && (isCarrying ? (dropArmed && graceDone && farEnoughFromPickup) : true)
+        let distFromInteractPickup = hypot(interactJob.pickup.worldX - worldX, interactJob.pickup.worldZ - worldZ)
+        let farEnoughFromPickup = distFromInteractPickup > Self.minDropSeparation
+        let dropGate = dropArmed && graceDone && farEnoughFromPickup
+        let inZone = dist < target.radius && (interactingPickup ? true : dropGate)
         let slowEnough = abs(speed) < 6.2
         let crawl = abs(speed) < 3.2
         let reversing = speed < -0.8
 
         if inZone && !zoneEnterAnnounced {
             zoneEnterAnnounced = true
-            let tip = reversing ? "REVERSE PARK · HOLD" : (isCarrying ? "STOP · HOLD TO DELIVER" : "STOP · HOLD TO LOAD")
+            let tip = reversing
+                ? "REVERSE PARK · HOLD"
+                : (interactingPickup ? "STOP · HOLD TO LOAD" : "STOP · HOLD TO DELIVER")
             showToast(tip, duration: 1.2)
             DispatchQueue.main.async {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.55)
@@ -470,21 +594,25 @@ final class CourierDeliverySystem {
 
         if dist < 55 && !approachAnnounced && !inZone {
             approachAnnounced = true
-            showToast(isCarrying ? "DROP AHEAD" : "PICKUP AHEAD", duration: 1.1)
+            showToast(interactingPickup ? "PICKUP AHEAD" : "DROP AHEAD", duration: 1.1)
         } else if dist > 70 {
             approachAnnounced = false
         }
 
         // Fragile / general cargo damage — never during the post-load grace window.
+        let fragileJob = primaryHeldJob ?? interactJob
         if isCarrying, graceDone, dropArmed, impact > 0.55, damageCooldown <= 0 {
             damageEvents += 1
             damageCooldown = 1.6
             streak = 0
-            if job.kind == .fragile {
-                let lost = Int64(Float(job.basePayout) * 0.45)
+            if let idx = pool.firstIndex(where: { $0.id == fragileJob.id }) {
+                pool[idx].carryImpacts += 1
+            }
+            if fragileJob.kind == .fragile {
+                let lost = Int64(Float(fragileJob.basePayout) * 0.45)
                 earned = max(0, earned - lost)
                 showToast("FRAGILE BROKEN −\(lost) KR", duration: 1.5)
-                clearCargoAndOpenBoard(jobId: job.id, toastAlreadySet: true)
+                clearCargoAndOpenBoard(jobId: fragileJob.id, toastAlreadySet: true)
                 DispatchQueue.main.async {
                     UINotificationFeedbackGenerator().notificationOccurred(.error)
                 }
@@ -501,14 +629,17 @@ final class CourierDeliverySystem {
         }
 
         // Rival only after grace + leaving the pickup — never the instant you load.
+        let rivalDrop = primaryHeldJob?.dropoff ?? interactJob.dropoff
         if isCarrying, graceDone, dropArmed {
-            updateRival(dt: dt, drop: job.dropoff, playerDist: dist)
+            let dropDist = hypot(rivalDrop.worldX - worldX, rivalDrop.worldZ - worldZ)
+            updateRival(dt: dt, drop: rivalDrop, playerDist: dropDist)
             if rivalProgress >= 0.98 {
                 rivalSteals += 1
                 rivalNode?.isHidden = true
                 rivalProgress = 0
+                rivalWarned = false
                 showToast("RIVAL STOLE THE DROP", duration: 1.8)
-                clearCargoAndOpenBoard(jobId: job.id, toastAlreadySet: true)
+                clearCargoAndOpenBoard(jobId: (primaryHeldJob ?? interactJob).id, toastAlreadySet: true)
                 DispatchQueue.main.async {
                     UINotificationFeedbackGenerator().notificationOccurred(.error)
                 }
@@ -517,7 +648,10 @@ final class CourierDeliverySystem {
             }
         } else {
             rivalNode?.isHidden = true
-            if !isCarrying { rivalProgress = 0 }
+            if !isCarrying {
+                rivalProgress = 0
+                rivalWarned = false
+            }
         }
 
         if inZone && slowEnough {
@@ -530,71 +664,11 @@ final class CourierDeliverySystem {
             dwell = min(1, dwell + dt * rate / 0.45)
             if dwell >= 1 {
                 dwell = 0
-                if !isCarrying {
-                    cargoHeld = min(cargoCapacity, max(1, cargoHeld + 1))
-                    dropArmed = false
-                    carryElapsed = 0
-                    offers = []
-                    offerPoolIndex = [:]
-                    setExclusiveRoute(jobId: job.id, pickupActive: false, dropActive: true)
-                    phase = .toDrop(jobId: job.id)
-                    approachAnnounced = false
-                    zoneEnterAnnounced = false
-                    attachPackageToCar(kind: job.kind)
-                    rivalProgress = 0
-                    rivalNode?.isHidden = true
-                    showToast("\(job.kind.title) LOADED — HEAD TO DROP", duration: 1.7)
-                    DispatchQueue.main.async {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    }
-                    let drop = job.dropoff
-                    let ndx = drop.worldX - worldX
-                    let ndz = drop.worldZ - worldZ
-                    let ndist = hypot(ndx, ndz)
-                    var nrel = atan2(ndx, ndz) - heading
-                    while nrel > Float.pi { nrel -= 2 * Float.pi }
-                    while nrel < -Float.pi { nrel += 2 * Float.pi }
-                    updateNavArrow(worldX: worldX, worldZ: worldZ, worldY: worldY, heading: heading, target: drop, relativeBearing: nrel)
-                    updateGPSTrail(fromX: worldX, fromZ: worldZ, fromY: worldY, to: drop)
-                    pulseActiveZones(dt: dt)
-                    refreshSnapshot(
-                        worldX: worldX,
-                        worldZ: worldZ,
-                        heading: heading,
-                        distance: ndist,
-                        bearing: nrel,
-                        inZone: false
-                    )
+                if interactingPickup {
+                    completePickup(job: interactJob, worldX: worldX, worldZ: worldZ, worldY: worldY, heading: heading, dt: dt)
                     return
                 } else {
-                    if perfectStop { perfectStops += 1 }
-                    if reversePark { reverseParks += 1 }
-                    let payout = resolvePayout(base: job.basePayout, kind: job.kind)
-                    deliveriesDone += 1
-                    earned += payout
-                    lastDeliveryElapsed = elapsed
-                    showToast({
-                        let tags = [
-                            reversePark ? "REV PARK" : nil,
-                            streak > 1 ? "\(streak)×" : nil,
-                        ].compactMap { $0 }.joined(separator: " · ")
-                        let suffix = tags.isEmpty ? "" : " · \(tags)"
-                        return "DELIVERED +\(payout) KR\(suffix)"
-                    }(), duration: 1.7)
-                    approachAnnounced = false
-                    zoneEnterAnnounced = false
-                    dropArmed = false
-                    rivalNode?.isHidden = true
-                    rivalProgress = 0
-                    DispatchQueue.main.async {
-                        UINotificationFeedbackGenerator().notificationOccurred(.success)
-                    }
-                    clearCargoAndOpenBoard(jobId: job.id, toastAlreadySet: true, completed: true)
-                    if deliveriesDone >= goal {
-                        finishSession(success: true)
-                        return
-                    }
-                    refreshSnapshot(worldX: worldX, worldZ: worldZ, heading: heading)
+                    completeDrop(job: interactJob, worldX: worldX, worldZ: worldZ, heading: heading)
                     return
                 }
             }
@@ -605,7 +679,7 @@ final class CourierDeliverySystem {
         }
 
         // Rush jobs burn extra clock while carrying.
-        if isCarrying, job.kind == .rush {
+        if isCarrying, (primaryHeldJob ?? interactJob).kind == .rush {
             elapsed += TimeInterval(dt * 0.35)
         }
 
@@ -622,6 +696,213 @@ final class CourierDeliverySystem {
         )
     }
 
+    /// Load a package onto the van — may auto-chain another pickup when capacity remains.
+    private func completePickup(
+        job: Job,
+        worldX: Float,
+        worldZ: Float,
+        worldY: Float,
+        heading: Float,
+        dt: Float
+    ) {
+        if !heldJobIds.contains(job.id) {
+            heldJobIds.append(job.id)
+        }
+        cargoHeld = heldJobIds.count
+        dropArmed = false
+        carryElapsed = 0
+        offers = []
+        offerPoolIndex = [:]
+        approachAnnounced = false
+        zoneEnterAnnounced = false
+        rivalProgress = 0
+        rivalWarned = false
+        rivalNode?.isHidden = true
+        if let idx = pool.firstIndex(where: { $0.id == job.id }) {
+            pool[idx].pickedAt = elapsed
+            pool[idx].carryImpacts = 0
+        }
+        attachPackageToCar(kind: job.kind)
+
+        let canChain = heldJobIds.count < cargoCapacity
+            && deliveriesDone + heldJobIds.count < goal
+        let navTarget: Zone
+        if canChain,
+           let next = nearestUnusedJob(fromX: worldX, fromZ: worldZ, excluding: Set(heldJobIds)),
+           let dropId = heldJobIds.first {
+            setCargoRoute(pickupJobId: next.id, dropJobId: dropId)
+            phase = .toPickup(jobId: next.id)
+            showToast("CARGO \(cargoHeld)/\(cargoCapacity) — LOAD MORE OR DROP", duration: 1.8)
+            // Nav toward closer of next pickup vs primary drop.
+            let pickD = hypot(next.pickup.worldX - worldX, next.pickup.worldZ - worldZ)
+            let dropD = hypot((primaryHeldJob ?? job).dropoff.worldX - worldX,
+                              (primaryHeldJob ?? job).dropoff.worldZ - worldZ)
+            navTarget = pickD <= dropD ? next.pickup : (primaryHeldJob ?? job).dropoff
+        } else if let dropId = heldJobIds.first, let held = self.job(id: dropId) {
+            setExclusiveRoute(jobId: dropId, pickupActive: false, dropActive: true)
+            phase = .toDrop(jobId: dropId)
+            showToast("\(job.kind.title) LOADED — HEAD TO DROP", duration: 1.7)
+            navTarget = held.dropoff
+        } else {
+            setExclusiveRoute(jobId: job.id, pickupActive: false, dropActive: true)
+            phase = .toDrop(jobId: job.id)
+            showToast("\(job.kind.title) LOADED — HEAD TO DROP", duration: 1.7)
+            navTarget = job.dropoff
+        }
+
+        DispatchQueue.main.async {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        }
+        let ndx = navTarget.worldX - worldX
+        let ndz = navTarget.worldZ - worldZ
+        let ndist = hypot(ndx, ndz)
+        var nrel = atan2(ndx, ndz) - heading
+        while nrel > Float.pi { nrel -= 2 * Float.pi }
+        while nrel < -Float.pi { nrel += 2 * Float.pi }
+        updateNavArrow(worldX: worldX, worldZ: worldZ, worldY: worldY, heading: heading, target: navTarget, relativeBearing: nrel)
+        updateGPSTrail(fromX: worldX, fromZ: worldZ, fromY: worldY, to: navTarget)
+        pulseActiveZones(dt: dt)
+        refreshSnapshot(
+            worldX: worldX,
+            worldZ: worldZ,
+            heading: heading,
+            distance: ndist,
+            bearing: nrel,
+            inZone: false
+        )
+    }
+
+    /// Deliver the first held package (FIFO); keep rolling if more cargo remains.
+    private func completeDrop(job: Job, worldX: Float, worldZ: Float, heading: Float) {
+        if perfectStop { perfectStops += 1 }
+        if reversePark { reverseParks += 1 }
+        let payout = resolvePayout(base: job.basePayout, kind: job.kind)
+        let tip = resolveCustomerTip(job: job)
+        deliveriesDone += 1
+        earned += payout + tip.amount
+        tipsEarned += tip.amount
+        lastTipAmount = tip.amount
+        lastTipStars = tip.stars
+        tipFlashRemaining = 3.2
+        lastDeliveryElapsed = elapsed
+        showToast({
+            let tags = [
+                reversePark ? "REV PARK" : nil,
+                streak > 1 ? "\(streak)×" : nil,
+            ].compactMap { $0 }.joined(separator: " · ")
+            let tagBit = tags.isEmpty ? "" : " · \(tags)"
+            if tip.amount > 0 {
+                return "DELIVERED +\(payout) · TIP +\(tip.amount) \(tip.glyph)\(tagBit)"
+            }
+            return "DELIVERED +\(payout) KR · NO TIP\(tagBit)"
+        }(), duration: 2.2)
+        approachAnnounced = false
+        zoneEnterAnnounced = false
+        rivalNode?.isHidden = true
+        rivalProgress = 0
+        rivalWarned = false
+        DispatchQueue.main.async {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+
+        if let idx = heldJobIds.firstIndex(of: job.id) {
+            heldJobIds.remove(at: idx)
+        } else if !heldJobIds.isEmpty {
+            heldJobIds.removeFirst()
+        }
+        cargoHeld = heldJobIds.count
+        markJobFinished(jobId: job.id, completed: true)
+
+        if deliveriesDone >= goal {
+            cargoHeld = 0
+            heldJobIds = []
+            detachPackageFromCar()
+            finishSession(success: true)
+            return
+        }
+
+        if let nextId = heldJobIds.first, let nextJob = self.job(id: nextId) {
+            dropArmed = false
+            carryElapsed = 0
+            dwell = 0
+            setExclusiveRoute(jobId: nextId, pickupActive: false, dropActive: true)
+            phase = .toDrop(jobId: nextId)
+            attachPackageToCar(kind: nextJob.kind)
+            // Keep tip flash visible; secondary toast is shorter.
+            showToast("NEXT DROP — \(nextJob.kind.title) · TIP +\(tip.amount)", duration: 1.6)
+            refreshSnapshot(worldX: worldX, worldZ: worldZ, heading: heading)
+            return
+        }
+
+        // heldJobIds already empty — open the board.
+        cargoHeld = 0
+        carryElapsed = 0
+        dropArmed = false
+        dwell = 0
+        detachPackageFromCar()
+        phase = .choosing
+        presentJobOffers(count: min(3, goal - deliveriesDone), first: false)
+        refreshSnapshot(worldX: worldX, worldZ: worldZ, heading: heading)
+    }
+
+    /// Real courier dopamine: customers tip based on speed, smooth arrival, and care.
+    private func resolveCustomerTip(job: Job) -> (amount: Int64, stars: Int, glyph: String) {
+        let live = pool.first(where: { $0.id == job.id }) ?? job
+        let carrySecs = max(0, elapsed - (live.pickedAt > 0 ? live.pickedAt : elapsed))
+        // Expected windows scale with package kind (rush is impatient).
+        let fast: TimeInterval
+        let ok: TimeInterval
+        let slow: TimeInterval
+        switch job.kind {
+        case .rush:
+            fast = 22; ok = 36; slow = 52
+        case .heavy:
+            fast = 40; ok = 58; slow = 80
+        case .fragile:
+            fast = 32; ok = 48; slow = 68
+        case .standard:
+            fast = 28; ok = 44; slow = 64
+        }
+        var stars = 3
+        if carrySecs <= fast { stars = 5 }
+        else if carrySecs <= ok { stars = 4 }
+        else if carrySecs <= slow { stars = 3 }
+        else if carrySecs <= slow + 20 { stars = 2 }
+        else { stars = 1 }
+
+        if reversePark { stars = min(5, stars + 1) }
+        if perfectStop { stars = min(5, stars + 1) }
+        stars = max(1, stars - live.carryImpacts)
+        if streak >= 3 { stars = min(5, stars + 1) }
+
+        let kindTip: Float
+        switch job.kind {
+        case .rush: kindTip = 1.35
+        case .fragile: kindTip = 1.25
+        case .heavy: kindTip = 1.15
+        case .standard: kindTip = 1.0
+        }
+        let starMul = 0.10 + Float(stars) * 0.08
+        var tip = Int64(Float(job.basePayout) * starMul * kindTip)
+        if nightPremium { tip = Int64(Float(tip) * 1.12) }
+        if stars <= 1 { tip = max(8, tip / 3) }
+        let glyph = String(repeating: "★", count: stars) + String(repeating: "☆", count: 5 - stars)
+        return (tip, stars, glyph)
+    }
+
+    private func nearestUnusedJob(fromX: Float, fromZ: Float, excluding: Set<Int>) -> Job? {
+        var best: Job?
+        var bestD = Float.greatestFiniteMagnitude
+        for j in pool where !j.completed && !excluding.contains(j.id) {
+            let d = hypot(j.pickup.worldX - fromX, j.pickup.worldZ - fromZ)
+            if d < bestD {
+                bestD = d
+                best = j
+            }
+        }
+        return best
+    }
+
     func finishBonusCredits() -> Int64 {
         var bonus = earned
         let grade = computeGrade()
@@ -635,6 +916,7 @@ final class CourierDeliverySystem {
         bonus += Int64(perfectStops) * 40
         bonus += Int64(reverseParks) * 55
         bonus += Int64(max(0, maxStreak - 1)) * 60
+        bonus += tipsEarned / 2
         bonus -= Int64(rivalSteals) * 80
         return max(0, bonus)
     }
@@ -644,7 +926,7 @@ final class CourierDeliverySystem {
     private func presentJobOffers(count: Int, first: Bool) {
         // Hard rule: never reopen dispatch while a route/cargo is active.
         guard !finished else { return }
-        if cargoHeld > 0 { return }
+        if cargoHeld > 0 || !heldJobIds.isEmpty { return }
         if case .toDrop = phase { return }
         if case .toPickup = phase { return }
 
@@ -685,7 +967,9 @@ final class CourierDeliverySystem {
             offerPoolIndex[id] = poolIdx
             // Do not light pickup beams during choice — only the selected job gets a route.
         }
-        if first {
+        if first, !autoPickFirst {
+            showToast("DISPATCH — PICK A JOB (OR WAIT FOR GO)", duration: 2.2)
+        } else if first {
             showToast("CHOOSE A JOB — \(offers.count) OFFERS", duration: 2.0)
         } else {
             showToast("NEXT JOB — PICK YOUR ROUTE", duration: 1.6)
@@ -726,16 +1010,20 @@ final class CourierDeliverySystem {
         score += perfectStops * 6
         score += reverseParks * 8
         score += maxStreak * 5
+        score += Int(min(20, tipsEarned / 40))
         score += Int(max(0, timeLimit - elapsed) / 8)
         score -= damageEvents * 7
         score -= rivalSteals * 12
         if deliveriesDone >= goal { score += 15 }
-        switch score {
-        case 95...: return .s
-        case 80..<95: return .a
-        case 62..<80: return .b
-        case 45..<62: return .c
-        default: return .d
+        return CourierShiftGrade.fromScore(score)
+    }
+
+    /// Light one pickup and one drop across possibly different jobs (multi-cargo chain).
+    private func setCargoRoute(pickupJobId: Int?, dropJobId: Int?) {
+        for i in pool.indices {
+            let pick = pickupJobId != nil && pool[i].id == pickupJobId
+            let drop = dropJobId != nil && pool[i].id == dropJobId
+            setActive(job: &pool[i], pickupActive: pick, dropActive: drop)
         }
     }
 
@@ -764,15 +1052,20 @@ final class CourierDeliverySystem {
     /// Clear cargo, retire the job, then open the board (or leave finished to the caller).
     private func clearCargoAndOpenBoard(jobId: Int, toastAlreadySet: Bool = false, completed: Bool = true) {
         cargoHeld = 0
+        heldJobIds = []
         carryElapsed = 0
         dropArmed = false
         dwell = 0
         rivalProgress = 0
+        rivalWarned = false
         rivalNode?.isHidden = true
         detachPackageFromCar()
         markJobFinished(jobId: jobId, completed: completed)
         if case .toPickup(let id) = phase, id == jobId { phase = .choosing }
         if case .toDrop(let id) = phase, id == jobId { phase = .choosing }
+        // Any leftover route phase after a steal/break — force choosing.
+        if case .toPickup = phase { phase = .choosing }
+        if case .toDrop = phase { phase = .choosing }
         guard !finished, deliveriesDone < goal else { return }
         if !toastAlreadySet {
             showToast("NEXT JOB — PICK YOUR ROUTE", duration: 1.4)
@@ -794,20 +1087,23 @@ final class CourierDeliverySystem {
     }
 
     private func applyZoneVisual(_ zone: Zone) {
-        // Keep the parent opaque so building dressing stays readable when inactive.
         zone.node.opacity = 1
         zone.beacon.isHidden = !zone.active
         zone.beam.isHidden = !zone.active
         zone.pulse.isHidden = !zone.active
-        zone.beam.opacity = zone.active ? 0.55 : 0
+        zone.beam.opacity = zone.active ? (nightPremium ? 0.75 : 0.55) : 0
         if let pad = zone.node.childNode(withName: "krcCourierPad", recursively: false) {
-            pad.opacity = zone.active ? 1 : 0.4
+            pad.opacity = zone.active ? 1 : 0.15
         }
         if let ring = zone.node.childNode(withName: "krcCourierRing", recursively: false) {
             ring.opacity = zone.active ? 1 : 0.25
         }
+        if let dressing = zone.node.childNode(withName: "krcCourierDressing", recursively: false) {
+            dressing.isHidden = !zone.active
+        }
+        let activeIntensity: CGFloat = nightPremium ? 1400 : 900
         if let light = zone.beacon.childNodes.first(where: { $0.light != nil })?.light {
-            light.intensity = zone.active ? 900 : 0
+            light.intensity = zone.active ? activeIntensity : 0
         }
         if let sign = zone.node.childNode(withName: "krcCourierBaySign", recursively: true) {
             sign.opacity = zone.active ? 1 : 0.55
@@ -818,6 +1114,7 @@ final class CourierDeliverySystem {
         finished = true
         phase = .finished
         cargoHeld = 0
+        heldJobIds = []
         dropArmed = false
         detachPackageFromCar()
         navArrow?.isHidden = true
@@ -825,9 +1122,11 @@ final class CourierDeliverySystem {
         rivalNode?.isHidden = true
         let grade = computeGrade()
         if success {
-            showToast("SHIFT CLEAR · GRADE \(grade.rawValue)", duration: 2.6)
+            showToast("SHIFT CLEAR · \(grade.glyph)", duration: 2.6)
+        } else if deliveriesDone > 0 {
+            showToast("SHIFT CUT SHORT · \(deliveriesDone)/\(goal) · \(grade.glyph)", duration: 2.6)
         } else {
-            showToast("SHIFT OVER · GRADE \(grade.rawValue) · \(deliveriesDone)/\(goal)", duration: 2.6)
+            showToast("SHIFT OVER · NO DROPS · \(grade.glyph)", duration: 2.6)
         }
         refreshSnapshot(worldX: 0, worldZ: 0, heading: 0, forceFinish: true, success: success)
     }
@@ -843,14 +1142,15 @@ final class CourierDeliverySystem {
         success: Bool = false
     ) {
         let grade = computeGrade()
-        let kind = activeJob?.kind ?? .standard
+        let kind = (primaryHeldJob ?? activeJob)?.kind ?? .standard
+        let rivalApproaching = rivalProgress > 0.35
         snapshot.deliveriesComplete = deliveriesDone
         snapshot.deliveryGoal = goal
         snapshot.carryingPackage = carrying
         snapshot.cargoHeld = cargoHeld
         snapshot.cargoCapacity = cargoCapacity
         snapshot.earnedCredits = earned
-        snapshot.nextPayout = activeJob?.basePayout ?? offers.first?.payout ?? 0
+        snapshot.nextPayout = (primaryHeldJob ?? activeJob)?.basePayout ?? offers.first?.payout ?? 0
         snapshot.streak = streak
         snapshot.distanceToTarget = distance
         snapshot.bearingToTarget = bearing
@@ -865,8 +1165,8 @@ final class CourierDeliverySystem {
         snapshot.rivalThreat = carrying ? rivalProgress : 0
         snapshot.reverseParkHint = inZone && carrying
         snapshot.routeLocked = routeLocked
-        // Board is only legal in choosing with empty cargo and no active route.
-        let boardLegal = !finished && !routeLocked && cargoHeld == 0 && {
+        // Board only when held empty and choosing — no mid-cargo dispatch.
+        let boardLegal = !finished && !routeLocked && heldJobIds.isEmpty && cargoHeld == 0 && {
             if case .choosing = phase { return true }
             return false
         }()
@@ -874,16 +1174,40 @@ final class CourierDeliverySystem {
         snapshot.jobOffers = boardLegal ? offers : []
         snapshot.shiftGrade = grade
         snapshot.gradeLabel = grade.title
+        snapshot.gradeStars = grade.stars
+        snapshot.gradeGlyph = grade.glyph
+        snapshot.maxStreak = maxStreak
+        snapshot.rivalSteals = rivalSteals
+        snapshot.perfectStops = perfectStops
+        snapshot.tipsEarned = tipsEarned
+        snapshot.lastTipAmount = tipFlashRemaining > 0 ? lastTipAmount : 0
+        snapshot.lastTipStars = tipFlashRemaining > 0 ? lastTipStars : 0
+        snapshot.tipFlashRemaining = tipFlashRemaining
+        snapshot.rivalApproaching = rivalApproaching
+        if tipFlashRemaining > 0.4, lastTipAmount > 0 {
+            snapshot.coachHint = "TIP +\(lastTipAmount) · \(String(repeating: "★", count: lastTipStars))"
+        } else if snapshot.reverseParkHint {
+            snapshot.coachHint = "REVERSE PARK +18%"
+        } else if kind == .fragile && carrying {
+            snapshot.coachHint = "NO CRASHES"
+        } else if kind == .heavy && carrying {
+            snapshot.coachHint = "HEAVY — SLOWER"
+        } else if rivalApproaching {
+            snapshot.coachHint = "RIVAL CLOSING IN"
+        } else {
+            snapshot.coachHint = ""
+        }
         snapshot.toast = toast
         snapshot.sessionFinished = forceFinish || finished
         snapshot.success = forceFinish ? success : (finished && deliveriesDone >= goal)
         snapshot.objectiveComplete = deliveriesDone >= goal
         snapshot.objectiveProgress = Float(deliveriesDone) / Float(max(1, goal))
 
+        let cargoTag = cargoHeld > 1 ? " · CARGO \(cargoHeld)/\(cargoCapacity)" : ""
         if boardLegal {
             snapshot.objectiveLabel = "CHOOSE JOB · \(offers.count) OFFERS"
         } else if carrying {
-            snapshot.objectiveLabel = "\(kind.title) DROP \(deliveriesDone)/\(goal) · \(Int(distance.rounded()))m"
+            snapshot.objectiveLabel = "\(kind.title) DROP \(deliveriesDone)/\(goal)\(cargoTag) · \(Int(distance.rounded()))m"
         } else if deliveriesDone >= goal {
             snapshot.objectiveLabel = "ROUTE CLEAR \(deliveriesDone)/\(goal)"
         } else if let job = activeJob {
@@ -913,7 +1237,12 @@ final class CourierDeliverySystem {
         rival.isHidden = false
         // Rival gains faster when player is far / slow — paced so a normal drive wins.
         let chase: Float = 0.028 + min(0.05, playerDist / 1200)
+        let prev = rivalProgress
         rivalProgress = min(1, rivalProgress + dt * chase)
+        if !rivalWarned, prev < 0.4, rivalProgress >= 0.4 {
+            rivalWarned = true
+            showToast("RIVAL CLOSING — HURRY", duration: 1.5)
+        }
         let y = drop.worldY + 0.4
         // Approach drop from a side angle so they feel like another courier.
         let ang = animTime * 0.7
@@ -927,30 +1256,72 @@ final class CourierDeliverySystem {
         rival.opacity = CGFloat(0.55 + rivalProgress * 0.4)
     }
 
+    private func nearestTrackT(x: Float, z: Float) -> Float {
+        let pts = track.points
+        guard !pts.isEmpty else { return 0 }
+        var bestIdx = 0
+        var bestD = Float.greatestFiniteMagnitude
+        for i in pts.indices {
+            let p = pts[i]
+            let d = hypot(p.x - x, p.z - z)
+            if d < bestD {
+                bestD = d
+                bestIdx = i
+            }
+        }
+        return Float(bestIdx) / Float(pts.count)
+    }
+
     private func updateGPSTrail(fromX: Float, fromZ: Float, fromY: Float, to: Zone) {
         guard let gps = gpsRoot else { return }
         gps.childNodes.forEach { $0.removeFromParentNode() }
-        guard !awaitingChoice, activeJob != nil else { return }
+        guard !awaitingChoice, activeJob != nil || !heldJobIds.isEmpty else { return }
 
-        let dx = to.worldX - fromX
-        let dz = to.worldZ - fromZ
-        let dist = hypot(dx, dz)
-        guard dist > 4 else { return }
-        let segments = min(28, max(8, Int(dist / 8)))
+        let straightDist = hypot(to.worldX - fromX, to.worldZ - fromZ)
+        guard straightDist > 4 else { return }
+
+        let fromT = nearestTrackT(x: fromX, z: fromZ)
+        let toT = nearestTrackT(x: to.worldX, z: to.worldZ)
+        var fwd = (toT - fromT).truncatingRemainder(dividingBy: 1)
+        if fwd < 0 { fwd += 1 }
+        // Shortest arc on the loop (forward or back along track-T).
+        let dir: Float = fwd <= 0.5 ? 1 : -1
+        let absSpan: Float = fwd <= 0.5 ? fwd : (1 - fwd)
+
+        let segments = min(28, max(8, Int(straightDist / 8)))
         let color = carrying
             ? UIColor(red: 0.2, green: 0.95, blue: 0.55, alpha: 1)
-            : (activeJob?.kind.accentUIColor ?? UIColor.orange)
+            : ((primaryHeldJob ?? activeJob)?.kind.accentUIColor ?? UIColor.orange)
+        let padBlendStart = max(0, segments - 4)
+
+        var points: [(x: Float, y: Float, z: Float)] = []
+        points.reserveCapacity(segments + 1)
+        for i in 0...segments {
+            let u = Float(i) / Float(segments)
+            if i >= padBlendStart {
+                let trackU = Float(padBlendStart) / Float(segments)
+                var t = (fromT + dir * absSpan * trackU).truncatingRemainder(dividingBy: 1)
+                if t < 0 { t += 1 }
+                let sp = track.sample(t)
+                let blend = Float(i - padBlendStart) / Float(max(1, segments - padBlendStart))
+                points.append((
+                    sp.x + (to.worldX - sp.x) * blend,
+                    sp.y + Self.roadSurfaceY + (to.worldY - (sp.y + Self.roadSurfaceY)) * blend,
+                    sp.z + (to.worldZ - sp.z) * blend
+                ))
+            } else {
+                var t = (fromT + dir * absSpan * u).truncatingRemainder(dividingBy: 1)
+                if t < 0 { t += 1 }
+                let sp = track.sample(t)
+                points.append((sp.x, sp.y + Self.roadSurfaceY, sp.z))
+            }
+        }
 
         for i in 0..<segments {
-            let t0 = Float(i) / Float(segments)
-            let t1 = Float(i + 1) / Float(segments)
-            let x0 = fromX + dx * t0
-            let z0 = fromZ + dz * t0
-            let x1 = fromX + dx * t1
-            let z1 = fromZ + dz * t1
-            let mx = (x0 + x1) * 0.5
-            let mz = (z0 + z1) * 0.5
-            let segLen = hypot(x1 - x0, z1 - z0)
+            let a = points[i]
+            let b = points[i + 1]
+            let segLen = hypot(b.x - a.x, b.z - a.z)
+            guard segLen > 0.05 else { continue }
             let box = SCNBox(width: CGFloat(segLen), height: 0.08, length: 0.55, chamferRadius: 0.02)
             let mat = SCNMaterial()
             mat.lightingModel = .constant
@@ -959,13 +1330,13 @@ final class CourierDeliverySystem {
             mat.transparency = 0.35
             box.materials = [mat]
             let node = SCNNode(geometry: box)
-            node.position = SCNVector3(mx, fromY * 0.15 + to.worldY + 0.12, mz)
-            node.eulerAngles.y = atan2(x1 - x0, z1 - z0) + Float.pi / 2
-            // Pulse traveling light.
+            node.position = SCNVector3((a.x + b.x) * 0.5, (a.y + b.y) * 0.5 + 0.12, (a.z + b.z) * 0.5)
+            node.eulerAngles.y = atan2(b.x - a.x, b.z - a.z) + Float.pi / 2
             let pulse = 0.45 + 0.4 * sin(animTime * 6 - Float(i) * 0.45)
             node.opacity = CGFloat(max(0.25, pulse))
             gps.addChildNode(node)
         }
+        _ = fromY
     }
 
     private func pulseActiveZones(dt: Float) {
@@ -1007,10 +1378,12 @@ final class CourierDeliverySystem {
                 }
             }
         }
+        let stack = Float(max(0, cargoHeld - 1))
+        let scale: Float = 1 + stack * 0.18
+        crate.scale = SCNVector3(scale, scale * (1 + stack * 0.12), scale)
         if let car = carNode {
             car.addChildNode(crate)
             // Stack on the roof rack — keep clear of the chassis/road.
-            let stack = Float(max(0, cargoHeld - 1))
             crate.position = SCNVector3(0, 1.35 + stack * 0.4, -0.2)
             crate.eulerAngles = SCNVector3(0, 0, 0)
         } else {
@@ -1022,6 +1395,7 @@ final class CourierDeliverySystem {
     private func detachPackageFromCar() {
         guard let crate = packageNode else { return }
         crate.isHidden = true
+        crate.scale = SCNVector3(1, 1, 1)
         crate.removeFromParentNode()
         root?.addChildNode(crate)
     }
@@ -1031,6 +1405,7 @@ final class CourierDeliverySystem {
         lateral: Float,
         color: UIColor,
         label: String,
+        kind: CourierPackageKind,
         active: Bool
     ) -> Zone {
         let p = track.sample(trackT)
@@ -1086,9 +1461,9 @@ final class CourierDeliverySystem {
         let beamGeo = SCNCylinder(radius: 0.55, height: 28)
         let beamMat = SCNMaterial()
         beamMat.lightingModel = .constant
-        beamMat.diffuse.contents = color.withAlphaComponent(0.25)
+        beamMat.diffuse.contents = color.withAlphaComponent(nightPremium ? 0.4 : 0.25)
         beamMat.emission.contents = color
-        beamMat.transparency = 0.7
+        beamMat.transparency = nightPremium ? 0.55 : 0.7
         beamMat.isDoubleSided = true
         beamGeo.materials = [beamMat]
         let beam = SCNNode(geometry: beamGeo)
@@ -1120,14 +1495,14 @@ final class CourierDeliverySystem {
         light.light = SCNLight()
         light.light?.type = .omni
         light.light?.color = color
-        light.light?.intensity = active ? 900 : 0
+        light.light?.intensity = active ? (nightPremium ? 1400 : 900) : 0
         light.light?.attenuationStartDistance = 1
-        light.light?.attenuationEndDistance = 36
+        light.light?.attenuationEndDistance = nightPremium ? 48 : 36
         light.position = SCNVector3(0, 2.8, 0)
         beacon.addChildNode(light)
 
         // Light building dressing — façade + bay behind the pad (local +Z = outward).
-        let dressing = makeStopDressing(color: color, isPickup: label == "PICKUP")
+        let dressing = makeStopDressing(color: color, isPickup: label == "PICKUP", kind: kind)
         dressing.position = SCNVector3(0, 0, 7.2)
         node.addChildNode(dressing)
 
@@ -1147,24 +1522,51 @@ final class CourierDeliverySystem {
     }
 
     /// Cheap storefront / warehouse shell so stops feel like places, not floating rings.
-    private func makeStopDressing(color: UIColor, isPickup: Bool) -> SCNNode {
+    private func makeStopDressing(color: UIColor, isPickup: Bool, kind: CourierPackageKind) -> SCNNode {
         let root = SCNNode()
         root.name = "krcCourierDressing"
 
-        let wallW: CGFloat = isPickup ? 14 : 12
-        let wallH: CGFloat = isPickup ? 7.5 : 9.5
-        let wallD: CGFloat = isPickup ? 4.2 : 5.5
+        // Kind silhouette: fragile = glass-blue windows; rush = taller neon fin;
+        // heavy = wider dock; standard = baseline shop/warehouse.
+        var wallW: CGFloat = isPickup ? 14 : 12
+        var wallH: CGFloat = isPickup ? 7.5 : 9.5
+        var wallD: CGFloat = isPickup ? 4.2 : 5.5
+        switch kind {
+        case .fragile:
+            wallW = isPickup ? 13 : 11
+            wallH = isPickup ? 8.2 : 10
+        case .rush:
+            wallH = isPickup ? 9.5 : 12
+            wallD = isPickup ? 3.8 : 5.0
+        case .heavy:
+            wallW = isPickup ? 18 : 16
+            wallD = isPickup ? 5.5 : 7.0
+        case .standard:
+            break
+        }
 
-        let wallColor = isPickup
-            ? UIColor(red: 0.42, green: 0.38, blue: 0.34, alpha: 1)
-            : UIColor(red: 0.28, green: 0.32, blue: 0.36, alpha: 1)
+        let wallColor: UIColor
+        switch kind {
+        case .fragile:
+            wallColor = UIColor(red: 0.55, green: 0.72, blue: 0.82, alpha: 1)
+        case .rush:
+            wallColor = isPickup
+                ? UIColor(red: 0.38, green: 0.28, blue: 0.30, alpha: 1)
+                : UIColor(red: 0.32, green: 0.22, blue: 0.26, alpha: 1)
+        case .heavy:
+            wallColor = UIColor(red: 0.24, green: 0.24, blue: 0.28, alpha: 1)
+        case .standard:
+            wallColor = isPickup
+                ? UIColor(red: 0.42, green: 0.38, blue: 0.34, alpha: 1)
+                : UIColor(red: 0.28, green: 0.32, blue: 0.36, alpha: 1)
+        }
 
         let wall = SCNBox(width: wallW, height: wallH, length: wallD, chamferRadius: 0.08)
         let wallMat = SCNMaterial()
         wallMat.lightingModel = .physicallyBased
         wallMat.diffuse.contents = wallColor
-        wallMat.roughness.contents = 0.78
-        wallMat.metalness.contents = 0.08
+        wallMat.roughness.contents = kind == .fragile ? 0.35 : 0.78
+        wallMat.metalness.contents = kind == .fragile ? 0.35 : 0.08
         wall.materials = [wallMat]
         let wallNode = SCNNode(geometry: wall)
         wallNode.position = SCNVector3(0, Float(wallH) * 0.5, 0)
@@ -1172,7 +1574,7 @@ final class CourierDeliverySystem {
         root.addChildNode(wallNode)
 
         // Loading bay opening (dark inset on the track-facing face).
-        let doorW: CGFloat = isPickup ? 5.5 : 4.2
+        let doorW: CGFloat = kind == .heavy ? (isPickup ? 7.5 : 6.0) : (isPickup ? 5.5 : 4.2)
         let doorH: CGFloat = isPickup ? 3.6 : 4.4
         let door = SCNBox(width: doorW, height: doorH, length: 0.35, chamferRadius: 0.04)
         let doorMat = SCNMaterial()
@@ -1208,8 +1610,33 @@ final class CourierDeliverySystem {
         signNode.position = SCNVector3(0, Float(wallH) - 1.1, -Float(wallD) * 0.5 - 0.08)
         root.addChildNode(signNode)
 
-        // Window strip for shop feel on pickups; blank panels on warehouses.
-        if isPickup {
+        // Rush: tall neon fin on the roof.
+        if kind == .rush {
+            let fin = SCNBox(width: 0.35, height: wallH * 0.55, length: 1.8, chamferRadius: 0.04)
+            let finMat = SCNMaterial()
+            finMat.lightingModel = .constant
+            finMat.diffuse.contents = color
+            finMat.emission.contents = color
+            fin.materials = [finMat]
+            let finNode = SCNNode(geometry: fin)
+            finNode.position = SCNVector3(Float(wallW) * 0.35, Float(wallH) + Float(wallH) * 0.2, 0)
+            root.addChildNode(finNode)
+        }
+
+        // Window strip — fragile gets glass-blue panes; pickups get shop windows; warehouses get panels.
+        if kind == .fragile {
+            for i in -2...2 {
+                let win = SCNBox(width: 1.8, height: 2.2, length: 0.12, chamferRadius: 0.02)
+                let winMat = SCNMaterial()
+                winMat.lightingModel = .constant
+                winMat.diffuse.contents = UIColor(red: 0.45, green: 0.85, blue: 1.0, alpha: 0.75)
+                winMat.emission.contents = UIColor(red: 0.35, green: 0.7, blue: 0.95, alpha: 0.55)
+                win.materials = [winMat]
+                let winNode = SCNNode(geometry: win)
+                winNode.position = SCNVector3(Float(i) * 2.4, Float(wallH) * 0.5, -Float(wallD) * 0.5 - 0.06)
+                root.addChildNode(winNode)
+            }
+        } else if isPickup {
             for i in -1...1 where i != 0 {
                 let win = SCNBox(width: 1.6, height: 1.4, length: 0.1, chamferRadius: 0.02)
                 let winMat = SCNMaterial()
@@ -1262,8 +1689,10 @@ final class CourierDeliverySystem {
             root.addChildNode(crateNode)
         }
 
-        // Low curb / dock platform under the pad side of the façade.
-        let dock = SCNBox(width: wallW * 0.92, height: 0.35, length: 3.2, chamferRadius: 0.04)
+        // Low curb / dock platform — heavier jobs get a wider apron.
+        let dockW = kind == .heavy ? wallW * 1.05 : wallW * 0.92
+        let dockLen: CGFloat = kind == .heavy ? 4.5 : 3.2
+        let dock = SCNBox(width: dockW, height: 0.35, length: dockLen, chamferRadius: 0.04)
         let dockMat = SCNMaterial()
         dockMat.lightingModel = .physicallyBased
         dockMat.diffuse.contents = UIColor(white: 0.35, alpha: 1)

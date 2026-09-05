@@ -118,7 +118,8 @@ struct CourierSessionConfig {
     var timeBonus: TimeInterval = 0
     var jobGoal: Int = 3
     var timeLimit: TimeInterval = 120
-    var autoPickFirst: Bool = true
+    /// When false, first shift opens the dispatch board so the player picks a job.
+    var autoPickFirst: Bool = false
 
     static func from(progress: PlayerProgressStore, nightRace: Bool) -> CourierSessionConfig {
         let rank = progress.courierRank
@@ -129,7 +130,7 @@ struct CourierSessionConfig {
             timeBonus: rank.timeBonusSeconds,
             jobGoal: 3,
             timeLimit: 120,
-            autoPickFirst: true
+            autoPickFirst: false
         )
     }
 }
@@ -177,6 +178,14 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
     private var finished = false
     private var nitro: Float = 1
     private var wasNitroOn = false
+    #if DEBUG
+    private var nitroProbeLoggedPre = false
+    private var nitroProbeLoggedPost = false
+    private var nitroProbePreSpeed: Float = 0
+    private var nitroProbePreTank: Float = 0
+    private var nitroProbePeakSpeed: Float = 0
+    private var nitroProbeEngageAt: Date?
+    #endif
     private var heat: Float = 0
     private var damage: Float = 0
     private var lastRewardBreakdown: (base: Int64, position: Int64, heat: Int64, arcade: Int64) = (0, 0, 0, 0)
@@ -231,8 +240,8 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
     @Published var latestTicket: RaceOpponentController.SpeedingTicket? = nil
     @Published private(set) var issuedTickets: [RaceOpponentController.SpeedingTicket] = []
     @Published var courierDeliveries: Int = 0
-    @Published var courierGoal: Int = 6
-    @Published var courierTimeRemaining: TimeInterval = 210
+    @Published var courierGoal: Int = 3
+    @Published var courierTimeRemaining: TimeInterval = 120
     @Published var courierCarrying: Bool = false
     @Published var courierDistance: Float = 0
     @Published var courierBearing: Float = 0
@@ -250,6 +259,20 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
     @Published var courierCargoCapacity: Int = 1
     @Published var courierNightPremium: Bool = false
     @Published var courierShiftGrade: String = ""
+    /// Filled stars 1–5 for courier shift rating.
+    @Published var courierGradeStars: Int = 2
+    /// Compact glyph e.g. "★★★★☆".
+    @Published var courierGradeGlyph: String = "★★☆☆☆"
+    @Published var courierCoachHint: String = ""
+    @Published var courierReverseParkHint: Bool = false
+    @Published var courierShiftSuccess: Bool = false
+    @Published var courierMaxStreak: Int = 0
+    @Published var courierRivalSteals: Int = 0
+    @Published var courierPerfectStops: Int = 0
+    @Published var courierTipsEarned: Int64 = 0
+    @Published var courierLastTipAmount: Int64 = 0
+    @Published var courierLastTipStars: Int = 0
+    @Published var courierTipFlash: Float = 0
     let lapGoal: Int
     var onRaceFinished: ((TimeInterval) -> Void)?
     private(set) var houseGhostDelta: TimeInterval?
@@ -445,6 +468,8 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
                 if next >= 0 { KRCUISounds.playClick() }
                 if released {
                     KRCMusicDirector.shared.play(.race, crossfade: 0.35)
+                    // Don't leave the dispatch board covering the race after GO.
+                    self.autoSelectFirstCourierOfferIfNeeded()
                 }
             }
         }
@@ -490,6 +515,16 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
     }
 
     func selectCourierOffer(id: Int) {
+        // Optimistic dismiss so a stale render publish can't leave the board stuck.
+        if Thread.isMainThread {
+            courierAwaitingJobChoice = false
+            courierJobOffers = []
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.courierAwaitingJobChoice = false
+                self?.courierJobOffers = []
+            }
+        }
         courier.selectOffer(id: id)
         let snap = courier.snapshot
         _courierSnapshot = snap
@@ -502,7 +537,23 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         }
     }
 
+    /// Claim the first offer if the player hasn't picked yet (e.g. green flag).
+    func autoSelectFirstCourierOfferIfNeeded() {
+        guard mode == .courier else { return }
+        let snap = courier.snapshot
+        guard snap.awaitingJobChoice, let first = snap.jobOffers.first else { return }
+        selectCourierOffer(id: first.id)
+    }
+
     func courierGradeLabel() -> String { _courierSnapshot.gradeLabel }
+
+    #if DEBUG
+    /// Active pad world position for QA tip probe (pickup while empty, drop while carrying).
+    func courierDebugActivePad() -> (x: Float, z: Float, y: Float)? {
+        courier.debugActivePadWorld()
+    }
+    #endif
+
     func lastCreditsEarned() -> Int64 {
         lastRewardBreakdown.base + lastRewardBreakdown.position + lastRewardBreakdown.heat + lastRewardBreakdown.arcade
     }
@@ -795,7 +846,8 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         case .endless:
             return false
         case .courier:
-            return true
+            // Delivery district — no race field cluttering the route.
+            return false
         default:
             return lapGoal < 500
         }
@@ -828,10 +880,9 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         if !qaDrive {
             gameController.poll(into: input)
         }
-        let nitroOn = input.nitro && nitro > 0.02
         let projection = trackQuery.project(x: openWorld.worldX, z: openWorld.worldZ)
         #if DEBUG
-        if qaDrive {
+        if qaDrive, !RaceQAAutopilot.tipProbe {
             RaceQAAutopilot.apply(
                 input: input,
                 state: &openWorld,
@@ -843,9 +894,35 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
             )
         }
         #endif
+        // After controller / QA input so N2O actually engages this frame.
+        let nitroOn = input.nitro && nitro > 0.02
 
         let arcadeMods: (gripMul: Float, speedMul: Float, driftScoreMul: Float)
         if mode == .courier {
+            #if DEBUG
+            // Claim a job before we snap to its pad.
+            if RaceQAAutopilot.enabled,
+               courier.snapshot.awaitingJobChoice,
+               let first = courier.snapshot.jobOffers.first {
+                courier.selectOffer(id: first.id)
+            }
+            if RaceQAAutopilot.tipProbe {
+                RaceQAAutopilot.applyCourierTipProbe(
+                    input: input,
+                    state: &openWorld,
+                    carNode: carNode,
+                    pad: courier.debugActivePadWorld(),
+                    carrying: courier.snapshot.carryingPackage,
+                    deliveries: courier.snapshot.deliveriesComplete,
+                    tipsEarned: courier.snapshot.tipsEarned,
+                    lastTip: courier.snapshot.lastTipAmount,
+                    tipFlash: courier.snapshot.tipFlashRemaining,
+                    inZone: courier.snapshot.inZone,
+                    dt: dt
+                )
+                carNode.position = SCNVector3(openWorld.worldX, max(carNode.position.y, 0.4), openWorld.worldZ)
+            }
+            #endif
             courier.update(
                 dt: dt,
                 worldX: openWorld.worldX,
@@ -856,6 +933,30 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
                 impact: openWorld.impactImpulse
             )
             _courierSnapshot = courier.snapshot
+            #if DEBUG
+            if RaceQAAutopilot.enabled, !RaceQAAutopilot.tipProbe {
+                RaceQAAutopilot.applyCourierSeek(
+                    input: input,
+                    state: &openWorld,
+                    bearing: _courierSnapshot.bearingToTarget,
+                    distance: _courierSnapshot.distanceToTarget,
+                    inZone: _courierSnapshot.inZone,
+                    carrying: _courierSnapshot.carryingPackage,
+                    reverseHint: _courierSnapshot.reverseParkHint,
+                    dt: dt
+                )
+            }
+            if RaceQAAutopilot.tipProbe {
+                RaceQAAutopilot.advanceCourierTipProbe(
+                    carrying: _courierSnapshot.carryingPackage,
+                    deliveries: _courierSnapshot.deliveriesComplete,
+                    tipsEarned: _courierSnapshot.tipsEarned,
+                    lastTip: _courierSnapshot.lastTipAmount,
+                    tipFlash: _courierSnapshot.tipFlashRemaining,
+                    dt: dt
+                )
+            }
+            #endif
             arcadeMods = (1, _courierSnapshot.speedMul, 1)
         } else {
             arcadeMods = arcadeFun.update(
@@ -948,6 +1049,41 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
             nitro = min(1, nitro + 0.06 * stats.nitroRefillMul * dt)
         }
         wasNitroOn = nitroOn
+        #if DEBUG
+        if RaceQAAutopilot.nitroTest {
+            let spd = abs(openWorld.speed)
+            if nitroOn, !nitroProbeLoggedPre {
+                nitroProbeLoggedPre = true
+                nitroProbePreSpeed = spd
+                nitroProbePeakSpeed = spd
+                nitroProbePreTank = nitro
+                nitroProbeEngageAt = Date()
+                NSLog(
+                    "[QANitro] ENGAGE speed=%.1f km/h tank=%.0f%%",
+                    nitroProbePreSpeed * 3.6, nitroProbePreTank * 100
+                )
+            }
+            if nitroProbeLoggedPre, !nitroProbeLoggedPost {
+                nitroProbePeakSpeed = max(nitroProbePeakSpeed, spd)
+            }
+            if nitroProbeLoggedPre, !nitroProbeLoggedPost,
+               let engageAt = nitroProbeEngageAt,
+               Date().timeIntervalSince(engageAt) >= 3.5 {
+                nitroProbeLoggedPost = true
+                let postTank = nitro
+                let peaked = nitroProbePeakSpeed > nitroProbePreSpeed * 1.04
+                let drained = postTank < nitroProbePreTank - 0.08
+                // While following turns, brake-in can hold peak ≈ engage; tank drain proves N2O fired.
+                NSLog(
+                    "[QANitro] POST engage=%.1f peak=%.1f km/h tank=%.0f→%.0f%% peaked=%@ drained=%@ PASS=%@",
+                    nitroProbePreSpeed * 3.6, nitroProbePeakSpeed * 3.6,
+                    nitroProbePreTank * 100, postTank * 100,
+                    peaked ? "yes" : "no", drained ? "yes" : "no",
+                    drained ? "YES" : "NO"
+                )
+            }
+        }
+        #endif
         if mode == .endless {
             // Heat rises with speed and time — high heat bleeds top speed (see damageDrag/heatDrag).
             let speedHeat = min(1, abs(openWorld.speed) / max(0.001, maxWorldSpeed))
@@ -1406,20 +1542,37 @@ final class NativeRaceEngine: NSObject, ObservableObject, SCNSceneRendererDelega
         courierNextPayout = snap.nextPayout
         courierStreak = snap.streak
         courierUrgency = snap.urgency
-        courierAwaitingJobChoice = snap.awaitingJobChoice
+        let boardOpen = snap.awaitingJobChoice
             && !snap.carryingPackage
             && !snap.routeLocked
             && snap.cargoHeld == 0
-        courierJobOffers = (snap.awaitingJobChoice
-            && !snap.carryingPackage
-            && !snap.routeLocked
-            && snap.cargoHeld == 0) ? snap.jobOffers : []
+            && !snap.jobOffers.isEmpty
+        // Never resurrect the board from a stale frame once a route is locked.
+        if snap.routeLocked || snap.carryingPackage || snap.cargoHeld > 0 {
+            courierAwaitingJobChoice = false
+            courierJobOffers = []
+        } else {
+            courierAwaitingJobChoice = boardOpen
+            courierJobOffers = boardOpen ? snap.jobOffers : []
+        }
         courierPackageKind = snap.packageKind
         courierRivalThreat = snap.rivalThreat
         courierCargoHeld = snap.cargoHeld
         courierCargoCapacity = snap.cargoCapacity
         courierNightPremium = snap.nightPremium
         courierShiftGrade = snap.gradeLabel
+        courierGradeStars = snap.gradeStars
+        courierGradeGlyph = snap.gradeGlyph
+        courierCoachHint = snap.coachHint
+        courierReverseParkHint = snap.reverseParkHint
+        courierShiftSuccess = snap.success
+        courierMaxStreak = snap.maxStreak
+        courierRivalSteals = snap.rivalSteals
+        courierPerfectStops = snap.perfectStops
+        courierTipsEarned = snap.tipsEarned
+        courierLastTipAmount = snap.lastTipAmount
+        courierLastTipStars = snap.lastTipStars
+        courierTipFlash = snap.tipFlashRemaining
         arcadeObjective = snap.objectiveLabel
         arcadeObjectiveProgress = snap.objectiveProgress
         arcadeObjectiveComplete = snap.objectiveComplete
